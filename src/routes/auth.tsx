@@ -41,6 +41,22 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  const traducirError = (msg: string) => {
+    const m = msg.toLowerCase();
+    if (m.includes("email not confirmed"))
+      return "Tu correo aún no está confirmado. Intenta de nuevo en unos segundos.";
+    if (m.includes("invalid login credentials"))
+      return "Correo o contraseña incorrectos.";
+    if (m.includes("already registered") || m.includes("already been registered"))
+      return "Ese correo ya está registrado. Ingresa con tu contraseña.";
+    if (m.includes("weak") || m.includes("known to be weak"))
+      return "Esa contraseña es muy común. Usa una más segura.";
+    if (m.includes("at least 6")) return "La contraseña debe tener al menos 6 caracteres.";
+    if (m.includes("rate limit") || m.includes("after"))
+      return "Demasiados intentos seguidos. Espera unos segundos e intenta otra vez.";
+    return msg;
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -56,15 +72,27 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("Cuenta creada. Ya puedes ingresar.");
-        setMode("login");
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          toast.success("Cuenta creada. Ya puedes ingresar.");
+          setMode("login");
+        } else {
+          toast.success("Cuenta creada. Bienvenida.");
+          void navigate({ to: "/dashboard" });
+        }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No fue posible ingresar");
+      toast.error(
+        error instanceof Error ? traducirError(error.message) : "No fue posible ingresar",
+      );
     } finally {
       setBusy(false);
     }
   };
+
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
