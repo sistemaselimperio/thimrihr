@@ -1,6 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
+  ChevronLeft,
+  ChevronRight,
   Download,
   FileText,
   Home,
