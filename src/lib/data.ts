@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+/*
+ * Capa de acceso genérica: las tablas se pasan por nombre, por lo que se usa un
+ * cliente sin tipar para los helpers CRUD. Los tipos de dominio viven en hr.ts.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const db = supabase as any;
 import type {
   Company,
   Employee,
@@ -19,7 +26,7 @@ export interface DocumentTemplate {
 }
 
 async function selectAll<T>(table: string, order: string, ascending = true): Promise<T[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from(table)
     .select("*")
     .order(order, { ascending });
@@ -111,22 +118,22 @@ export function useTableMutation<TVars>(
 }
 
 export async function upsertRow(table: string, row: Record<string, unknown>) {
-  const { error } = await supabase.from(table).upsert(row);
+  const { error } = await db.from(table).upsert(row);
   if (error) throw new Error(error.message);
 }
 
 export async function insertRow(table: string, row: Record<string, unknown>) {
-  const { error } = await supabase.from(table).insert(row);
+  const { error } = await db.from(table).insert(row);
   if (error) throw new Error(error.message);
 }
 
 export async function updateRow(table: string, id: string, row: Record<string, unknown>) {
-  const { error } = await supabase.from(table).update(row).eq("id", id);
+  const { error } = await db.from(table).update(row).eq("id", id);
   if (error) throw new Error(error.message);
 }
 
 export async function deleteRow(table: string, id: string) {
-  const { error } = await supabase.from(table).delete().eq("id", id);
+  const { error } = await db.from(table).delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
