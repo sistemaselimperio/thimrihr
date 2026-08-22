@@ -112,8 +112,14 @@ export function IncapacityDialog({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.employee_id) return toast.error("Selecciona un empleado");
-    if (days <= 0) return toast.error("Revisa las fechas de la incapacidad");
+    if (!form.employee_id) {
+      toast.error("Selecciona un empleado");
+      return;
+    }
+    if (days <= 0) {
+      toast.error("Revisa las fechas de la incapacidad");
+      return;
+    }
     setBusy(true);
     try {
       let certificate_path: string | null = null;
@@ -301,9 +307,18 @@ export function LeaveDialog({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.employee_id) return toast.error("Selecciona un empleado");
-    if (requested <= 0) return toast.error("Revisa las fechas del permiso");
-    if (validation.blocked) return toast.error(validation.message ?? "Permiso no permitido");
+    if (!form.employee_id) {
+      toast.error("Selecciona un empleado");
+      return;
+    }
+    if (requested <= 0) {
+      toast.error("Revisa las fechas del permiso");
+      return;
+    }
+    if (validation.blocked) {
+      toast.error(validation.message ?? "Permiso no permitido");
+      return;
+    }
     setBusy(true);
     try {
       await insertRow("leaves", {
@@ -483,7 +498,10 @@ export function TerminationDialog({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.employee_id) return toast.error("Selecciona un empleado");
+    if (!form.employee_id) {
+      toast.error("Selecciona un empleado");
+      return;
+    }
     setBusy(true);
     try {
       await insertRow("terminations", {
