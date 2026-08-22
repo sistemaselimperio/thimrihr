@@ -365,9 +365,11 @@ function TopBar() {
 }
 
 export function Shell({ children }: { children: ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main className="min-w-0 flex-1 p-6">{children}</main>
