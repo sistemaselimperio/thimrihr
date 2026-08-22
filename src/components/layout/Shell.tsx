@@ -116,9 +116,10 @@ function Sidebar({
           size="icon"
           onClick={onToggle}
           aria-label={open ? "Contraer menú" : "Expandir menú"}
+          title={open ? "Contraer menú" : "Expandir menú"}
           className="w-full text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
         >
-          <Menu className="size-4" />
+          {open ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
         </Button>
       </div>
       {open && (
