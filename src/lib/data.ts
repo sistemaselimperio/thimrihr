@@ -1,12 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-/*
- * Capa de acceso genérica: las tablas se pasan por nombre, por lo que se usa un
- * cliente sin tipar para los helpers CRUD. Los tipos de dominio viven en hr.ts.
- */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const db = supabase as any;
 import type {
   Company,
   Employee,
@@ -16,6 +9,13 @@ import type {
   Termination,
   VacationEntitlement,
 } from "./hr";
+
+/*
+ * Capa de acceso genérica: las tablas se pasan por nombre, por lo que se usa un
+ * cliente sin tipar para los helpers CRUD. Los tipos de dominio viven en hr.ts.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const db = supabase as any;
 
 export interface DocumentTemplate {
   id: string;
