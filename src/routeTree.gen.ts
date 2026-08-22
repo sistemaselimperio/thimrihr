@@ -12,8 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedConfiguracionRouteImport } from './routes/_authenticated/configuracion'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedNovedadesRouteImport } from './routes/_authenticated/novedades'
+import { Route as AuthenticatedReportesRouteImport } from './routes/_authenticated/reportes'
 import { Route as AuthenticatedEmpleadosIndexRouteImport } from './routes/_authenticated/empleados.index'
 import { Route as AuthenticatedEmpleadosIdRouteImport } from './routes/_authenticated/empleados.$id'
 
@@ -31,14 +34,30 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedConfiguracionRoute =
+  AuthenticatedConfiguracionRouteImport.update({
+    id: '/configuracion',
+    path: '/configuracion',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNovedadesRoute = AuthenticatedNovedadesRouteImport.update({
   id: '/novedades',
   path: '/novedades',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReportesRoute = AuthenticatedReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEmpleadosIndexRoute =
@@ -57,16 +76,22 @@ const AuthenticatedEmpleadosIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/documentos': typeof AuthenticatedDocumentosRoute
   '/novedades': typeof AuthenticatedNovedadesRoute
+  '/reportes': typeof AuthenticatedReportesRoute
   '/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/empleados/': typeof AuthenticatedEmpleadosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/documentos': typeof AuthenticatedDocumentosRoute
   '/novedades': typeof AuthenticatedNovedadesRoute
+  '/reportes': typeof AuthenticatedReportesRoute
   '/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/empleados': typeof AuthenticatedEmpleadosIndexRoute
 }
@@ -75,8 +100,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/configuracion': typeof AuthenticatedConfiguracionRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/novedades': typeof AuthenticatedNovedadesRoute
+  '/_authenticated/reportes': typeof AuthenticatedReportesRoute
   '/_authenticated/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/_authenticated/empleados/': typeof AuthenticatedEmpleadosIndexRoute
 }
@@ -85,16 +113,22 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/configuracion'
     | '/dashboard'
+    | '/documentos'
     | '/novedades'
+    | '/reportes'
     | '/empleados/$id'
     | '/empleados/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/configuracion'
     | '/dashboard'
+    | '/documentos'
     | '/novedades'
+    | '/reportes'
     | '/empleados/$id'
     | '/empleados'
   id:
@@ -102,8 +136,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/configuracion'
     | '/_authenticated/dashboard'
+    | '/_authenticated/documentos'
     | '/_authenticated/novedades'
+    | '/_authenticated/reportes'
     | '/_authenticated/empleados/$id'
     | '/_authenticated/empleados/'
   fileRoutesById: FileRoutesById
@@ -137,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/configuracion': {
+      id: '/_authenticated/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof AuthenticatedConfiguracionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -144,11 +188,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documentos': {
+      id: '/_authenticated/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof AuthenticatedDocumentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/novedades': {
       id: '/_authenticated/novedades'
       path: '/novedades'
       fullPath: '/novedades'
       preLoaderRoute: typeof AuthenticatedNovedadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reportes': {
+      id: '/_authenticated/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof AuthenticatedReportesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/empleados/': {
@@ -169,15 +227,21 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConfiguracionRoute: typeof AuthenticatedConfiguracionRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedNovedadesRoute: typeof AuthenticatedNovedadesRoute
+  AuthenticatedReportesRoute: typeof AuthenticatedReportesRoute
   AuthenticatedEmpleadosIdRoute: typeof AuthenticatedEmpleadosIdRoute
   AuthenticatedEmpleadosIndexRoute: typeof AuthenticatedEmpleadosIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConfiguracionRoute: AuthenticatedConfiguracionRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedNovedadesRoute: AuthenticatedNovedadesRoute,
+  AuthenticatedReportesRoute: AuthenticatedReportesRoute,
   AuthenticatedEmpleadosIdRoute: AuthenticatedEmpleadosIdRoute,
   AuthenticatedEmpleadosIndexRoute: AuthenticatedEmpleadosIndexRoute,
 }
