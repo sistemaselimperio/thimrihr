@@ -77,7 +77,7 @@ export type Database = {
           municipality: string | null
           notes: string | null
           phone: string | null
-          position: string
+          position: string | null
           status: string
           updated_at: string
           work_location: string | null
@@ -97,7 +97,7 @@ export type Database = {
           municipality?: string | null
           notes?: string | null
           phone?: string | null
-          position?: string
+          position?: string | null
           status?: string
           updated_at?: string
           work_location?: string | null
@@ -117,7 +117,7 @@ export type Database = {
           municipality?: string | null
           notes?: string | null
           phone?: string | null
-          position?: string
+          position?: string | null
           status?: string
           updated_at?: string
           work_location?: string | null
