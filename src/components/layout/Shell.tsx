@@ -257,7 +257,13 @@ function FiltersPopover() {
   );
 }
 
-function TopBar() {
+function TopBar({
+  sidebarOpen,
+  onToggleSidebar,
+}: {
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+}) {
   const { filters, patch } = useFilters();
   const navigate = useNavigate();
   const { data: employees = [] } = useEmployees();
