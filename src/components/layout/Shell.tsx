@@ -1,6 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
+  ChevronLeft,
+  ChevronRight,
   Download,
   FileText,
   Home,
@@ -114,9 +116,10 @@ function Sidebar({
           size="icon"
           onClick={onToggle}
           aria-label={open ? "Contraer menú" : "Expandir menú"}
+          title={open ? "Contraer menú" : "Expandir menú"}
           className="w-full text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
         >
-          <Menu className="size-4" />
+          {open ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
         </Button>
       </div>
       {open && (
@@ -254,7 +257,13 @@ function FiltersPopover() {
   );
 }
 
-function TopBar() {
+function TopBar({
+  sidebarOpen,
+  onToggleSidebar,
+}: {
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+}) {
   const { filters, patch } = useFilters();
   const navigate = useNavigate();
   const { data: employees = [] } = useEmployees();
@@ -302,7 +311,18 @@ function TopBar() {
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-surface px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-surface px-4 sm:px-6">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onToggleSidebar}
+        aria-label={sidebarOpen ? "Contraer menú" : "Expandir menú"}
+        title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
+        className="shrink-0 text-foreground/70 hover:bg-muted hover:text-foreground"
+      >
+        <Menu className="size-5" />
+      </Button>
+
       <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -371,7 +391,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
+        <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
         <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
     </div>
