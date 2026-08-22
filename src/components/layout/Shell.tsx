@@ -311,7 +311,18 @@ function TopBar({
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-surface px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-surface px-4 sm:px-6">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onToggleSidebar}
+        aria-label={sidebarOpen ? "Contraer menú" : "Expandir menú"}
+        title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
+        className="shrink-0 text-foreground/70 hover:bg-muted hover:text-foreground"
+      >
+        <Menu className="size-5" />
+      </Button>
+
       <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
