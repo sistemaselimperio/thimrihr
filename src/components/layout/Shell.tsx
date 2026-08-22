@@ -391,7 +391,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
+        <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
         <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
     </div>
