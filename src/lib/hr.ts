@@ -190,26 +190,33 @@ export function periodKeyOf(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${half}`;
 }
 
+function splitKey(key: string): { y: string; m: string; half: string } {
+  const parts = key.split("-");
+  return { y: parts[0] ?? "1970", m: parts[1] ?? "01", half: parts[2] ?? "Q1" };
+}
+
 export function periodBounds(key: string): { start: string; end: string } {
-  const [y, m, half] = key.split("-");
-  const year = Number(y);
-  const month = Number(m);
+  const { y, m, half } = splitKey(key);
   if (half === "Q1") {
     return { start: `${y}-${m}-01`, end: `${y}-${m}-15` };
   }
-  const last = new Date(year, month, 0).getDate();
+  const last = new Date(Number(y), Number(m), 0).getDate();
   return { start: `${y}-${m}-16`, end: `${y}-${m}-${last}` };
 }
 
 export function periodLabel(key: string): string {
-  const [y, m, half] = key.split("-");
-  return `${half} ${MONTHS_SHORT[Number(m) - 1]} ${y}`;
+  const { y, m, half } = splitKey(key);
+  return `${half} ${monthShort(Number(m) - 1)} ${y}`;
 }
 
 export function periodLabelLong(key: string): string {
-  const [y, m, half] = key.split("-");
+  const { y, m, half } = splitKey(key);
   const n = half === "Q1" ? "1" : "2";
-  return `Quincena ${n} — ${MONTHS_LONG[Number(m) - 1]} ${y}`;
+  return `Quincena ${n} — ${monthLong(Number(m) - 1)} ${y}`;
+}
+
+export function periodYear(key: string): number {
+  return Number(splitKey(key).y);
 }
 
 export function periodKeysOfYear(year: number): string[] {
