@@ -128,10 +128,18 @@ export const EXIT_ALERT_DAYS = 30;
 
 /* ------------------------------------------------------------------ fechas */
 
+export function monthShort(index: number): string {
+  return MONTHS_SHORT[index] ?? "";
+}
+
+export function monthLong(index: number): string {
+  return MONTHS_LONG[index] ?? "";
+}
+
 /** Convierte "2026-08-15" en Date local (sin corrimiento de zona horaria). */
 export function parseDate(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, (m ?? 1) - 1, d ?? 1);
+  const parts = iso.split("-").map(Number);
+  return new Date(parts[0] ?? 1970, (parts[1] ?? 1) - 1, parts[2] ?? 1);
 }
 
 export function toISO(date: Date): string {
@@ -148,14 +156,14 @@ export function todayISO(): string {
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = parseDate(iso);
-  return `${String(d.getDate()).padStart(2, "0")}/${MONTHS_SHORT[d.getMonth()].toLowerCase()}/${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, "0")}/${monthShort(d.getMonth()).toLowerCase()}/${d.getFullYear()}`;
 }
 
 /** "15/ago" */
 export function fmtDateShort(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = parseDate(iso);
-  return `${d.getDate()}/${MONTHS_SHORT[d.getMonth()].toLowerCase()}`;
+  return `${d.getDate()}/${monthShort(d.getMonth()).toLowerCase()}`;
 }
 
 export function daysUntil(iso: string, from = todayISO()): number {
