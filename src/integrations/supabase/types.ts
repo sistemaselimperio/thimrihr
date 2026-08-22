@@ -14,7 +14,321 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      document_templates: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          file_path: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          cedula: string
+          company_id: string | null
+          contract_end_date: string | null
+          created_at: string
+          exit_date: string | null
+          full_name: string
+          hire_date: string
+          id: string
+          notes: string | null
+          phone: string | null
+          position: string
+          status: string
+          updated_at: string
+          work_location: string | null
+          work_schedule: string | null
+        }
+        Insert: {
+          cedula: string
+          company_id?: string | null
+          contract_end_date?: string | null
+          created_at?: string
+          exit_date?: string | null
+          full_name: string
+          hire_date: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string
+          status?: string
+          updated_at?: string
+          work_location?: string | null
+          work_schedule?: string | null
+        }
+        Update: {
+          cedula?: string
+          company_id?: string | null
+          contract_end_date?: string | null
+          created_at?: string
+          exit_date?: string | null
+          full_name?: string
+          hire_date?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string
+          status?: string
+          updated_at?: string
+          work_location?: string | null
+          work_schedule?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incapacities: {
+        Row: {
+          certificate_path: string | null
+          created_at: string
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          start_date: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          certificate_path?: string | null
+          created_at?: string
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          start_date: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          certificate_path?: string | null
+          created_at?: string
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          start_date?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incapacities_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaves: {
+        Row: {
+          created_at: string
+          days: number
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          reason: string
+          start_date: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days?: number
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          start_date: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          start_date?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaves_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_periods: {
+        Row: {
+          base_days: number
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          period_key: string
+          updated_at: string
+        }
+        Insert: {
+          base_days?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          period_key: string
+          updated_at?: string
+        }
+        Update: {
+          base_days?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          period_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_periods_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      terminations: {
+        Row: {
+          created_at: string
+          employee_id: string
+          exit_date: string
+          id: string
+          notes: string | null
+          reason: string | null
+          settlement_paid: boolean
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          exit_date: string
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          settlement_paid?: boolean
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          exit_date?: string
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          settlement_paid?: boolean
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terminations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacation_entitlements: {
+        Row: {
+          created_at: string
+          employee_id: string
+          entitled_days: number
+          id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          entitled_days?: number
+          id?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          entitled_days?: number
+          id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacation_entitlements_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
