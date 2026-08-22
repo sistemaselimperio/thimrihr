@@ -13,7 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedNovedadesRouteImport } from './routes/_authenticated/novedades'
 import { Route as AuthenticatedEmpleadosIndexRouteImport } from './routes/_authenticated/empleados.index'
+import { Route as AuthenticatedEmpleadosIdRouteImport } from './routes/_authenticated/empleados.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,10 +36,21 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNovedadesRoute = AuthenticatedNovedadesRouteImport.update({
+  id: '/novedades',
+  path: '/novedades',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEmpleadosIndexRoute =
   AuthenticatedEmpleadosIndexRouteImport.update({
     id: '/empleados/',
     path: '/empleados/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEmpleadosIdRoute =
+  AuthenticatedEmpleadosIdRouteImport.update({
+    id: '/empleados/$id',
+    path: '/empleados/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -45,12 +58,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/novedades': typeof AuthenticatedNovedadesRoute
+  '/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/empleados/': typeof AuthenticatedEmpleadosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/novedades': typeof AuthenticatedNovedadesRoute
+  '/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/empleados': typeof AuthenticatedEmpleadosIndexRoute
 }
 export interface FileRoutesById {
@@ -59,19 +76,35 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/novedades': typeof AuthenticatedNovedadesRoute
+  '/_authenticated/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/_authenticated/empleados/': typeof AuthenticatedEmpleadosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/empleados/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/novedades'
+    | '/empleados/$id'
+    | '/empleados/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/empleados'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/novedades'
+    | '/empleados/$id'
+    | '/empleados'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/novedades'
+    | '/_authenticated/empleados/$id'
     | '/_authenticated/empleados/'
   fileRoutesById: FileRoutesById
 }
@@ -111,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/novedades': {
+      id: '/_authenticated/novedades'
+      path: '/novedades'
+      fullPath: '/novedades'
+      preLoaderRoute: typeof AuthenticatedNovedadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/empleados/': {
       id: '/_authenticated/empleados/'
       path: '/empleados'
@@ -118,16 +158,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpleadosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/empleados/$id': {
+      id: '/_authenticated/empleados/$id'
+      path: '/empleados/$id'
+      fullPath: '/empleados/$id'
+      preLoaderRoute: typeof AuthenticatedEmpleadosIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNovedadesRoute: typeof AuthenticatedNovedadesRoute
+  AuthenticatedEmpleadosIdRoute: typeof AuthenticatedEmpleadosIdRoute
   AuthenticatedEmpleadosIndexRoute: typeof AuthenticatedEmpleadosIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNovedadesRoute: AuthenticatedNovedadesRoute,
+  AuthenticatedEmpleadosIdRoute: AuthenticatedEmpleadosIdRoute,
   AuthenticatedEmpleadosIndexRoute: AuthenticatedEmpleadosIndexRoute,
 }
 
