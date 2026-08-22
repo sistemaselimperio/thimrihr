@@ -68,13 +68,16 @@ export type Database = {
           company_id: string | null
           contract_end_date: string | null
           created_at: string
+          email: string | null
           exit_date: string | null
+          folder_number: string | null
           full_name: string
-          hire_date: string
+          hire_date: string | null
           id: string
+          municipality: string | null
           notes: string | null
           phone: string | null
-          position: string
+          position: string | null
           status: string
           updated_at: string
           work_location: string | null
@@ -85,13 +88,16 @@ export type Database = {
           company_id?: string | null
           contract_end_date?: string | null
           created_at?: string
+          email?: string | null
           exit_date?: string | null
+          folder_number?: string | null
           full_name: string
-          hire_date: string
+          hire_date?: string | null
           id?: string
+          municipality?: string | null
           notes?: string | null
           phone?: string | null
-          position?: string
+          position?: string | null
           status?: string
           updated_at?: string
           work_location?: string | null
@@ -102,13 +108,16 @@ export type Database = {
           company_id?: string | null
           contract_end_date?: string | null
           created_at?: string
+          email?: string | null
           exit_date?: string | null
+          folder_number?: string | null
           full_name?: string
-          hire_date?: string
+          hire_date?: string | null
           id?: string
+          municipality?: string | null
           notes?: string | null
           phone?: string | null
-          position?: string
+          position?: string | null
           status?: string
           updated_at?: string
           work_location?: string | null
