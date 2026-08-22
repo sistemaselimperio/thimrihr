@@ -54,42 +54,76 @@ const NAV = [
   { to: "/configuracion", label: "Configuración", icon: Settings },
 ] as const;
 
-function Sidebar() {
+function Sidebar({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="px-5 py-6">
-        <p className="font-display text-lg leading-none font-extrabold tracking-tight">
-          El Imperio
-        </p>
-        <p className="mt-1.5 text-[11px] tracking-[0.18em] text-sidebar-foreground/60 uppercase">
-          Recursos Humanos
-        </p>
+    <aside
+      className={[
+        "flex shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-all duration-300",
+        open ? "w-60" : "w-16",
+      ].join(" ")}
+    >
+      <div className={["flex items-center py-6", open ? "px-5" : "justify-center px-2"].join(" ")}>
+        {open ? (
+          <div>
+            <p className="font-display text-lg leading-none font-extrabold tracking-tight">
+              El Imperio
+            </p>
+            <p className="mt-1.5 text-[11px] tracking-[0.18em] text-sidebar-foreground/60 uppercase">
+              Recursos Humanos
+            </p>
+          </div>
+        ) : (
+          <p className="font-display text-xl font-extrabold tracking-tight" title="El Imperio RRHH">
+            EI
+          </p>
+        )}
       </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3">
+      <nav className={["flex flex-1 flex-col gap-1", open ? "px-3" : "px-2"].join(" ")}>
         {NAV.map((item) => {
           const active = pathname.startsWith(item.to);
           return (
             <Link
               key={item.to}
               to={item.to}
+              title={item.label}
               className={[
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center rounded-md py-2.5 text-sm font-medium transition-colors",
+                open ? "gap-3 px-3" : "justify-center px-2",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_0_var(--sidebar-primary)]"
                   : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
               ].join(" ")}
             >
-              <item.icon className="size-4" />
-              {item.label}
+              <item.icon className="size-4 shrink-0" />
+              {open && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-sidebar-border px-5 py-4 text-[11px] text-sidebar-foreground/55">
-        Grupo El Imperio · 5 empresas
+      <div className="border-t border-sidebar-border p-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          aria-label={open ? "Contraer menú" : "Expandir menú"}
+          className="w-full text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+        >
+          <Menu className="size-4" />
+        </Button>
       </div>
+      {open && (
+        <div className="border-t border-sidebar-border px-5 py-4 text-[11px] text-sidebar-foreground/55">
+          Grupo El Imperio · 5 empresas
+        </div>
+      )}
     </aside>
   );
 }
