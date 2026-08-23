@@ -72,11 +72,6 @@ function Dashboard() {
   const { data: incapacities = [] } = useIncapacities();
   const { data: leaves = [] } = useLeaves();
 
-  const [openEmployee, setOpenEmployee] = useState(false);
-  const [openIncapacity, setOpenIncapacity] = useState(false);
-  const [openLeave, setOpenLeave] = useState(false);
-  const [openTermination, setOpenTermination] = useState(false);
-
   const alerts = useMemo(() => buildAlerts(employees, incapacities), [employees, incapacities]);
   const active = employees.filter((e) => e.status === "activo").length;
   const retired = employees.length - active;
@@ -88,27 +83,11 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Estado general del personal y alertas que requieren tu atención.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="success" className="gap-2" onClick={() => setOpenEmployee(true)}>
-            <Plus className="size-4" /> Nuevo empleado
-          </Button>
-          <Button variant="outline" onClick={() => setOpenIncapacity(true)}>
-            Incapacidad
-          </Button>
-          <Button variant="outline" onClick={() => setOpenLeave(true)}>
-            Permiso
-          </Button>
-          <Button variant="outline" onClick={() => setOpenTermination(true)}>
-            Retiro
-          </Button>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold">Principal</h1>
+        <p className="text-sm text-muted-foreground">
+          Estado general del personal y alertas que requieren tu atención.
+        </p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
