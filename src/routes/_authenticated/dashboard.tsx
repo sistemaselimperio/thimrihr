@@ -1,25 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Activity,
   BriefcaseBusiness,
   CalendarClock,
   DoorOpen,
-  Plus,
   UserMinus,
   Users,
 } from "lucide-react";
 
 import { MiniCalendar } from "@/components/hr/MiniCalendar";
-import {
-  IncapacityDialog,
-  LeaveDialog,
-  TerminationDialog,
-} from "@/components/hr/NoveltyDialogs";
-import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
 import { useFilters } from "@/components/layout/filters-context";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   useCompanies,
   useEmployees,
@@ -32,13 +24,13 @@ import { INCAPACITY_LABELS, fmtDate } from "@/lib/hr";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard RRHH · El Imperio" },
+      { title: "Principal RRHH · El Imperio" },
       {
         name: "description",
         content:
           "Panel de control de Recursos Humanos: alertas de contratos por vencer, incapacidades activas y salidas próximas.",
       },
-      { property: "og:title", content: "Dashboard RRHH · El Imperio" },
+      { property: "og:title", content: "Principal RRHH · El Imperio" },
       {
         property: "og:description",
         content: "Alertas de contratos, incapacidades y salidas del Grupo El Imperio.",
@@ -80,11 +72,6 @@ function Dashboard() {
   const { data: incapacities = [] } = useIncapacities();
   const { data: leaves = [] } = useLeaves();
 
-  const [openEmployee, setOpenEmployee] = useState(false);
-  const [openIncapacity, setOpenIncapacity] = useState(false);
-  const [openLeave, setOpenLeave] = useState(false);
-  const [openTermination, setOpenTermination] = useState(false);
-
   const alerts = useMemo(() => buildAlerts(employees, incapacities), [employees, incapacities]);
   const active = employees.filter((e) => e.status === "activo").length;
   const retired = employees.length - active;
@@ -96,27 +83,11 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Estado general del personal y alertas que requieren tu atención.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="success" className="gap-2" onClick={() => setOpenEmployee(true)}>
-            <Plus className="size-4" /> Nuevo empleado
-          </Button>
-          <Button variant="outline" onClick={() => setOpenIncapacity(true)}>
-            Incapacidad
-          </Button>
-          <Button variant="outline" onClick={() => setOpenLeave(true)}>
-            Permiso
-          </Button>
-          <Button variant="outline" onClick={() => setOpenTermination(true)}>
-            Retiro
-          </Button>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold">Principal</h1>
+        <p className="text-sm text-muted-foreground">
+          Estado general del personal y alertas que requieren tu atención.
+        </p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
@@ -270,11 +241,6 @@ function Dashboard() {
           </div>
         </div>
       </div>
-
-      <EmployeeDialog open={openEmployee} onOpenChange={setOpenEmployee} />
-      <IncapacityDialog open={openIncapacity} onOpenChange={setOpenIncapacity} />
-      <LeaveDialog open={openLeave} onOpenChange={setOpenLeave} />
-      <TerminationDialog open={openTermination} onOpenChange={setOpenTermination} />
     </div>
   );
 }
