@@ -1,25 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Activity,
   BriefcaseBusiness,
   CalendarClock,
   DoorOpen,
-  Plus,
   UserMinus,
   Users,
 } from "lucide-react";
 
 import { MiniCalendar } from "@/components/hr/MiniCalendar";
-import {
-  IncapacityDialog,
-  LeaveDialog,
-  TerminationDialog,
-} from "@/components/hr/NoveltyDialogs";
-import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
 import { useFilters } from "@/components/layout/filters-context";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   useCompanies,
   useEmployees,
@@ -32,13 +24,13 @@ import { INCAPACITY_LABELS, fmtDate } from "@/lib/hr";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard RRHH · El Imperio" },
+      { title: "Principal RRHH · El Imperio" },
       {
         name: "description",
         content:
           "Panel de control de Recursos Humanos: alertas de contratos por vencer, incapacidades activas y salidas próximas.",
       },
-      { property: "og:title", content: "Dashboard RRHH · El Imperio" },
+      { property: "og:title", content: "Principal RRHH · El Imperio" },
       {
         property: "og:description",
         content: "Alertas de contratos, incapacidades y salidas del Grupo El Imperio.",

@@ -47,7 +47,7 @@ import { fmtDate } from "@/lib/hr";
 import { useFilters } from "./filters-context";
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/dashboard", label: "Principal", icon: Home },
   { to: "/empleados", label: "Empleados", icon: Users },
   { to: "/novedades", label: "Novedades", icon: LayoutList },
   { to: "/documentos", label: "Documentos", icon: FileText },
