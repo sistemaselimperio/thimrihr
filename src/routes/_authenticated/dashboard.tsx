@@ -241,11 +241,6 @@ function Dashboard() {
           </div>
         </div>
       </div>
-
-      <EmployeeDialog open={openEmployee} onOpenChange={setOpenEmployee} />
-      <IncapacityDialog open={openIncapacity} onOpenChange={setOpenIncapacity} />
-      <LeaveDialog open={openLeave} onOpenChange={setOpenLeave} />
-      <TerminationDialog open={openTermination} onOpenChange={setOpenTermination} />
     </div>
   );
 }
