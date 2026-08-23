@@ -357,23 +357,16 @@ function TopBar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Acciones rápidas</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => void navigate({ to: "/dashboard" })}>
               <Bell className="size-4" /> Ver alertas
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => void navigate({ to: "/documentos" })}>
-              <FileText className="size-4" /> Generar documento
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => void navigate({ to: "/novedades" })}>
-              <LayoutList className="size-4" /> Registrar novedad
             </DropdownMenuItem>
             <DropdownMenuItem onClick={exportEmployees}>
               <Download className="size-4" /> Exportar datos
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => void navigate({ to: "/configuracion" })}>
               <Settings className="size-4" /> Configuración
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => void signOut()}>
               <LogOut className="size-4" /> Cerrar sesión
             </DropdownMenuItem>
