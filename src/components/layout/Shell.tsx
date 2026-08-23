@@ -359,9 +359,6 @@ function TopBar({
             <DropdownMenuItem onClick={() => void navigate({ to: "/dashboard" })}>
               <Bell className="size-4" /> Ver alertas
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={exportEmployees}>
-              <Download className="size-4" /> Exportar datos
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => void navigate({ to: "/configuracion" })}>
               <Settings className="size-4" /> Configuración
             </DropdownMenuItem>
