@@ -94,28 +94,6 @@ function AuthPage() {
     }
   };
 
-  const reenviarConfirmacion = async () => {
-    if (!email) {
-      toast.error("Escribe primero tu correo.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth` },
-      });
-      if (error) throw error;
-      toast.success(`Reenviamos el correo de confirmación a ${email}.`);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? traducirError(error.message) : "No fue posible reenviar",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
 
 
 
