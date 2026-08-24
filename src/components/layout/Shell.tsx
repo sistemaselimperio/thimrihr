@@ -183,6 +183,15 @@ function FiltersPopover() {
         </div>
 
         <div className="space-y-1.5">
+          <Label className="text-xs">Lugar de trabajo contiene</Label>
+          <Input
+            value={filters.workLocation}
+            placeholder="Bogotá, planta, oficina…"
+            onChange={(e) => patch({ workLocation: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-1.5">
           <Label className="text-xs">Estado</Label>
           <Select
             value={filters.status}
@@ -327,7 +336,7 @@ function TopBar({
         <Input
           value={filters.search}
           onChange={(e) => patch({ search: e.target.value })}
-          placeholder="Buscar por nombre o cédula…"
+          placeholder="Buscar por nombre, cédula o lugar de trabajo…"
           className="pl-9"
         />
       </div>

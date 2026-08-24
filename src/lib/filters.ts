@@ -12,6 +12,7 @@ export interface HrFilters {
   search: string;
   companyId: string;
   position: string;
+  workLocation: string;
   status: "activo" | "retirado" | "todos";
   hireFrom: string;
   hireTo: string;
@@ -24,6 +25,7 @@ export const emptyFilters: HrFilters = {
   search: "",
   companyId: "all",
   position: "",
+  workLocation: "",
   status: "activo",
   hireFrom: "",
   hireTo: "",
@@ -36,6 +38,7 @@ export function activeFilterCount(f: HrFilters): number {
   let n = 0;
   if (f.companyId !== "all") n++;
   if (f.position.trim()) n++;
+  if (f.workLocation.trim()) n++;
   if (f.status !== "activo") n++;
   if (f.hireFrom || f.hireTo) n++;
   if (f.expiry !== "none") n++;
@@ -68,6 +71,11 @@ export function filterEmployees(
     if (f.status !== "todos" && e.status !== f.status) return false;
     if (f.companyId !== "all" && e.company_id !== f.companyId) return false;
     if (f.position.trim() && !e.position.toLowerCase().includes(f.position.trim().toLowerCase()))
+      return false;
+    if (
+      f.workLocation.trim() &&
+      !(e.work_location ?? "").toLowerCase().includes(f.workLocation.trim().toLowerCase())
+    )
       return false;
     if (f.hireFrom && e.hire_date < f.hireFrom) return false;
     if (f.hireTo && e.hire_date > f.hireTo) return false;
