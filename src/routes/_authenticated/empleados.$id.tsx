@@ -35,10 +35,12 @@ import {
   useEntitlements,
   useIncapacities,
   useLeaves,
+  useGeneratedDocuments,
   useOverrides,
   useTerminations,
 } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
+import { openPrintableDocument } from "@/lib/print-doc";
 import {
   INCAPACITY_LABELS,
   LEAVE_LABELS,
@@ -88,6 +90,7 @@ function EmployeeDetail() {
   const { data: terminations = [] } = useTerminations();
   const { data: entitlements = [] } = useEntitlements();
   const { data: overrides = [] } = useOverrides();
+  const { data: generatedDocs = [] } = useGeneratedDocuments();
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [editOpen, setEditOpen] = useState(false);
@@ -101,6 +104,7 @@ function EmployeeDetail() {
   const myTerminations = terminations.filter((t) => t.employee_id === id);
   const myEntitlements = entitlements.filter((v) => v.employee_id === id);
   const myOverrides = overrides.filter((o) => o.employee_id === id);
+  const myDocs = generatedDocs.filter((d) => d.employee_id === id);
 
   const quincenas = useMemo(
     () =>
@@ -317,6 +321,7 @@ function EmployeeDetail() {
           <TabsTrigger value="permisos">Permisos</TabsTrigger>
           <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="retiro">Retiro</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="quincenas" className="space-y-3">
@@ -579,6 +584,55 @@ function EmployeeDetail() {
                   </TableRow>
                 )}
 
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="documentos" className="space-y-3">
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Documento</TableHead>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead>Generado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myDocs.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium">{d.template_name}</TableCell>
+                    <TableCell>{d.company_name ?? "—"}</TableCell>
+                    <TableCell className="numeric">
+                      {new Date(d.created_at).toLocaleString("es-CO")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() =>
+                          openPrintableDocument({
+                            title: `${d.template_name} — ${d.employee_name}`,
+                            text: d.content,
+                            logoUrl: null,
+                          })
+                        }
+                      >
+                        <FileDown className="size-4" /> Ver / PDF
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {myDocs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                      Aún no se han generado documentos para este empleado.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
