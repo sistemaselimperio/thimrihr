@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileDown, Printer } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { logoUrl } from "@/components/hr/CompanyLogos";
 import { useCompanies, useEmployees, useTemplates } from "@/lib/data";
 import { renderDocument } from "@/lib/documents";
 import { downloadText } from "@/lib/excel";
