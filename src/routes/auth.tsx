@@ -175,15 +175,6 @@ function AuthPage() {
               ? "Primera vez: crear mi cuenta"
               : "Ya tengo cuenta, quiero ingresar"}
           </button>
-
-          <button
-            type="button"
-            className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
-            disabled={busy}
-            onClick={() => void reenviarConfirmacion()}
-          >
-            No recibí el correo de confirmación: reenviar
-          </button>
         </form>
       </div>
     </div>
