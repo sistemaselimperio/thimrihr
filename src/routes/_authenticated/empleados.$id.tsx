@@ -8,8 +8,10 @@ import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
 import {
   IncapacityDialog,
   LeaveDialog,
+  NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
