@@ -147,7 +147,7 @@ function AuthPage() {
           <div className="flex items-center gap-2 text-brand">
             <ShieldCheck className="size-5" />
             <p className="font-display text-lg font-bold">
-              {mode === "login" ? "Ingresar" : "Crear cuenta de administrador"}
+              {mode === "login" ? "Ingresar" : "Crear cuenta"}
             </p>
           </div>
 
