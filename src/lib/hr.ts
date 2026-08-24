@@ -18,6 +18,8 @@ export interface Company {
 export interface Employee {
   id: string;
   full_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   cedula: string;
   company_id: string | null;
   position: string;
@@ -25,6 +27,10 @@ export interface Employee {
   contract_end_date: string | null;
   exit_date: string | null;
   phone: string | null;
+  landline?: string | null;
+  email?: string | null;
+  folder_number?: string | null;
+  municipality?: string | null;
   work_location: string | null;
   work_schedule: string | null;
   status: string;
