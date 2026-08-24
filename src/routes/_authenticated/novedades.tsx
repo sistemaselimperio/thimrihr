@@ -166,6 +166,7 @@ function NoveltiesPage() {
                   <TableHead>Hasta</TableHead>
                   <TableHead>Días</TableHead>
                   <TableHead>Motivo</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,8 +180,16 @@ function NoveltiesPage() {
                     <TableCell className="numeric">{fmtDate(l.end_date)}</TableCell>
                     <TableCell className="numeric">{l.days}</TableCell>
                     <TableCell>{l.reason}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="leave"
+                        record={l}
+                        summary={`${LEAVE_LABELS[l.type] ?? l.type} · ${fmtDate(l.start_date)} · ${l.days} días`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>
