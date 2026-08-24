@@ -18,16 +18,22 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          logo_name: string | null
+          logo_path: string | null
           name: string
         }
         Insert: {
           created_at?: string
           id?: string
+          logo_name?: string | null
+          logo_path?: string | null
           name: string
         }
         Update: {
           created_at?: string
           id?: string
+          logo_name?: string | null
+          logo_path?: string | null
           name?: string
         }
         Relationships: []
