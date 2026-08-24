@@ -552,6 +552,7 @@ function EmployeeDetail() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Liquidación</TableHead>
                   <TableHead>Detalle</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -561,15 +562,23 @@ function EmployeeDetail() {
                     <TableCell className="numeric">{fmtDate(t.exit_date)}</TableCell>
                     <TableCell>{t.settlement_paid ? "Pagada" : "Pendiente"}</TableCell>
                     <TableCell>{t.reason ?? "—"}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="termination"
+                        record={t}
+                        summary={`${TERMINATION_LABELS[t.type] ?? t.type} · ${fmtDate(t.exit_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {myTerminations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
                       Sin registros de retiro.
                     </TableCell>
                   </TableRow>
                 )}
+
               </TableBody>
             </Table>
           </div>
