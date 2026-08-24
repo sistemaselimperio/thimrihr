@@ -164,15 +164,9 @@ function ReportsPage() {
         ],
       },
       {
-        title: "SALDO DE VACACIONES",
-        header: ["Cédula", "Nombre", "Derecho", "Tomados", "Disponibles"],
-        rows: rows.map(({ employee, vacations }) => [
-          employee.cedula,
-          employee.full_name,
-          vacations.totalEntitled,
-          vacations.totalUsed,
-          vacations.available,
-        ]),
+        title: "PERMISO POR DESCUENTO DE VACACIONES",
+        header: ["Cédula", "Nombre", "Empresa", "Cargo", "Fecha", "Días"],
+        rows: vacationLeaveRows,
       },
     ]);
     toast.success("Reporte de nómina exportado");
