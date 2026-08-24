@@ -205,6 +205,7 @@ function NoveltiesPage() {
                   <TableHead>Fecha de salida</TableHead>
                   <TableHead>Liquidación</TableHead>
                   <TableHead>Detalle</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -217,8 +218,16 @@ function NoveltiesPage() {
                     <TableCell className="numeric">{fmtDate(t.exit_date)}</TableCell>
                     <TableCell>{t.settlement_paid ? "Pagada" : "Pendiente"}</TableCell>
                     <TableCell>{t.reason ?? "—"}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="termination"
+                        record={t}
+                        summary={`${TERMINATION_LABELS[t.type] ?? t.type} · ${fmtDate(t.exit_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>
