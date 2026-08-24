@@ -128,7 +128,7 @@ function AuthPage() {
             <Input
               id="password"
               type="password"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               required
               minLength={6}
               value={password}
@@ -138,18 +138,13 @@ function AuthPage() {
 
           <Button type="submit" variant="success" className="w-full" disabled={busy}>
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {mode === "login" ? "Entrar" : "Crear cuenta"}
+            Entrar
           </Button>
 
-          <button
-            type="button"
-            className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          >
-            {mode === "login"
-              ? "Primera vez: crear mi cuenta"
-              : "Ya tengo cuenta, quiero ingresar"}
-          </button>
+          <p className="text-center text-xs text-muted-foreground">
+            Acceso solo para cuentas autorizadas. El registro está cerrado.
+          </p>
+
         </form>
       </div>
     </div>
