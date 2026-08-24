@@ -41,13 +41,17 @@ function norm(value: string) {
 /** Relaciona el nombre de la pestaña del Excel con una empresa registrada. */
 function matchCompany(sheet: string, companies: Company[]): string | null {
   const tokens = norm(sheet);
-  let best: { id: string; score: number } | null = null;
+  let bestId: string | null = null;
+  let bestScore = 0;
   companies.forEach((c) => {
     const ct = norm(c.name);
     const score = tokens.filter((t) => ct.some((w) => w.startsWith(t) || t.startsWith(w))).length;
-    if (score > 0 && (!best || score > best.score)) best = { id: c.id, score };
+    if (score > bestScore) {
+      bestScore = score;
+      bestId = c.id;
+    }
   });
-  return best ? best.id : null;
+  return bestId;
 }
 
 export function ImportEmployees({ companies }: { companies: Company[] }) {
@@ -121,8 +125,8 @@ export function ImportEmployees({ companies }: { companies: Company[] }) {
         status: row.status,
         folder_number: row.folder_number,
       };
-      if (companyId) body.company_id = companyId;
-      if (row.hire_date) body.hire_date = row.hire_date;
+      if (companyId) body['company_id'] = companyId;
+      if (row.hire_date) body['hire_date'] = row.hire_date;
       return body;
     };
 
