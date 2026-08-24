@@ -336,7 +336,7 @@ function TopBar({
         <Input
           value={filters.search}
           onChange={(e) => patch({ search: e.target.value })}
-          placeholder="Buscar por nombre o cédula…"
+          placeholder="Buscar por nombre, cédula o lugar de trabajo…"
           className="pl-9"
         />
       </div>
