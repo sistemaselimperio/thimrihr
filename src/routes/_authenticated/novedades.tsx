@@ -124,6 +124,7 @@ function NoveltiesPage() {
                   <TableHead>Hasta</TableHead>
                   <TableHead>Días</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -139,8 +140,16 @@ function NoveltiesPage() {
                       {daysInclusive(i.start_date, i.end_date)}
                     </TableCell>
                     <TableCell>{incapacityStatus(i)}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="incapacity"
+                        record={i}
+                        summary={`${INCAPACITY_LABELS[i.type] ?? i.type} · ${fmtDate(i.start_date)} → ${fmtDate(i.end_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>
