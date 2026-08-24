@@ -25,6 +25,7 @@ export const emptyFilters: HrFilters = {
   search: "",
   companyId: "all",
   position: "",
+  workLocation: "",
   status: "activo",
   hireFrom: "",
   hireTo: "",
