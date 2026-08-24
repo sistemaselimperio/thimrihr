@@ -30,7 +30,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,15 +42,12 @@ function AuthPage() {
 
   const traducirError = (msg: string) => {
     const m = msg.toLowerCase();
+    if (m.includes("signups not allowed") || m.includes("signup is disabled"))
+      return "El registro está cerrado. Solo las cuentas autorizadas pueden ingresar.";
     if (m.includes("email not confirmed"))
       return "Tu correo aún no está confirmado. Intenta de nuevo en unos segundos.";
     if (m.includes("invalid login credentials"))
       return "Correo o contraseña incorrectos.";
-    if (m.includes("already registered") || m.includes("already been registered"))
-      return "Ese correo ya está registrado. Ingresa con tu contraseña.";
-    if (m.includes("weak") || m.includes("known to be weak"))
-      return "Esa contraseña es muy común. Usa una más segura.";
-    if (m.includes("at least 6")) return "La contraseña debe tener al menos 6 caracteres.";
     if (m.includes("rate limit") || m.includes("after"))
       return "Demasiados intentos seguidos. Espera unos segundos e intenta otra vez.";
     return msg;
@@ -61,30 +57,9 @@ function AuthPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        void navigate({ to: "/dashboard" });
-      } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/auth` },
-        });
-        if (error) throw error;
-        if (data.session) {
-          toast.success("Cuenta creada. Bienvenida.");
-          void navigate({ to: "/dashboard" });
-        } else {
-          const { error: loginError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (loginError) throw loginError;
-          toast.success("Cuenta creada. Bienvenida.");
-          void navigate({ to: "/dashboard" });
-        }
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      void navigate({ to: "/dashboard" });
     } catch (error) {
       toast.error(
         error instanceof Error ? traducirError(error.message) : "No fue posible ingresar",
@@ -93,6 +68,7 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
 
 
 
