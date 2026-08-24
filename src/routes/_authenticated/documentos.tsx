@@ -178,9 +178,22 @@ function DocumentsPage() {
 
         <div className="rounded-xl border bg-surface p-6 shadow-panel">
           <p className="text-xs tracking-wide text-muted-foreground uppercase">Previsualización</p>
+          {logo && (
+            <img
+              src={logo}
+              alt={`Logo de ${company?.name ?? "la empresa"}`}
+              className="mt-3 h-20 object-contain"
+            />
+          )}
+          {text && !logo && company && (
+            <p className="mt-3 text-[11px] text-warning-foreground">
+              Esta empresa no tiene logo configurado; el documento se generará sin logo.
+            </p>
+          )}
           <pre className="mt-3 min-h-96 whitespace-pre-wrap font-sans text-sm leading-relaxed">
             {text || "Selecciona un empleado y una plantilla para ver el documento."}
           </pre>
+
         </div>
       </div>
     </div>
