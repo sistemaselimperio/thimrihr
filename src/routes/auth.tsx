@@ -191,8 +191,17 @@ function AuthPage() {
             onClick={() => setMode(mode === "login" ? "signup" : "login")}
           >
             {mode === "login"
-              ? "Primera vez: crear la cuenta de administrador"
+              ? "Primera vez: crear mi cuenta"
               : "Ya tengo cuenta, quiero ingresar"}
+          </button>
+
+          <button
+            type="button"
+            className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
+            disabled={busy}
+            onClick={() => void reenviarConfirmacion()}
+          >
+            No recibí el correo de confirmación: reenviar
           </button>
         </form>
       </div>
