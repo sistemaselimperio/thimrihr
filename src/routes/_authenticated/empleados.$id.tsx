@@ -394,6 +394,7 @@ function EmployeeDetail() {
                   <TableHead>Días</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Certificado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -420,8 +421,16 @@ function EmployeeDetail() {
                         <span className="text-xs text-muted-foreground">Sin adjunto</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="incapacity"
+                        record={i}
+                        summary={`${INCAPACITY_LABELS[i.type] ?? i.type} · ${fmtDate(i.start_date)} → ${fmtDate(i.end_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
                 {myIncapacities.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
