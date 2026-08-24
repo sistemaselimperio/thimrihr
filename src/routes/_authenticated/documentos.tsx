@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileDown, Printer } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { logoUrl } from "@/components/hr/CompanyLogos";
 import { useCompanies, useEmployees, useTemplates } from "@/lib/data";
 import { renderDocument } from "@/lib/documents";
 import { downloadText } from "@/lib/excel";
@@ -47,15 +48,31 @@ function DocumentsPage() {
 
   const employee = employees.find((e) => e.id === employeeId);
   const template = templates.find((t) => t.id === templateId);
+  const company = companies.find((c) => c.id === employee?.company_id);
+
+  const [logo, setLogo] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setLogo(null);
+    const path = company?.logo_path;
+    if (path && !path.endsWith(".pdf")) {
+      void logoUrl(path).then((url) => {
+        if (alive) setLogo(url);
+      });
+    }
+    return () => {
+      alive = false;
+    };
+  }, [company?.logo_path]);
 
   const text = useMemo(() => {
     if (!employee || !template) return "";
     return renderDocument(template.category, {
       employee,
-      company: companies.find((c) => c.id === employee.company_id),
+      company,
       extra,
     });
-  }, [employee, template, companies, extra]);
+  }, [employee, template, company, extra]);
 
   const download = () => {
     if (!text || !employee || !template) {
@@ -73,12 +90,20 @@ function DocumentsPage() {
     }
     const win = window.open("", "_blank", "noopener,width=800,height=1000");
     if (!win) return;
+    const safe = text.replace(
+      /[<>&]/g,
+      (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c,
+    );
+    const img = logo
+      ? `<img src="${logo}" alt="Logo" style="height:110px;object-fit:contain;display:block;margin-bottom:20px" onload="window.print()" onerror="window.print()" />`
+      : "";
     win.document.write(
-      `<pre style="font-family:Georgia,serif;font-size:13px;white-space:pre-wrap;padding:48px;line-height:1.6">${text.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c)}</pre>`,
+      `<div style="padding:48px"><div style="text-align:left">${img}</div><pre style="font-family:Georgia,serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0">${safe}</pre></div>`,
     );
     win.document.close();
-    win.print();
+    if (!logo) win.print();
   };
+
 
   return (
     <div className="space-y-5">
@@ -153,9 +178,22 @@ function DocumentsPage() {
 
         <div className="rounded-xl border bg-surface p-6 shadow-panel">
           <p className="text-xs tracking-wide text-muted-foreground uppercase">Previsualización</p>
+          {logo && (
+            <img
+              src={logo}
+              alt={`Logo de ${company?.name ?? "la empresa"}`}
+              className="mt-3 h-20 object-contain"
+            />
+          )}
+          {text && !logo && company && (
+            <p className="mt-3 text-[11px] text-warning-foreground">
+              Esta empresa no tiene logo configurado; el documento se generará sin logo.
+            </p>
+          )}
           <pre className="mt-3 min-h-96 whitespace-pre-wrap font-sans text-sm leading-relaxed">
             {text || "Selecciona un empleado y una plantilla para ver el documento."}
           </pre>
+
         </div>
       </div>
     </div>
