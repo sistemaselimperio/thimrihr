@@ -76,10 +76,13 @@ function AuthPage() {
           toast.success("Cuenta creada. Bienvenida.");
           void navigate({ to: "/dashboard" });
         } else {
-          toast.success(
-            `Cuenta creada. Te enviamos un correo de confirmación a ${email}. Ábrelo para activar tu acceso.`,
-          );
-          setMode("login");
+          const { error: loginError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (loginError) throw loginError;
+          toast.success("Cuenta creada. Bienvenida.");
+          void navigate({ to: "/dashboard" });
         }
       }
     } catch (error) {
