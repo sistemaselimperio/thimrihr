@@ -38,6 +38,7 @@ export function activeFilterCount(f: HrFilters): number {
   let n = 0;
   if (f.companyId !== "all") n++;
   if (f.position.trim()) n++;
+  if (f.workLocation.trim()) n++;
   if (f.status !== "activo") n++;
   if (f.hireFrom || f.hireTo) n++;
   if (f.expiry !== "none") n++;
