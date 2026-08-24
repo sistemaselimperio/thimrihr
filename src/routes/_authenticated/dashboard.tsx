@@ -24,13 +24,13 @@ import { INCAPACITY_LABELS, fmtDate } from "@/lib/hr";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Principal RRHH · El Imperio" },
+      { title: "Principal · imperiorrhco" },
       {
         name: "description",
         content:
           "Panel de control de Recursos Humanos: alertas de contratos por vencer, incapacidades activas y salidas próximas.",
       },
-      { property: "og:title", content: "Principal RRHH · El Imperio" },
+      { property: "og:title", content: "Principal · imperiorrhco" },
       {
         property: "og:description",
         content: "Alertas de contratos, incapacidades y salidas del Grupo El Imperio.",

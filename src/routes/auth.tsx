@@ -12,13 +12,13 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Ingreso · RRHH El Imperio" },
+      { title: "Ingreso · imperiorrhco" },
       {
         name: "description",
         content:
           "Acceso privado al sistema de gestión de Recursos Humanos del Grupo El Imperio.",
       },
-      { property: "og:title", content: "Ingreso · RRHH El Imperio" },
+      { property: "og:title", content: "Ingreso · imperiorrhco" },
       {
         property: "og:description",
         content: "Acceso privado al sistema de Recursos Humanos del Grupo El Imperio.",

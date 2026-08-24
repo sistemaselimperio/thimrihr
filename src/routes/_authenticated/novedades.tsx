@@ -31,13 +31,13 @@ import {
 export const Route = createFileRoute("/_authenticated/novedades")({
   head: () => ({
     meta: [
-      { title: "Novedades · RRHH El Imperio" },
+      { title: "Novedades · imperiorrhco" },
       {
         name: "description",
         content:
           "Registro histórico de incapacidades, permisos, vacaciones y retiros del personal del Grupo El Imperio.",
       },
-      { property: "og:title", content: "Novedades · RRHH El Imperio" },
+      { property: "og:title", content: "Novedades · imperiorrhco" },
       {
         property: "og:description",
         content: "Incapacidades, permisos y retiros registrados del personal.",

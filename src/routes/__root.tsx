@@ -78,16 +78,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "RRHH El Imperio · Gestión de personal" },
+      { title: "imperiorrhco" },
       {
         name: "description",
-        content:
-          "Sistema centralizado de Recursos Humanos del Grupo El Imperio: empleados, novedades, quincenas y reportes de nómina.",
+        content: "sistema generado para recursos",
       },
-      { property: "og:title", content: "RRHH El Imperio · Gestión de personal" },
+      { property: "og:title", content: "imperiorrhco" },
       {
         property: "og:description",
-        content: "Empleados, novedades, quincenas y reportes de nómina en un solo lugar.",
+        content: "sistema generado para recursos",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

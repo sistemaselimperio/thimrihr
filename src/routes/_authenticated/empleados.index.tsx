@@ -23,13 +23,13 @@ import { fmtDate, type Employee } from "@/lib/hr";
 export const Route = createFileRoute("/_authenticated/empleados/")({
   head: () => ({
     meta: [
-      { title: "Empleados · RRHH El Imperio" },
+      { title: "Empleados · imperiorrhco" },
       {
         name: "description",
         content:
           "Base centralizada de empleados activos y retirados de las 5 empresas del Grupo El Imperio, con filtros avanzados.",
       },
-      { property: "og:title", content: "Empleados · RRHH El Imperio" },
+      { property: "og:title", content: "Empleados · imperiorrhco" },
       {
         property: "og:description",
         content: "Base de empleados activos y retirados con filtros avanzados.",
