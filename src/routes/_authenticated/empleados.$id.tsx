@@ -231,23 +231,75 @@ function EmployeeDetail() {
         </div>
       </div>
 
-      <div className="grid gap-4 rounded-xl border bg-surface p-5 shadow-panel sm:grid-cols-3 lg:grid-cols-4">
-        <Field label="Cédula" value={emp.cedula} />
-        <Field label="Celular" value={emp.phone ?? "—"} />
-        <Field label="Ingreso" value={fmtDate(emp.hire_date)} />
-        <Field
-          label="Fin de contrato"
-          value={emp.contract_end_date ? fmtDate(emp.contract_end_date) : "Indefinido"}
-        />
-        <Field label="Lugar de trabajo" value={emp.work_location ?? "—"} />
-        <Field label="Horario" value={emp.work_schedule ?? "—"} />
-        <Field label="Fecha de salida" value={emp.exit_date ? fmtDate(emp.exit_date) : "—"} />
-        <Field
-          label="Vacaciones disponibles"
-          value={vacations ? `${vacations.available} días` : "—"}
-        />
+      <div className="space-y-4 rounded-xl border bg-surface p-5 shadow-panel">
+        <div className="space-y-3">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Datos personales
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <Field label="Cédula" value={emp.cedula} />
+            <Field label="Nombres" value={emp.first_name ?? "—"} />
+            <Field label="Apellidos" value={emp.last_name ?? "—"} />
+            <Field label="Email" value={emp.email ?? "—"} />
+            <Field label="Celular" value={emp.phone ?? "—"} />
+            <Field label="Teléfono" value={emp.landline ?? "—"} />
+            <Field label="N° Carpeta" value={emp.folder_number ?? "—"} />
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Información laboral
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <Field
+              label="Empresa"
+              value={
+                emp.company_id
+                  ? (companies.find((c) => c.id === emp.company_id)?.name ?? "—")
+                  : "—"
+              }
+            />
+            <Field label="Cargo" value={emp.position} />
+            <Field label="Lugar de trabajo" value={emp.work_location ?? "—"} />
+            <Field label="Municipio" value={emp.municipality ?? "—"} />
+            <Field label="Horario" value={emp.work_schedule ?? "—"} />
+            <Field label="Fecha de ingreso" value={fmtDate(emp.hire_date)} />
+            <Field
+              label="Fin de contrato"
+              value={emp.contract_end_date ? fmtDate(emp.contract_end_date) : "Indefinido"}
+            />
+            <Field label="Fecha de salida" value={emp.exit_date ? fmtDate(emp.exit_date) : "—"} />
+            <Field label="Estado" value={emp.status === "activo" ? "Activo" : "Retirado"} />
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Información adicional
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <Field
+              label={`Vacaciones ${year}`}
+              value={
+                vacations
+                  ? `${vacations.rows.find((r) => r.year === year)?.entitled ?? 0} derecho | ${
+                      vacations.rows.find((r) => r.year === year)?.used ?? 0
+                    } usadas`
+                  : "—"
+              }
+            />
+            <Field
+              label="Vacaciones disponibles"
+              value={vacations ? `${vacations.available} días` : "—"}
+            />
+            <Field label="Incapacidades" value={`${myIncapacities.length} registradas`} />
+            <Field label="Permisos" value={`${myLeaves.length} registrados`} />
+          </div>
+        </div>
+
         {emp.notes && (
-          <div className="sm:col-span-3 lg:col-span-4">
+          <div className="border-t pt-4">
             <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
               Observaciones
             </p>
