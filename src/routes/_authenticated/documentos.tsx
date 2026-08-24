@@ -76,11 +76,20 @@ function DocumentsPage() {
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "—") : "Todas";
 
+  const isIslero = useMemo(() => {
+    const hay = `${employee?.position ?? ""} ${employee?.work_location ?? ""}`.toLowerCase();
+    return hay.includes("isler");
+  }, [employee?.position, employee?.work_location]);
+
+  const logoPath = isIslero
+    ? (company?.islero_logo_path ?? company?.logo_path ?? null)
+    : (company?.logo_path ?? null);
+
   const [logo, setLogo] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
     setLogo(null);
-    const path = company?.logo_path;
+    const path = logoPath;
     if (path && !path.endsWith(".pdf")) {
       void logoUrl(path).then((url) => {
         if (alive) setLogo(url);
@@ -89,7 +98,7 @@ function DocumentsPage() {
     return () => {
       alive = false;
     };
-  }, [company?.logo_path]);
+  }, [logoPath]);
 
   const visibleEmployees = useMemo(() => {
     const term = search.trim().toLowerCase();
