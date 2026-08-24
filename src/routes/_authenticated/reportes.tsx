@@ -262,7 +262,7 @@ function ReportsPage() {
         rows: [],
       },
       {
-        title: "EMPLEADOS DEL PERÍODO",
+        title: "EMPLEADOS CON NOVEDADES EN LA QUINCENA",
         header: [
           "Cédula",
           "Nombre",
