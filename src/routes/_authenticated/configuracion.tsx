@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { CompanyLogos } from "@/components/hr/CompanyLogos";
 import {
   Table,
   TableBody,
@@ -112,6 +113,10 @@ function SettingsPage() {
           </Table>
         </div>
       </section>
+
+      <CompanyLogos companies={companies} />
+
+
 
       <section className="space-y-2">
         <h2 className="font-display text-sm font-bold">Plantillas de documentos</h2>
