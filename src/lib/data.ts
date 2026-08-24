@@ -23,7 +23,22 @@ export interface DocumentTemplate {
   category: string;
   description: string | null;
   file_path: string | null;
+  body: string;
+  company_id: string | null;
+  created_at?: string;
 }
+
+export interface GeneratedDocument {
+  id: string;
+  template_id: string | null;
+  template_name: string;
+  employee_id: string | null;
+  employee_name: string;
+  company_name: string | null;
+  content: string;
+  created_at: string;
+}
+
 
 async function selectAll<T>(table: string, order: string, ascending = true): Promise<T[]> {
   const { data, error } = await db
