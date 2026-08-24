@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          islero_logo_name: string | null
+          islero_logo_path: string | null
           logo_name: string | null
           logo_path: string | null
           name: string
@@ -25,6 +27,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          islero_logo_name?: string | null
+          islero_logo_path?: string | null
           logo_name?: string | null
           logo_path?: string | null
           name: string
@@ -32,6 +36,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          islero_logo_name?: string | null
+          islero_logo_path?: string | null
           logo_name?: string | null
           logo_path?: string | null
           name?: string
