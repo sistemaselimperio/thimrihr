@@ -8,8 +8,58 @@ export interface SheetBlock {
   rows: Cell[][];
 }
 
+function blocksToSheet(blocks: SheetBlock[]) {
+  const aoa: Cell[][] = [];
+  blocks.forEach((block, index) => {
+    if (index > 0) aoa.push([]);
+    if (block.title) aoa.push([block.title]);
+    if (block.header) aoa.push(block.header);
+    if (block.rows.length === 0) aoa.push(["Sin registros"]);
+    else block.rows.forEach((r) => aoa.push(r));
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const widths = new Map<number, number>();
+  aoa.forEach((row) =>
+    row.forEach((cell, i) => {
+      const len = String(cell ?? "").length + 2;
+      widths.set(i, Math.min(46, Math.max(widths.get(i) ?? 10, len)));
+    }),
+  );
+  ws["!cols"] = [...widths.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, w]) => ({ wch: w }));
+  return ws;
+}
+
+function safeSheetName(name: string, used: Set<string>) {
+  let base = name.replace(/[\\/?*[\]:]/g, " ").trim().slice(0, 31) || "Hoja";
+  let candidate = base;
+  let n = 2;
+  while (used.has(candidate)) {
+    const suffix = ` (${n++})`;
+    candidate = base.slice(0, 31 - suffix.length) + suffix;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+/** Genera y descarga un .xlsx con varias pestañas. */
+export function downloadWorkbook(
+  fileName: string,
+  sheets: { name: string; blocks: SheetBlock[] }[],
+) {
+  const wb = XLSX.utils.book_new();
+  const used = new Set<string>();
+  sheets.forEach((sheet) => {
+    XLSX.utils.book_append_sheet(wb, blocksToSheet(sheet.blocks), safeSheetName(sheet.name, used));
+  });
+  XLSX.writeFile(wb, fileName);
+}
+
 /** Genera y descarga un .xlsx a partir de bloques (secciones) de datos. */
 export function downloadSheet(fileName: string, sheetName: string, blocks: SheetBlock[]) {
+
   const aoa: Cell[][] = [];
   blocks.forEach((block, index) => {
     if (index > 0) aoa.push([]);
