@@ -43,7 +43,25 @@ export const qk = {
   entitlements: ["vacation_entitlements"] as const,
   overrides: ["payroll_periods"] as const,
   templates: ["document_templates"] as const,
+  imports: ["import_batches"] as const,
 };
+
+export interface ImportBatch {
+  id: string;
+  file_name: string;
+  total_rows: number;
+  created_count: number;
+  updated_count: number;
+  error_count: number;
+  created_at: string;
+}
+
+export function useImportBatches() {
+  return useQuery({
+    queryKey: qk.imports,
+    queryFn: () => selectAll<ImportBatch>("import_batches", "created_at", false),
+  });
+}
 
 export function useCompanies() {
   return useQuery({
