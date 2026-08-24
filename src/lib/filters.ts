@@ -65,6 +65,10 @@ export function filterEmployees(
       const hit =
         e.full_name.toLowerCase().includes(term) ||
         e.cedula.toLowerCase().includes(term) ||
+        (e.first_name ?? "").toLowerCase().includes(term) ||
+        (e.last_name ?? "").toLowerCase().includes(term) ||
+        e.position.toLowerCase().includes(term) ||
+        (e.municipality ?? "").toLowerCase().includes(term) ||
         (e.work_location ?? "").toLowerCase().includes(term);
       if (!hit) return false;
     }
