@@ -240,6 +240,22 @@ function ReportsPage() {
         title: `${companyName(companyId)} — ${periodLabelLong(periodKey)} (${fmtDate(bounds.start)} a ${fmtDate(bounds.end)})`,
         rows: [],
       },
+      {
+        title: "EMPLEADOS DEL PERÍODO",
+        header: [
+          "Cédula",
+          "Nombre",
+          "Empresa",
+          "Cargo",
+          "Días base",
+          "Permisos",
+          "Incapacidad",
+          "Vacaciones",
+          "Días trabajados",
+          "Estado",
+        ],
+        rows: resumen,
+      },
       { title: "1. INGRESOS", header: NOVELTY_HEADER, rows: ingresos },
       { title: "2. RETIROS", header: NOVELTY_HEADER, rows: retiros },
       {
@@ -261,22 +277,6 @@ function ReportsPage() {
         title: "6. DESCUENTOS ESPECIALES (AJUSTE DE DÍAS BASE)",
         header: [...NOVELTY_HEADER.slice(0, 5), "Días base ajustados", "Días trabajados"],
         rows: descuentos,
-      },
-      {
-        title: "DÍAS TRABAJADOS POR EMPLEADO",
-        header: [
-          "Cédula",
-          "Nombre",
-          "Empresa",
-          "Cargo",
-          "Días base",
-          "Permisos",
-          "Incapacidad",
-          "Vacaciones",
-          "Días trabajados",
-          "Estado",
-        ],
-        rows: resumen,
       },
     ];
   };
