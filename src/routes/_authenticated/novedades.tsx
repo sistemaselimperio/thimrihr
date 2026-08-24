@@ -5,8 +5,10 @@ import { Plus } from "lucide-react";
 import {
   IncapacityDialog,
   LeaveDialog,
+  NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
+
 import { useFilters } from "@/components/layout/filters-context";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
