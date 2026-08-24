@@ -23,7 +23,22 @@ export interface DocumentTemplate {
   category: string;
   description: string | null;
   file_path: string | null;
+  body: string;
+  company_id: string | null;
+  created_at?: string;
 }
+
+export interface GeneratedDocument {
+  id: string;
+  template_id: string | null;
+  template_name: string;
+  employee_id: string | null;
+  employee_name: string;
+  company_name: string | null;
+  content: string;
+  created_at: string;
+}
+
 
 async function selectAll<T>(table: string, order: string, ascending = true): Promise<T[]> {
   const { data, error } = await db
@@ -43,6 +58,7 @@ export const qk = {
   entitlements: ["vacation_entitlements"] as const,
   overrides: ["payroll_periods"] as const,
   templates: ["document_templates"] as const,
+  generated: ["generated_documents"] as const,
   imports: ["import_batches"] as const,
 };
 
@@ -117,6 +133,13 @@ export function useTemplates() {
   return useQuery({
     queryKey: qk.templates,
     queryFn: () => selectAll<DocumentTemplate>("document_templates", "name"),
+  });
+}
+
+export function useGeneratedDocuments() {
+  return useQuery({
+    queryKey: qk.generated,
+    queryFn: () => selectAll<GeneratedDocument>("generated_documents", "created_at", false),
   });
 }
 

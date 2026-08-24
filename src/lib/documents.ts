@@ -1,4 +1,4 @@
-import { fmtDate, todayISO, type Company, type Employee } from "./hr";
+import { fmtDate, monthLong, todayISO, type Company, type Employee } from "./hr";
 
 export interface DocContext {
   employee: Employee;
@@ -49,4 +49,114 @@ export function renderDocument(category: string, ctx: DocContext): string {
     default:
       return `${intro}${who}${ctx.extra.trim() || "Documento generado desde el sistema de Recursos Humanos."}${FOOTER}`;
   }
+}
+
+/* ------------------------------------------------- plantillas con variables */
+
+export interface DocVariable {
+  key: string;
+  label: string;
+  group: string;
+}
+
+export const DOC_VARIABLES: DocVariable[] = [
+  { key: "NOMBRE", label: "Nombre del empleado", group: "Datos personales" },
+  { key: "APELLIDOS", label: "Apellidos", group: "Datos personales" },
+  { key: "NOMBRE_COMPLETO", label: "Nombre completo", group: "Datos personales" },
+  { key: "CEDULA", label: "Cédula", group: "Datos personales" },
+  { key: "CELULAR", label: "Celular", group: "Datos personales" },
+  { key: "TELEFONO", label: "Teléfono fijo", group: "Datos personales" },
+  { key: "EMAIL", label: "Correo", group: "Datos personales" },
+  { key: "CARGO", label: "Cargo", group: "Datos personales" },
+  { key: "EMPRESA", label: "Empresa", group: "Datos laborales" },
+  { key: "LUGAR_TRABAJO", label: "Lugar de trabajo", group: "Datos laborales" },
+  { key: "MUNICIPIO", label: "Municipio", group: "Datos laborales" },
+  { key: "HORARIO", label: "Horario", group: "Datos laborales" },
+  { key: "FECHA_INGRESO", label: "Fecha de ingreso", group: "Datos laborales" },
+  { key: "FECHA_FIN_CONTRATO", label: "Fecha fin de contrato", group: "Datos laborales" },
+  { key: "FECHA_SALIDA", label: "Fecha de salida", group: "Datos laborales" },
+  { key: "HOY", label: "Fecha de hoy", group: "Fechas" },
+  { key: "DIA", label: "Día", group: "Fechas" },
+  { key: "MES", label: "Mes", group: "Fechas" },
+  { key: "AÑO", label: "Año", group: "Fechas" },
+  { key: "LUGAR", label: "Ciudad (municipio)", group: "Fechas" },
+  { key: "LOGO", label: "Logo de la empresa (automático)", group: "Logo" },
+];
+
+export const DOC_CATEGORIES = [
+  { value: "contrato", label: "Contrato" },
+  { value: "memorando", label: "Memorando" },
+  { value: "permiso", label: "Permiso" },
+  { value: "liquidacion", label: "Liquidación" },
+  { value: "paz_y_salvo", label: "Paz y salvo" },
+  { value: "certificado", label: "Certificado laboral" },
+  { value: "descargos", label: "Descargos" },
+  { value: "terminacion", label: "Terminación" },
+  { value: "otros", label: "Otros" },
+];
+
+const LEGACY_CATEGORY_LABELS: Record<string, string> = {
+  disciplinario: "Disciplinario",
+  retiro: "Retiro",
+  novedad: "Novedad",
+  vacaciones: "Vacaciones",
+};
+
+export function categoryLabel(value: string): string {
+  return (
+    DOC_CATEGORIES.find((c) => c.value === value)?.label ??
+    LEGACY_CATEGORY_LABELS[value] ??
+    value
+  );
+}
+
+/** Valores de las variables para un empleado concreto. */
+export function docValues(
+  employee: Employee,
+  company: Company | undefined,
+): Record<string, string> {
+  const today = new Date();
+  const dash = "—";
+  const first =
+    employee.first_name?.trim() || employee.full_name.split(" ").slice(0, 1).join(" ");
+  const last =
+    employee.last_name?.trim() || employee.full_name.split(" ").slice(1).join(" ");
+  return {
+    NOMBRE: first || employee.full_name,
+    APELLIDOS: last || "",
+    NOMBRE_COMPLETO: employee.full_name,
+    CEDULA: employee.cedula,
+    CELULAR: employee.phone ?? dash,
+    TELEFONO: employee.landline ?? dash,
+    EMAIL: employee.email ?? dash,
+    CARGO: employee.position,
+    EMPRESA: company?.name ?? "El Imperio",
+    LUGAR_TRABAJO: employee.work_location ?? dash,
+    MUNICIPIO: employee.municipality ?? dash,
+    HORARIO: employee.work_schedule ?? dash,
+    FECHA_INGRESO: fmtDate(employee.hire_date),
+    FECHA_FIN_CONTRATO: fmtDate(employee.contract_end_date),
+    FECHA_SALIDA: fmtDate(employee.exit_date),
+    HOY: fmtDate(todayISO()),
+    DIA: String(today.getDate()),
+    MES: monthLong(today.getMonth()).toLowerCase(),
+    AÑO: String(today.getFullYear()),
+    LUGAR: employee.municipality ?? employee.work_location ?? dash,
+    LOGO: "",
+  };
+}
+
+/** Reemplaza {VARIABLE} por el valor del empleado. */
+export function fillTemplate(
+  body: string,
+  employee: Employee,
+  company: Company | undefined,
+): string {
+  const values = docValues(employee, company);
+  return body
+    .replace(/\{\s*([A-ZÑÁÉÍÓÚ_]+)\s*\}/g, (match, key: string) =>
+      key in values ? values[key]! : match,
+    )
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim();
 }

@@ -40,7 +40,9 @@ export type Database = {
       }
       document_templates: {
         Row: {
+          body: string
           category: string
+          company_id: string | null
           created_at: string
           description: string | null
           file_path: string | null
@@ -49,7 +51,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          body?: string
           category?: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
@@ -58,7 +62,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          body?: string
           category?: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
@@ -66,7 +72,15 @@ export type Database = {
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employees: {
         Row: {
@@ -144,6 +158,54 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_documents: {
+        Row: {
+          company_name: string | null
+          content: string
+          created_at: string
+          employee_id: string | null
+          employee_name: string
+          id: string
+          template_id: string | null
+          template_name: string
+        }
+        Insert: {
+          company_name?: string | null
+          content: string
+          created_at?: string
+          employee_id?: string | null
+          employee_name: string
+          id?: string
+          template_id?: string | null
+          template_name: string
+        }
+        Update: {
+          company_name?: string | null
+          content?: string
+          created_at?: string
+          employee_id?: string | null
+          employee_name?: string
+          id?: string
+          template_id?: string | null
+          template_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "document_templates"
             referencedColumns: ["id"]
           },
         ]
