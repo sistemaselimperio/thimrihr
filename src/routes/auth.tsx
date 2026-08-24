@@ -30,7 +30,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,15 +42,12 @@ function AuthPage() {
 
   const traducirError = (msg: string) => {
     const m = msg.toLowerCase();
+    if (m.includes("signups not allowed") || m.includes("signup is disabled"))
+      return "El registro está cerrado. Solo las cuentas autorizadas pueden ingresar.";
     if (m.includes("email not confirmed"))
       return "Tu correo aún no está confirmado. Intenta de nuevo en unos segundos.";
     if (m.includes("invalid login credentials"))
       return "Correo o contraseña incorrectos.";
-    if (m.includes("already registered") || m.includes("already been registered"))
-      return "Ese correo ya está registrado. Ingresa con tu contraseña.";
-    if (m.includes("weak") || m.includes("known to be weak"))
-      return "Esa contraseña es muy común. Usa una más segura.";
-    if (m.includes("at least 6")) return "La contraseña debe tener al menos 6 caracteres.";
     if (m.includes("rate limit") || m.includes("after"))
       return "Demasiados intentos seguidos. Espera unos segundos e intenta otra vez.";
     return msg;
@@ -61,30 +57,9 @@ function AuthPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        void navigate({ to: "/dashboard" });
-      } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/auth` },
-        });
-        if (error) throw error;
-        if (data.session) {
-          toast.success("Cuenta creada. Bienvenida.");
-          void navigate({ to: "/dashboard" });
-        } else {
-          const { error: loginError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (loginError) throw loginError;
-          toast.success("Cuenta creada. Bienvenida.");
-          void navigate({ to: "/dashboard" });
-        }
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      void navigate({ to: "/dashboard" });
     } catch (error) {
       toast.error(
         error instanceof Error ? traducirError(error.message) : "No fue posible ingresar",
@@ -93,6 +68,7 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
 
 
 
@@ -127,9 +103,8 @@ function AuthPage() {
         >
           <div className="flex items-center gap-2 text-brand">
             <ShieldCheck className="size-5" />
-            <p className="font-display text-lg font-bold">
-              {mode === "login" ? "Ingresar" : "Crear cuenta"}
-            </p>
+            <p className="font-display text-lg font-bold">Ingresar</p>
+
           </div>
 
           <div className="space-y-1.5">
@@ -153,7 +128,7 @@ function AuthPage() {
             <Input
               id="password"
               type="password"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               required
               minLength={6}
               value={password}
@@ -163,18 +138,13 @@ function AuthPage() {
 
           <Button type="submit" variant="success" className="w-full" disabled={busy}>
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {mode === "login" ? "Entrar" : "Crear cuenta"}
+            Entrar
           </Button>
 
-          <button
-            type="button"
-            className="w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          >
-            {mode === "login"
-              ? "Primera vez: crear mi cuenta"
-              : "Ya tengo cuenta, quiero ingresar"}
-          </button>
+          <p className="text-center text-xs text-muted-foreground">
+            Acceso solo para cuentas autorizadas. El registro está cerrado.
+          </p>
+
         </form>
       </div>
     </div>
