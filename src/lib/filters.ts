@@ -60,7 +60,9 @@ export function filterEmployees(
   return employees.filter((e) => {
     if (term) {
       const hit =
-        e.full_name.toLowerCase().includes(term) || e.cedula.toLowerCase().includes(term);
+        e.full_name.toLowerCase().includes(term) ||
+        e.cedula.toLowerCase().includes(term) ||
+        (e.work_location ?? "").toLowerCase().includes(term);
       if (!hit) return false;
     }
     if (f.status !== "todos" && e.status !== f.status) return false;
