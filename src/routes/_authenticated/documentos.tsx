@@ -48,15 +48,31 @@ function DocumentsPage() {
 
   const employee = employees.find((e) => e.id === employeeId);
   const template = templates.find((t) => t.id === templateId);
+  const company = companies.find((c) => c.id === employee?.company_id);
+
+  const [logo, setLogo] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setLogo(null);
+    const path = company?.logo_path;
+    if (path && !path.endsWith(".pdf")) {
+      void logoUrl(path).then((url) => {
+        if (alive) setLogo(url);
+      });
+    }
+    return () => {
+      alive = false;
+    };
+  }, [company?.logo_path]);
 
   const text = useMemo(() => {
     if (!employee || !template) return "";
     return renderDocument(template.category, {
       employee,
-      company: companies.find((c) => c.id === employee.company_id),
+      company,
       extra,
     });
-  }, [employee, template, companies, extra]);
+  }, [employee, template, company, extra]);
 
   const download = () => {
     if (!text || !employee || !template) {
@@ -74,12 +90,20 @@ function DocumentsPage() {
     }
     const win = window.open("", "_blank", "noopener,width=800,height=1000");
     if (!win) return;
+    const safe = text.replace(
+      /[<>&]/g,
+      (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c,
+    );
+    const img = logo
+      ? `<img src="${logo}" alt="Logo" style="height:110px;object-fit:contain;display:block;margin-bottom:20px" onload="window.print()" onerror="window.print()" />`
+      : "";
     win.document.write(
-      `<pre style="font-family:Georgia,serif;font-size:13px;white-space:pre-wrap;padding:48px;line-height:1.6">${text.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c)}</pre>`,
+      `<div style="padding:48px"><div style="text-align:left">${img}</div><pre style="font-family:Georgia,serif;font-size:13px;white-space:pre-wrap;line-height:1.6;margin:0">${safe}</pre></div>`,
     );
     win.document.close();
-    win.print();
+    if (!logo) win.print();
   };
+
 
   return (
     <div className="space-y-5">
