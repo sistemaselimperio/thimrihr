@@ -4,9 +4,7 @@ import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -91,8 +89,8 @@ function ReportsPage() {
   const { data: terminations = [] } = useTerminations();
 
   const [periodKey, setPeriodKey] = useState(currentPeriodKey());
+  const [companyId, setCompanyId] = useState<string>("all");
   const [status, setStatus] = useState<StatusFilter>("todos");
-  const [excluded, setExcluded] = useState<string[]>([]);
 
   const today = todayISO();
   const periodOptions = useMemo(() => {
@@ -103,9 +101,11 @@ function ReportsPage() {
   }, [today]);
 
   const bounds = periodBounds(periodKey);
-  const selectedCompanies = companies.filter((c) => !excluded.includes(c.id));
-  const toggleCompany = (id: string, on: boolean) =>
-    setExcluded((prev) => (on ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const selectedCompanies = useMemo(
+    () => (companyId === "all" ? companies : companies.filter((c) => c.id === companyId)),
+    [companies, companyId],
+  );
 
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "") : "";
@@ -129,7 +129,7 @@ function ReportsPage() {
         return { employee: e, row: quincenas.find((q) => q.periodKey === periodKey) };
       })
       .filter((r) => r.row);
-  }, [employees, excluded, companies, status, bounds, incapacities, leaves, overrides, periodKey]);
+  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -309,11 +309,11 @@ function ReportsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-5 rounded-xl border bg-surface p-4 shadow-panel md:grid-cols-[auto_1fr_auto]">
+      <div className="grid gap-5 rounded-xl border bg-surface p-4 shadow-panel md:grid-cols-3">
         <div className="space-y-1.5">
           <Label className="text-xs">1. Quincena</Label>
           <Select value={periodKey} onValueChange={setPeriodKey}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-72">
@@ -326,45 +326,42 @@ function ReportsPage() {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs">2. Empresas</Label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {companies.map((c) => (
-              <label key={c.id} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={!excluded.includes(c.id)}
-                  onCheckedChange={(v) => toggleCompany(c.id, v === true)}
-                />
-                {c.name}
-              </label>
-            ))}
-          </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">2. Empresa</Label>
+          <Select value={companyId} onValueChange={setCompanyId}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las empresas</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label className="text-xs">3. Estado</Label>
-          <RadioGroup
-            value={status}
-            onValueChange={(v) => setStatus(v as StatusFilter)}
-            className="gap-2"
-          >
-            {[
-              { v: "activo", l: "Activos" },
-              { v: "retirado", l: "Retirados" },
-              { v: "todos", l: "Todos" },
-            ].map((o) => (
-              <label key={o.v} className="flex items-center gap-2 text-sm">
-                <RadioGroupItem value={o.v} /> {o.l}
-              </label>
-            ))}
-          </RadioGroup>
+          <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="activo">Activos</SelectItem>
+              <SelectItem value="retirado">Retirados</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         <span>
           {fmtDate(bounds.start)} → {fmtDate(bounds.end)} · {rows.length} empleados ·{" "}
-          {selectedCompanies.length} pestañas
+          {selectedCompanies.length} pestaña{selectedCompanies.length === 1 ? "" : "s"}
         </span>
         <span className="ml-auto">
           Días trabajados totales: <strong>{Math.round(totals.worked * 10) / 10}</strong>
