@@ -72,6 +72,11 @@ export function filterEmployees(
     if (f.companyId !== "all" && e.company_id !== f.companyId) return false;
     if (f.position.trim() && !e.position.toLowerCase().includes(f.position.trim().toLowerCase()))
       return false;
+    if (
+      f.workLocation.trim() &&
+      !(e.work_location ?? "").toLowerCase().includes(f.workLocation.trim().toLowerCase())
+    )
+      return false;
     if (f.hireFrom && e.hire_date < f.hireFrom) return false;
     if (f.hireTo && e.hire_date > f.hireTo) return false;
 
