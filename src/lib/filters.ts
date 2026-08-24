@@ -12,6 +12,7 @@ export interface HrFilters {
   search: string;
   companyId: string;
   position: string;
+  workLocation: string;
   status: "activo" | "retirado" | "todos";
   hireFrom: string;
   hireTo: string;
