@@ -8,8 +8,10 @@ import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
 import {
   IncapacityDialog,
   LeaveDialog,
+  NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -392,6 +394,7 @@ function EmployeeDetail() {
                   <TableHead>Días</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Certificado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -418,11 +421,19 @@ function EmployeeDetail() {
                         <span className="text-xs text-muted-foreground">Sin adjunto</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="incapacity"
+                        record={i}
+                        summary={`${INCAPACITY_LABELS[i.type] ?? i.type} · ${fmtDate(i.start_date)} → ${fmtDate(i.end_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
                 {myIncapacities.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                       Sin incapacidades registradas.
                     </TableCell>
                   </TableRow>
@@ -445,6 +456,7 @@ function EmployeeDetail() {
                   <TableHead>Hasta</TableHead>
                   <TableHead>Días</TableHead>
                   <TableHead>Motivo</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -455,15 +467,23 @@ function EmployeeDetail() {
                     <TableCell className="numeric">{fmtDate(l.end_date)}</TableCell>
                     <TableCell className="numeric">{l.days}</TableCell>
                     <TableCell>{l.reason}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="leave"
+                        record={l}
+                        summary={`${LEAVE_LABELS[l.type] ?? l.type} · ${fmtDate(l.start_date)} · ${l.days} días`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {myLeaves.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                       Sin permisos registrados.
                     </TableCell>
                   </TableRow>
                 )}
+
               </TableBody>
             </Table>
           </div>
@@ -532,6 +552,7 @@ function EmployeeDetail() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Liquidación</TableHead>
                   <TableHead>Detalle</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -541,15 +562,23 @@ function EmployeeDetail() {
                     <TableCell className="numeric">{fmtDate(t.exit_date)}</TableCell>
                     <TableCell>{t.settlement_paid ? "Pagada" : "Pendiente"}</TableCell>
                     <TableCell>{t.reason ?? "—"}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="termination"
+                        record={t}
+                        summary={`${TERMINATION_LABELS[t.type] ?? t.type} · ${fmtDate(t.exit_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {myTerminations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
                       Sin registros de retiro.
                     </TableCell>
                   </TableRow>
                 )}
+
               </TableBody>
             </Table>
           </div>

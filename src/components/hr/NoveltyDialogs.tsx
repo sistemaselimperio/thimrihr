@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, Loader2, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -24,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  deleteRow,
   insertRow,
   qk,
   updateRow,
@@ -37,6 +48,9 @@ import {
   daysInclusive,
   validateVacationLeave,
   type Employee,
+  type Incapacity,
+  type Leave,
+  type Termination,
 } from "@/lib/hr";
 
 function EmployeePicker({
@@ -75,10 +89,12 @@ export function IncapacityDialog({
   open,
   onOpenChange,
   employeeId,
+  record,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employeeId?: string;
+  record?: Incapacity;
 }) {
   const qc = useQueryClient();
   const { data: employees = [] } = useEmployees();
@@ -90,20 +106,22 @@ export function IncapacityDialog({
     notes: "",
   });
   const [file, setFile] = useState<File | null>(null);
+  const [removeFile, setRemoveFile] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (open) {
       setForm({
-        employee_id: employeeId ?? "",
-        type: "general",
-        start_date: "",
-        end_date: "",
-        notes: "",
+        employee_id: record?.employee_id ?? employeeId ?? "",
+        type: record?.type ?? "general",
+        start_date: record?.start_date ?? "",
+        end_date: record?.end_date ?? "",
+        notes: record?.notes ?? "",
       });
       setFile(null);
+      setRemoveFile(false);
     }
-  }, [open, employeeId]);
+  }, [open, employeeId, record]);
 
   const days =
     form.start_date && form.end_date && form.end_date >= form.start_date
@@ -116,27 +134,39 @@ export function IncapacityDialog({
       toast.error("Selecciona un empleado");
       return;
     }
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      toast.error("La fecha final no puede ser anterior a la inicial");
+      return;
+    }
     if (days <= 0) {
       toast.error("Revisa las fechas de la incapacidad");
       return;
     }
     setBusy(true);
     try {
-      let certificate_path: string | null = null;
+      let certificate_path: string | null = record?.certificate_path ?? null;
+      if (removeFile) certificate_path = null;
       if (file) certificate_path = await uploadFile("certificados", file, form.employee_id);
-      await insertRow("incapacities", {
+
+      const payload = {
         employee_id: form.employee_id,
         type: form.type,
         start_date: form.start_date,
         end_date: form.end_date,
         certificate_path,
         notes: form.notes.trim() || null,
-      });
+      };
+
+      if (record) await updateRow("incapacities", record.id, payload);
+      else await insertRow("incapacities", payload);
+
       await qc.invalidateQueries({ queryKey: qk.incapacities });
-      toast.success(`Incapacidad registrada (${days} días)`);
+      toast.success(
+        record ? "Incapacidad actualizada" : `Incapacidad registrada (${days} días)`,
+      );
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo registrar");
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {
       setBusy(false);
     }
@@ -146,14 +176,14 @@ export function IncapacityDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Registrar incapacidad</DialogTitle>
+          <DialogTitle>{record ? "Editar incapacidad" : "Registrar incapacidad"}</DialogTitle>
           <DialogDescription>
             Los días se descuentan automáticamente de la quincena correspondiente.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void submit(e)} className="space-y-4">
-          {!employeeId && (
+          {!employeeId && !record && (
             <EmployeePicker
               value={form.employee_id}
               onChange={(v) => setForm((p) => ({ ...p, employee_id: v }))}
@@ -212,6 +242,20 @@ export function IncapacityDialog({
             <Label htmlFor="inc_file" className="flex items-center gap-2">
               <Upload className="size-4" /> Certificado (PDF o imagen)
             </Label>
+            {record?.certificate_path && !removeFile && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Checkbox
+                  checked={removeFile}
+                  onCheckedChange={(v) => setRemoveFile(v === true)}
+                />
+                Certificado ya adjunto — marcar para eliminarlo
+              </label>
+            )}
+            {removeFile && (
+              <p className="text-xs text-danger-foreground">
+                El certificado actual se eliminará al guardar.
+              </p>
+            )}
             <Input
               id="inc_file"
               type="file"
@@ -236,7 +280,7 @@ export function IncapacityDialog({
             </Button>
             <Button type="submit" variant="success" disabled={busy}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Guardar
+              {record ? "Guardar cambios" : "Guardar"}
             </Button>
           </DialogFooter>
         </form>
@@ -251,10 +295,12 @@ export function LeaveDialog({
   open,
   onOpenChange,
   employeeId,
+  record,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employeeId?: string;
+  record?: Leave;
 }) {
   const qc = useQueryClient();
   const { data: employees = [] } = useEmployees();
@@ -274,15 +320,15 @@ export function LeaveDialog({
   useEffect(() => {
     if (open)
       setForm({
-        employee_id: employeeId ?? "",
-        type: "sin_pago",
-        start_date: "",
-        end_date: "",
-        days: "",
-        reason: "",
-        notes: "",
+        employee_id: record?.employee_id ?? employeeId ?? "",
+        type: record?.type ?? "sin_pago",
+        start_date: record?.start_date ?? "",
+        end_date: record?.end_date ?? "",
+        days: record ? String(record.days) : "",
+        reason: record?.reason ?? "",
+        notes: record?.notes ?? "",
       });
-  }, [open, employeeId]);
+  }, [open, employeeId, record]);
 
   const spanDays =
     form.start_date && form.end_date && form.end_date >= form.start_date
@@ -296,9 +342,10 @@ export function LeaveDialog({
     return buildVacationSummary(
       emp,
       entitlements.filter((x) => x.employee_id === emp.id),
-      leaves.filter((l) => l.employee_id === emp.id),
+      // al editar, el permiso actual no debe contarse dos veces
+      leaves.filter((l) => l.employee_id === emp.id && l.id !== record?.id),
     );
-  }, [employees, entitlements, leaves, form.employee_id]);
+  }, [employees, entitlements, leaves, form.employee_id, record?.id]);
 
   const validation =
     form.type === "vacaciones" && summary
@@ -311,8 +358,16 @@ export function LeaveDialog({
       toast.error("Selecciona un empleado");
       return;
     }
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      toast.error("La fecha final no puede ser anterior a la inicial");
+      return;
+    }
     if (requested <= 0) {
       toast.error("Revisa las fechas del permiso");
+      return;
+    }
+    if (!form.reason.trim()) {
+      toast.error("El motivo es obligatorio");
       return;
     }
     if (validation.blocked) {
@@ -321,7 +376,7 @@ export function LeaveDialog({
     }
     setBusy(true);
     try {
-      await insertRow("leaves", {
+      const payload = {
         employee_id: form.employee_id,
         type: form.type,
         start_date: form.start_date,
@@ -329,12 +384,14 @@ export function LeaveDialog({
         days: requested,
         reason: form.reason.trim(),
         notes: form.notes.trim() || null,
-      });
+      };
+      if (record) await updateRow("leaves", record.id, payload);
+      else await insertRow("leaves", payload);
       await qc.invalidateQueries({ queryKey: qk.leaves });
-      toast.success(`Permiso registrado (${requested} días)`);
+      toast.success(record ? "Permiso actualizado" : `Permiso registrado (${requested} días)`);
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo registrar");
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {
       setBusy(false);
     }
@@ -344,14 +401,14 @@ export function LeaveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Registrar permiso</DialogTitle>
+          <DialogTitle>{record ? "Editar permiso" : "Registrar permiso"}</DialogTitle>
           <DialogDescription>
             Los permisos sin pago y los descuentos de vacaciones restan días de la quincena.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void submit(e)} className="space-y-4">
-          {!employeeId && (
+          {!employeeId && !record && (
             <EmployeePicker
               value={form.employee_id}
               onChange={(v) => setForm((p) => ({ ...p, employee_id: v }))}
@@ -446,13 +503,23 @@ export function LeaveDialog({
             />
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="lv_notes">Observaciones</Label>
+            <Textarea
+              id="lv_notes"
+              rows={2}
+              value={form.notes}
+              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" variant="success" disabled={busy || validation.blocked}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Guardar
+              {record ? "Guardar cambios" : "Guardar"}
             </Button>
           </DialogFooter>
         </form>
@@ -467,10 +534,12 @@ export function TerminationDialog({
   open,
   onOpenChange,
   employeeId,
+  record,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employeeId?: string;
+  record?: Termination;
 }) {
   const qc = useQueryClient();
   const { data: employees = [] } = useEmployees();
@@ -487,14 +556,14 @@ export function TerminationDialog({
   useEffect(() => {
     if (open)
       setForm({
-        employee_id: employeeId ?? "",
-        type: "renuncia",
-        exit_date: "",
-        reason: "",
-        settlement_paid: false,
-        notes: "",
+        employee_id: record?.employee_id ?? employeeId ?? "",
+        type: record?.type ?? "renuncia",
+        exit_date: record?.exit_date ?? "",
+        reason: record?.reason ?? "",
+        settlement_paid: record?.settlement_paid ?? false,
+        notes: record?.notes ?? "",
       });
-  }, [open, employeeId]);
+  }, [open, employeeId, record]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -504,14 +573,17 @@ export function TerminationDialog({
     }
     setBusy(true);
     try {
-      await insertRow("terminations", {
+      const payload = {
         employee_id: form.employee_id,
         type: form.type,
         exit_date: form.exit_date,
         reason: form.reason.trim() || null,
         settlement_paid: form.settlement_paid,
         notes: form.notes.trim() || null,
-      });
+      };
+      if (record) await updateRow("terminations", record.id, payload);
+      else await insertRow("terminations", payload);
+
       await updateRow("employees", form.employee_id, {
         status: "retirado",
         exit_date: form.exit_date,
@@ -520,10 +592,14 @@ export function TerminationDialog({
         qc.invalidateQueries({ queryKey: qk.terminations }),
         qc.invalidateQueries({ queryKey: qk.employees }),
       ]);
-      toast.success("Retiro registrado. El empleado pasó a estado retirado.");
+      toast.success(
+        record
+          ? "Retiro actualizado"
+          : "Retiro registrado. El empleado pasó a estado retirado.",
+      );
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo registrar");
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {
       setBusy(false);
     }
@@ -533,14 +609,14 @@ export function TerminationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Registrar retiro</DialogTitle>
+          <DialogTitle>{record ? "Editar retiro" : "Registrar retiro"}</DialogTitle>
           <DialogDescription>
             El empleado se marca como retirado y conserva todo su histórico.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void submit(e)} className="space-y-4">
-          {!employeeId && (
+          {!employeeId && !record && (
             <EmployeePicker
               value={form.employee_id}
               onChange={(v) => setForm((p) => ({ ...p, employee_id: v }))}
@@ -593,17 +669,137 @@ export function TerminationDialog({
             Liquidación pagada
           </label>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="tm_notes">Observaciones</Label>
+            <Textarea
+              id="tm_notes"
+              rows={2}
+              value={form.notes}
+              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" variant="danger" disabled={busy}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              Registrar retiro
+              {record ? "Guardar cambios" : "Registrar retiro"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* -------------------------------------------------- editar / eliminar filas */
+
+type NoveltyKind = "incapacity" | "leave" | "termination";
+
+const TABLE_BY_KIND: Record<NoveltyKind, string> = {
+  incapacity: "incapacities",
+  leave: "leaves",
+  termination: "terminations",
+};
+
+const KEYS_BY_KIND: Record<NoveltyKind, readonly unknown[][]> = {
+  incapacity: [qk.incapacities as unknown as unknown[]],
+  leave: [qk.leaves as unknown as unknown[]],
+  termination: [qk.terminations as unknown as unknown[], qk.employees as unknown as unknown[]],
+};
+
+/** Botones [Editar] [Eliminar] para una novedad (incapacidad, permiso o retiro). */
+export function NoveltyRowActions({
+  kind,
+  record,
+  summary,
+}: {
+  kind: NoveltyKind;
+  record: Incapacity | Leave | Termination;
+  /** Texto corto que describe la novedad en la confirmación de borrado. */
+  summary: string;
+}) {
+  const qc = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await deleteRow(TABLE_BY_KIND[kind], record.id);
+      await Promise.all(
+        KEYS_BY_KIND[kind].map((key) => qc.invalidateQueries({ queryKey: key })),
+      );
+      toast.success("Novedad eliminada");
+      setConfirmOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo eliminar");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex justify-end gap-1">
+      <Button variant="outline" size="sm" className="gap-1" onClick={() => setEditOpen(true)}>
+        <Pencil className="size-3.5" /> Editar
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="gap-1 text-danger-foreground"
+        onClick={() => setConfirmOpen(true)}
+      >
+        <Trash2 className="size-3.5" /> Eliminar
+      </Button>
+
+      {kind === "incapacity" && (
+        <IncapacityDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          record={record as Incapacity}
+        />
+      )}
+      {kind === "leave" && (
+        <LeaveDialog open={editOpen} onOpenChange={setEditOpen} record={record as Leave} />
+      )}
+      {kind === "termination" && (
+        <TerminationDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          record={record as Termination}
+        />
+      )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-4 text-danger-foreground" /> Eliminar novedad
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que quieres eliminar esta novedad? {summary}. Esta acción no se puede
+              deshacer y los cálculos se recalcularán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              onClick={(e) => {
+                e.preventDefault();
+                void remove();
+              }}
+            >
+              {busy && <Loader2 className="size-4 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

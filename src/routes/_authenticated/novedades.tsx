@@ -5,8 +5,10 @@ import { Plus } from "lucide-react";
 import {
   IncapacityDialog,
   LeaveDialog,
+  NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
+
 import { useFilters } from "@/components/layout/filters-context";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -122,6 +124,7 @@ function NoveltiesPage() {
                   <TableHead>Hasta</TableHead>
                   <TableHead>Días</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,8 +140,16 @@ function NoveltiesPage() {
                       {daysInclusive(i.start_date, i.end_date)}
                     </TableCell>
                     <TableCell>{incapacityStatus(i)}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="incapacity"
+                        record={i}
+                        summary={`${INCAPACITY_LABELS[i.type] ?? i.type} · ${fmtDate(i.start_date)} → ${fmtDate(i.end_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>
@@ -155,6 +166,7 @@ function NoveltiesPage() {
                   <TableHead>Hasta</TableHead>
                   <TableHead>Días</TableHead>
                   <TableHead>Motivo</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -168,8 +180,16 @@ function NoveltiesPage() {
                     <TableCell className="numeric">{fmtDate(l.end_date)}</TableCell>
                     <TableCell className="numeric">{l.days}</TableCell>
                     <TableCell>{l.reason}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="leave"
+                        record={l}
+                        summary={`${LEAVE_LABELS[l.type] ?? l.type} · ${fmtDate(l.start_date)} · ${l.days} días`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>
@@ -185,6 +205,7 @@ function NoveltiesPage() {
                   <TableHead>Fecha de salida</TableHead>
                   <TableHead>Liquidación</TableHead>
                   <TableHead>Detalle</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -197,8 +218,16 @@ function NoveltiesPage() {
                     <TableCell className="numeric">{fmtDate(t.exit_date)}</TableCell>
                     <TableCell>{t.settlement_paid ? "Pagada" : "Pendiente"}</TableCell>
                     <TableCell>{t.reason ?? "—"}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="termination"
+                        record={t}
+                        summary={`${TERMINATION_LABELS[t.type] ?? t.type} · ${fmtDate(t.exit_date)}`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>
