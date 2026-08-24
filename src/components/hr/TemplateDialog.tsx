@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -42,6 +42,7 @@ export function TemplateDialog({ open, onOpenChange, template }: Props) {
   const [companyId, setCompanyId] = useState(ALL);
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -76,7 +77,23 @@ export function TemplateDialog({ open, onOpenChange, template }: Props) {
     }
   };
 
-  const insertVar = (key: string) => setBody((prev) => `${prev}{${key}}`);
+  const insertVar = (key: string) => {
+    const token = `{${key}}`;
+    const el = bodyRef.current;
+    if (!el) {
+      setBody((prev) => `${prev}${token}`);
+      return;
+    }
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    const next = `${el.value.slice(0, start)}${token}${el.value.slice(end)}`;
+    setBody(next);
+    const caret = start + token.length;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -149,6 +166,7 @@ export function TemplateDialog({ open, onOpenChange, template }: Props) {
           </Label>
           <Textarea
             id="tpl-body"
+            ref={bodyRef}
             rows={16}
             className="font-mono text-xs"
             value={body}
