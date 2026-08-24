@@ -433,7 +433,7 @@ function EmployeeDetail() {
 
                 {myIncapacities.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                       Sin incapacidades registradas.
                     </TableCell>
                   </TableRow>
@@ -456,6 +456,7 @@ function EmployeeDetail() {
                   <TableHead>Hasta</TableHead>
                   <TableHead>Días</TableHead>
                   <TableHead>Motivo</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -466,15 +467,23 @@ function EmployeeDetail() {
                     <TableCell className="numeric">{fmtDate(l.end_date)}</TableCell>
                     <TableCell className="numeric">{l.days}</TableCell>
                     <TableCell>{l.reason}</TableCell>
+                    <TableCell>
+                      <NoveltyRowActions
+                        kind="leave"
+                        record={l}
+                        summary={`${LEAVE_LABELS[l.type] ?? l.type} · ${fmtDate(l.start_date)} · ${l.days} días`}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
                 {myLeaves.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                       Sin permisos registrados.
                     </TableCell>
                   </TableRow>
                 )}
+
               </TableBody>
             </Table>
           </div>
