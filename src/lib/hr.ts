@@ -11,6 +11,8 @@ export type TerminationType = "vencimiento" | "renuncia" | "justa_causa";
 export interface Company {
   id: string;
   name: string;
+  logo_path?: string | null;
+  logo_name?: string | null;
 }
 
 export interface Employee {
