@@ -95,8 +95,19 @@ export const DOC_CATEGORIES = [
   { value: "otros", label: "Otros" },
 ];
 
+const LEGACY_CATEGORY_LABELS: Record<string, string> = {
+  disciplinario: "Disciplinario",
+  retiro: "Retiro",
+  novedad: "Novedad",
+  vacaciones: "Vacaciones",
+};
+
 export function categoryLabel(value: string): string {
-  return DOC_CATEGORIES.find((c) => c.value === value)?.label ?? value;
+  return (
+    DOC_CATEGORIES.find((c) => c.value === value)?.label ??
+    LEGACY_CATEGORY_LABELS[value] ??
+    value
+  );
 }
 
 /** Valores de las variables para un empleado concreto. */
