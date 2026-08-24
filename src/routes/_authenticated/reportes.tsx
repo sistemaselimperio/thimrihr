@@ -48,13 +48,13 @@ import {
 export const Route = createFileRoute("/_authenticated/reportes")({
   head: () => ({
     meta: [
-      { title: "Reportes de nómina · RRHH El Imperio" },
+      { title: "Reportes de nómina · imperiorrhco" },
       {
         name: "description",
         content:
           "Reporte quincenal de novedades por empresa: ingresos, retiros, permisos e incapacidades, exportable a Excel con una pestaña por empresa.",
       },
-      { property: "og:title", content: "Reportes de nómina · RRHH El Imperio" },
+      { property: "og:title", content: "Reportes de nómina · imperiorrhco" },
       {
         property: "og:description",
         content: "Novedades y días trabajados por quincena, exportables a Excel por empresa.",

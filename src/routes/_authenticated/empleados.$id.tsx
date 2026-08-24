@@ -51,13 +51,13 @@ import {
 export const Route = createFileRoute("/_authenticated/empleados/$id")({
   head: () => ({
     meta: [
-      { title: "Ficha de empleado · RRHH El Imperio" },
+      { title: "Ficha de empleado · imperiorrhco" },
       {
         name: "description",
         content:
           "Hoja de vida laboral: datos, novedades, quincenas trabajadas y saldo de vacaciones del empleado.",
       },
-      { property: "og:title", content: "Ficha de empleado · RRHH El Imperio" },
+      { property: "og:title", content: "Ficha de empleado · imperiorrhco" },
       {
         property: "og:description",
         content: "Novedades, quincenas y vacaciones del empleado.",

@@ -22,13 +22,13 @@ import {
 export const Route = createFileRoute("/_authenticated/configuracion")({
   head: () => ({
     meta: [
-      { title: "Configuración · RRHH El Imperio" },
+      { title: "Configuración · imperiorrhco" },
       {
         name: "description",
         content:
           "Empresas del grupo, plantillas de documentos y reglas automáticas de alertas y vacaciones.",
       },
-      { property: "og:title", content: "Configuración · RRHH El Imperio" },
+      { property: "og:title", content: "Configuración · imperiorrhco" },
       {
         property: "og:description",
         content: "Empresas, plantillas y reglas de alertas del sistema.",

@@ -21,13 +21,13 @@ import { downloadText } from "@/lib/excel";
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({
     meta: [
-      { title: "Documentos · RRHH El Imperio" },
+      { title: "Documentos · imperiorrhco" },
       {
         name: "description",
         content:
           "Generación automática de certificaciones laborales, contratos, memorandos y cartas de terminación con los datos del empleado.",
       },
-      { property: "og:title", content: "Documentos · RRHH El Imperio" },
+      { property: "og:title", content: "Documentos · imperiorrhco" },
       {
         property: "og:description",
         content: "Certificados, contratos, memorandos y cartas generados automáticamente.",
