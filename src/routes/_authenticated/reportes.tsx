@@ -121,6 +121,31 @@ function ReportsPage() {
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "") : "";
 
+  const vacationLeaveRows = useMemo(() => {
+    const byId = new Map(rows.map((r) => [r.employee.id, r.employee]));
+    return leaves
+      .filter((l) => l.type === "vacaciones")
+      .filter((l) => l.start_date <= bounds.end && l.end_date >= bounds.start)
+      .filter((l) => byId.has(l.employee_id))
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .map((l) => {
+        const e = byId.get(l.employee_id)!;
+        const fechas =
+          l.start_date === l.end_date
+            ? fmtDate(l.start_date)
+            : `${fmtDate(l.start_date)} a ${fmtDate(l.end_date)}`;
+        return [
+          e.cedula,
+          e.full_name,
+          companyName(e.company_id),
+          e.position ?? "",
+          fechas,
+          Number(l.days),
+        ];
+      });
+  }, [rows, leaves, bounds, companies]);
+
+
   const exportReport = () => {
     downloadSheet(`Nomina_${periodKey}.xlsx`, periodLabel(periodKey), [
       {
@@ -164,15 +189,9 @@ function ReportsPage() {
         ],
       },
       {
-        title: "SALDO DE VACACIONES",
-        header: ["Cédula", "Nombre", "Derecho", "Tomados", "Disponibles"],
-        rows: rows.map(({ employee, vacations }) => [
-          employee.cedula,
-          employee.full_name,
-          vacations.totalEntitled,
-          vacations.totalUsed,
-          vacations.available,
-        ]),
+        title: "PERMISO POR DESCUENTO DE VACACIONES",
+        header: ["Cédula", "Nombre", "Empresa", "Cargo", "Fecha", "Días"],
+        rows: vacationLeaveRows,
       },
     ]);
     toast.success("Reporte de nómina exportado");
