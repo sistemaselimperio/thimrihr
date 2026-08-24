@@ -183,6 +183,15 @@ function FiltersPopover() {
         </div>
 
         <div className="space-y-1.5">
+          <Label className="text-xs">Lugar de trabajo contiene</Label>
+          <Input
+            value={filters.workLocation}
+            placeholder="Bogotá, planta, oficina…"
+            onChange={(e) => patch({ workLocation: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-1.5">
           <Label className="text-xs">Estado</Label>
           <Select
             value={filters.status}
