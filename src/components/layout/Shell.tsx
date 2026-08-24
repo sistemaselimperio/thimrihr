@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -130,10 +130,22 @@ function Sidebar({
   );
 }
 
+const LOC_ALL = "__all_locations__";
+
 function FiltersPopover() {
   const { filters, patch, reset } = useFilters();
   const { data: companies = [] } = useCompanies();
+  const { data: employees = [] } = useEmployees();
   const count = activeFilterCount(filters);
+
+  const locations = useMemo(() => {
+    const set = new Map<string, string>();
+    for (const e of employees) {
+      const loc = (e.work_location ?? "").trim();
+      if (loc) set.set(loc.toLowerCase(), loc);
+    }
+    return [...set.values()].sort((a, b) => a.localeCompare(b, "es"));
+  }, [employees]);
 
   return (
     <Popover>
@@ -183,12 +195,23 @@ function FiltersPopover() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs">Lugar de trabajo contiene</Label>
-          <Input
-            value={filters.workLocation}
-            placeholder="Bogotá, planta, oficina…"
-            onChange={(e) => patch({ workLocation: e.target.value })}
-          />
+          <Label className="text-xs">Lugar de trabajo</Label>
+          <Select
+            value={filters.workLocation || LOC_ALL}
+            onValueChange={(v) => patch({ workLocation: v === LOC_ALL ? "" : v })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value={LOC_ALL}>Todos los lugares</SelectItem>
+              {locations.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1.5">
