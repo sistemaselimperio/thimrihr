@@ -58,6 +58,7 @@ export const qk = {
   entitlements: ["vacation_entitlements"] as const,
   overrides: ["payroll_periods"] as const,
   templates: ["document_templates"] as const,
+  generated: ["generated_documents"] as const,
   imports: ["import_batches"] as const,
 };
 
@@ -132,6 +133,13 @@ export function useTemplates() {
   return useQuery({
     queryKey: qk.templates,
     queryFn: () => selectAll<DocumentTemplate>("document_templates", "name"),
+  });
+}
+
+export function useGeneratedDocuments() {
+  return useQuery({
+    queryKey: qk.generated,
+    queryFn: () => selectAll<GeneratedDocument>("generated_documents", "created_at", false),
   });
 }
 
