@@ -9,7 +9,7 @@ export interface DocContext {
 const HEADER = (company: string) =>
   `${company.toUpperCase()}\nNIT: ____________________\nDepartamento de Recursos Humanos\n\n`;
 
-const FOOTER = `\n\nCordialmente,\n\n\n____________________________\nValen — Recursos Humanos\n${""}`;
+const FOOTER = `\n\nCordialmente,\n\n\n____________________________\nRecursos Humanos\n${""}`;
 
 function base(ctx: DocContext) {
   const company = ctx.company?.name ?? "El Imperio";
