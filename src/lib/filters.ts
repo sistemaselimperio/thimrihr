@@ -69,7 +69,8 @@ export function filterEmployees(
         (e.last_name ?? "").toLowerCase().includes(term) ||
         e.position.toLowerCase().includes(term) ||
         (e.municipality ?? "").toLowerCase().includes(term) ||
-        (e.work_location ?? "").toLowerCase().includes(term);
+        (e.work_location ?? "").toLowerCase().includes(term) ||
+        (e.folder_number ?? "").toLowerCase().includes(term);
       if (!hit) return false;
     }
     if (f.status !== "todos" && e.status !== f.status) return false;
@@ -78,7 +79,7 @@ export function filterEmployees(
       return false;
     if (
       f.workLocation.trim() &&
-      !(e.work_location ?? "").toLowerCase().includes(f.workLocation.trim().toLowerCase())
+      (e.work_location ?? "").trim().toLowerCase() !== f.workLocation.trim().toLowerCase()
     )
       return false;
     if (f.hireFrom && e.hire_date < f.hireFrom) return false;
