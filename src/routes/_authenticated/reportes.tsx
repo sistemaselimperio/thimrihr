@@ -4,7 +4,9 @@ import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -23,23 +25,26 @@ import {
 import {
   useCompanies,
   useEmployees,
-  useEntitlements,
   useIncapacities,
   useLeaves,
   useOverrides,
+  useTerminations,
 } from "@/lib/data";
-import { downloadSheet } from "@/lib/excel";
+import { downloadWorkbook, type Cell, type SheetBlock } from "@/lib/excel";
 import {
+  INCAPACITY_LABELS,
+  TERMINATION_LABELS,
   buildQuincenas,
-  buildVacationSummary,
   currentPeriodKey,
   fmtDate,
+  monthLong,
+  overlapDays,
   periodBounds,
   periodKeysOfYear,
-  periodLabel,
   periodLabelLong,
   periodYear,
   todayISO,
+  type Employee,
 } from "@/lib/hr";
 
 export const Route = createFileRoute("/_authenticated/reportes")({
@@ -49,17 +54,33 @@ export const Route = createFileRoute("/_authenticated/reportes")({
       {
         name: "description",
         content:
-          "Reporte quincenal de días trabajados, novedades y saldos de vacaciones, exportable a Excel por empresa.",
+          "Reporte quincenal de novedades por empresa: ingresos, retiros, permisos e incapacidades, exportable a Excel con una pestaña por empresa.",
       },
       { property: "og:title", content: "Reportes de nómina · RRHH El Imperio" },
       {
         property: "og:description",
-        content: "Días trabajados por quincena y saldos de vacaciones, exportables a Excel.",
+        content: "Novedades y días trabajados por quincena, exportables a Excel por empresa.",
       },
     ],
   }),
   component: ReportsPage,
 });
+
+type StatusFilter = "activo" | "retirado" | "todos";
+
+const NOVELTY_HEADER = [
+  "Cédula",
+  "Nombre",
+  "Empresa",
+  "Cargo",
+  "Fecha(s) de novedad",
+  "Días",
+  "Días trabajados",
+];
+
+function dateRange(start: string, end: string) {
+  return start === end ? fmtDate(start) : `${fmtDate(start)} a ${fmtDate(end)}`;
+}
 
 function ReportsPage() {
   const { data: employees = [] } = useEmployees();
@@ -67,10 +88,11 @@ function ReportsPage() {
   const { data: incapacities = [] } = useIncapacities();
   const { data: leaves = [] } = useLeaves();
   const { data: overrides = [] } = useOverrides();
-  const { data: entitlements = [] } = useEntitlements();
+  const { data: terminations = [] } = useTerminations();
 
   const [periodKey, setPeriodKey] = useState(currentPeriodKey());
-  const [companyId, setCompanyId] = useState("all");
+  const [status, setStatus] = useState<StatusFilter>("todos");
+  const [excluded, setExcluded] = useState<string[]>([]);
 
   const today = todayISO();
   const periodOptions = useMemo(() => {
@@ -81,11 +103,20 @@ function ReportsPage() {
   }, [today]);
 
   const bounds = periodBounds(periodKey);
+  const selectedCompanies = companies.filter((c) => !excluded.includes(c.id));
+  const toggleCompany = (id: string, on: boolean) =>
+    setExcluded((prev) => (on ? prev.filter((x) => x !== id) : [...prev, id]));
 
+  const companyName = (id: string | null) =>
+    id ? (companies.find((c) => c.id === id)?.name ?? "") : "";
+
+  /** Empleados del período que pasan los filtros, con su fila de quincena. */
   const rows = useMemo(() => {
+    const allowed = new Set(selectedCompanies.map((c) => c.id));
     return employees
-      .filter((e) => (companyId === "all" ? true : e.company_id === companyId))
-      .filter((e) => e.hire_date <= bounds.end)
+      .filter((e) => (e.company_id ? allowed.has(e.company_id) : false))
+      .filter((e) => (status === "todos" ? true : e.status === status))
+      .filter((e) => !e.hire_date || e.hire_date <= bounds.end)
       .filter((e) => !e.exit_date || e.exit_date >= bounds.start)
       .map((e) => {
         const quincenas = buildQuincenas(
@@ -95,16 +126,10 @@ function ReportsPage() {
           overrides.filter((o) => o.employee_id === e.id),
           periodYear(periodKey),
         );
-        const row = quincenas.find((q) => q.periodKey === periodKey);
-        const vacations = buildVacationSummary(
-          e,
-          entitlements.filter((v) => v.employee_id === e.id),
-          leaves.filter((l) => l.employee_id === e.id),
-        );
-        return { employee: e, row, vacations };
+        return { employee: e, row: quincenas.find((q) => q.periodKey === periodKey) };
       })
       .filter((r) => r.row);
-  }, [employees, companyId, bounds, incapacities, leaves, overrides, entitlements, periodKey]);
+  }, [employees, excluded, companies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -118,38 +143,127 @@ function ReportsPage() {
     { base: 0, worked: 0, leave: 0, inc: 0, vac: 0 },
   );
 
-  const companyName = (id: string | null) =>
-    id ? (companies.find((c) => c.id === id)?.name ?? "") : "";
+  const buildCompanyBlocks = (companyId: string): SheetBlock[] => {
+    const list = rows.filter((r) => r.employee.company_id === companyId);
+    const byId = new Map(list.map((r) => [r.employee.id, r]));
+    const worked = (e: Employee) => byId.get(e.id)?.row?.workedDays ?? 0;
+    const base = (e: Employee): Cell[] => [
+      e.cedula,
+      e.full_name,
+      companyName(e.company_id),
+      e.position ?? "",
+    ];
 
-  const vacationLeaveRows = useMemo(() => {
-    const byId = new Map(rows.map((r) => [r.employee.id, r.employee]));
-    return leaves
-      .filter((l) => l.type === "vacaciones")
-      .filter((l) => l.start_date <= bounds.end && l.end_date >= bounds.start)
-      .filter((l) => byId.has(l.employee_id))
-      .sort((a, b) => a.start_date.localeCompare(b.start_date))
-      .map((l) => {
-        const e = byId.get(l.employee_id)!;
-        const fechas =
-          l.start_date === l.end_date
-            ? fmtDate(l.start_date)
-            : `${fmtDate(l.start_date)} a ${fmtDate(l.end_date)}`;
+    const ingresos = list
+      .filter(({ employee }) => employee.hire_date && employee.hire_date >= bounds.start && employee.hire_date <= bounds.end)
+      .sort((a, b) => (a.employee.hire_date ?? "").localeCompare(b.employee.hire_date ?? ""))
+      .map(({ employee }): Cell[] => [
+        ...base(employee),
+        fmtDate(employee.hire_date),
+        "",
+        worked(employee),
+      ]);
+
+    const retiros = terminations
+      .filter((t) => byId.has(t.employee_id))
+      .filter((t) => t.exit_date >= bounds.start && t.exit_date <= bounds.end)
+      .sort((a, b) => a.exit_date.localeCompare(b.exit_date))
+      .map((t): Cell[] => {
+        const e = byId.get(t.employee_id)!.employee;
         return [
-          e.cedula,
-          e.full_name,
-          companyName(e.company_id),
-          e.position ?? "",
-          fechas,
-          Number(l.days),
+          ...base(e),
+          `${fmtDate(t.exit_date)} · ${TERMINATION_LABELS[t.type] ?? t.type}`,
+          "",
+          worked(e),
         ];
       });
-  }, [rows, leaves, bounds, companies]);
 
+    const leaveRows = (type: string) =>
+      leaves
+        .filter((l) => l.type === type)
+        .filter((l) => byId.has(l.employee_id))
+        .filter((l) => l.start_date <= bounds.end && l.end_date >= bounds.start)
+        .sort((a, b) => a.start_date.localeCompare(b.start_date))
+        .map((l): Cell[] => {
+          const e = byId.get(l.employee_id)!.employee;
+          return [
+            ...base(e),
+            dateRange(l.start_date, l.end_date),
+            Number(l.days),
+            worked(e),
+          ];
+        });
 
-  const exportReport = () => {
-    downloadSheet(`Nomina_${periodKey}.xlsx`, periodLabel(periodKey), [
+    const incapacidades = incapacities
+      .filter((i) => byId.has(i.employee_id))
+      .filter((i) => i.start_date <= bounds.end && i.end_date >= bounds.start)
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .map((i): Cell[] => {
+        const e = byId.get(i.employee_id)!.employee;
+        return [
+          ...base(e),
+          `${dateRange(i.start_date, i.end_date)} · ${INCAPACITY_LABELS[i.type] ?? i.type}`,
+          overlapDays(i.start_date, i.end_date, bounds.start, bounds.end),
+          worked(e),
+        ];
+      });
+
+    const descuentos = overrides
+      .filter((o) => o.period_key === periodKey && byId.has(o.employee_id))
+      .map((o): Cell[] => {
+        const e = byId.get(o.employee_id)!.employee;
+        return [
+          ...base(e),
+          periodLabelLong(periodKey),
+          Number(o.base_days),
+          worked(e),
+        ];
+      });
+
+    const resumen = list
+      .sort((a, b) => a.employee.full_name.localeCompare(b.employee.full_name))
+      .map(({ employee, row }): Cell[] => [
+        employee.cedula,
+        employee.full_name,
+        companyName(employee.company_id),
+        employee.position ?? "",
+        row?.baseDays ?? 0,
+        row?.leaveDays ?? 0,
+        row?.incapacityDays ?? 0,
+        row?.vacationDays ?? 0,
+        row?.workedDays ?? 0,
+        employee.status === "activo" ? "Activo" : "Retirado",
+      ]);
+
+    return [
       {
-        title: `REPORTE DE NÓMINA — ${periodLabelLong(periodKey)} (${fmtDate(bounds.start)} a ${fmtDate(bounds.end)})`,
+        title: `${companyName(companyId)} — ${periodLabelLong(periodKey)} (${fmtDate(bounds.start)} a ${fmtDate(bounds.end)})`,
+        rows: [],
+      },
+      { title: "1. INGRESOS", header: NOVELTY_HEADER, rows: ingresos },
+      { title: "2. RETIROS", header: NOVELTY_HEADER, rows: retiros },
+      {
+        title: "3. PERMISO POR DESCUENTO DE VACACIONES",
+        header: NOVELTY_HEADER,
+        rows: leaveRows("vacaciones"),
+      },
+      {
+        title: "4. PERMISO POR DESCUENTO DE DÍAS NO LABORADOS",
+        header: NOVELTY_HEADER,
+        rows: leaveRows("sin_pago"),
+      },
+      {
+        title: "5. OTRAS NOVEDADES (INCAPACIDADES)",
+        header: NOVELTY_HEADER,
+        rows: incapacidades,
+      },
+      {
+        title: "6. DESCUENTOS ESPECIALES (AJUSTE DE DÍAS BASE)",
+        header: [...NOVELTY_HEADER.slice(0, 5), "Días base ajustados", "Días trabajados"],
+        rows: descuentos,
+      },
+      {
+        title: "DÍAS TRABAJADOS POR EMPLEADO",
         header: [
           "Cédula",
           "Nombre",
@@ -162,39 +276,23 @@ function ReportsPage() {
           "Días trabajados",
           "Estado",
         ],
-        rows: rows.map(({ employee, row }) => [
-          employee.cedula,
-          employee.full_name,
-          companyName(employee.company_id),
-          employee.position,
-          row?.baseDays ?? 0,
-          row?.leaveDays ?? 0,
-          row?.incapacityDays ?? 0,
-          row?.vacationDays ?? 0,
-          row?.workedDays ?? 0,
-          employee.status === "activo" ? "Activo" : "Retirado",
-        ]),
+        rows: resumen,
       },
-      {
-        title: "TOTALES",
-        header: ["Días base", "Permisos", "Incapacidad", "Vacaciones", "Días trabajados"],
-        rows: [
-          [
-            Math.round(totals.base * 10) / 10,
-            Math.round(totals.leave * 10) / 10,
-            Math.round(totals.inc * 10) / 10,
-            Math.round(totals.vac * 10) / 10,
-            Math.round(totals.worked * 10) / 10,
-          ],
-        ],
-      },
-      {
-        title: "PERMISO POR DESCUENTO DE VACACIONES",
-        header: ["Cédula", "Nombre", "Empresa", "Cargo", "Fecha", "Días"],
-        rows: vacationLeaveRows,
-      },
-    ]);
-    toast.success("Reporte de nómina exportado");
+    ];
+  };
+
+  const exportReport = () => {
+    if (selectedCompanies.length === 0) {
+      toast.error("Selecciona al menos una empresa");
+      return;
+    }
+    const [year, month, q] = periodKey.split("-");
+    const fileName = `Reporte_Novedades_Quincena_${q === "Q1" ? 1 : 2}_${monthLong(Number(month) - 1)}_${year}.xlsx`;
+    downloadWorkbook(
+      fileName,
+      selectedCompanies.map((c) => ({ name: c.name, blocks: buildCompanyBlocks(c.id) })),
+    );
+    toast.success(`Reporte generado (${selectedCompanies.length} pestañas)`);
   };
 
   return (
@@ -203,17 +301,17 @@ function ReportsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Reportes de nómina</h1>
           <p className="text-sm text-muted-foreground">
-            Días trabajados por quincena, calculados desde las novedades registradas.
+            Novedades y días trabajados por quincena, con una pestaña de Excel por empresa.
           </p>
         </div>
         <Button variant="success" className="gap-2" onClick={exportReport}>
-          <FileSpreadsheet className="size-4" /> Exportar a Excel
+          <FileSpreadsheet className="size-4" /> Generar reporte
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-4 rounded-xl border bg-surface p-4 shadow-panel">
+      <div className="grid gap-5 rounded-xl border bg-surface p-4 shadow-panel md:grid-cols-[auto_1fr_auto]">
         <div className="space-y-1.5">
-          <Label className="text-xs">Quincena</Label>
+          <Label className="text-xs">1. Quincena</Label>
           <Select value={periodKey} onValueChange={setPeriodKey}>
             <SelectTrigger className="w-56">
               <SelectValue />
@@ -227,25 +325,50 @@ function ReportsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Empresa</Label>
-          <Select value={companyId} onValueChange={setCompanyId}>
-            <SelectTrigger className="w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las empresas</SelectItem>
-              {companies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        <div className="space-y-2">
+          <Label className="text-xs">2. Empresas</Label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {companies.map((c) => (
+              <label key={c.id} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={!excluded.includes(c.id)}
+                  onCheckedChange={(v) => toggleCompany(c.id, v === true)}
+                />
+                {c.name}
+              </label>
+            ))}
+          </div>
         </div>
-        <div className="ml-auto self-end text-sm text-muted-foreground">
-          {fmtDate(bounds.start)} → {fmtDate(bounds.end)} · {rows.length} empleados
+
+        <div className="space-y-2">
+          <Label className="text-xs">3. Estado</Label>
+          <RadioGroup
+            value={status}
+            onValueChange={(v) => setStatus(v as StatusFilter)}
+            className="gap-2"
+          >
+            {[
+              { v: "activo", l: "Activos" },
+              { v: "retirado", l: "Retirados" },
+              { v: "todos", l: "Todos" },
+            ].map((o) => (
+              <label key={o.v} className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value={o.v} /> {o.l}
+              </label>
+            ))}
+          </RadioGroup>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+        <span>
+          {fmtDate(bounds.start)} → {fmtDate(bounds.end)} · {rows.length} empleados ·{" "}
+          {selectedCompanies.length} pestañas
+        </span>
+        <span className="ml-auto">
+          Días trabajados totales: <strong>{Math.round(totals.worked * 10) / 10}</strong>
+        </span>
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
@@ -276,7 +399,7 @@ function ReportsPage() {
             {rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                  No hay empleados en esta quincena.
+                  No hay empleados con los filtros seleccionados.
                 </TableCell>
               </TableRow>
             )}
