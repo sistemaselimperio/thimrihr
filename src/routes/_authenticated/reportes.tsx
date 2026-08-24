@@ -220,7 +220,27 @@ function ReportsPage() {
         ];
       });
 
+    // Solo empleados con alguna novedad en la quincena seleccionada.
+    const conNovedad = new Set<string>();
+    list.forEach(({ employee: e }) => {
+      if (e.hire_date && e.hire_date >= bounds.start && e.hire_date <= bounds.end)
+        conNovedad.add(e.id);
+    });
+    terminations
+      .filter((t) => byId.has(t.employee_id) && t.exit_date >= bounds.start && t.exit_date <= bounds.end)
+      .forEach((t) => conNovedad.add(t.employee_id));
+    leaves
+      .filter((l) => byId.has(l.employee_id) && l.start_date <= bounds.end && l.end_date >= bounds.start)
+      .forEach((l) => conNovedad.add(l.employee_id));
+    incapacities
+      .filter((i) => byId.has(i.employee_id) && i.start_date <= bounds.end && i.end_date >= bounds.start)
+      .forEach((i) => conNovedad.add(i.employee_id));
+    overrides
+      .filter((o) => o.period_key === periodKey && byId.has(o.employee_id))
+      .forEach((o) => conNovedad.add(o.employee_id));
+
     const resumen = list
+      .filter(({ employee }) => conNovedad.has(employee.id))
       .sort((a, b) => a.employee.full_name.localeCompare(b.employee.full_name))
       .map(({ employee, row }): Cell[] => [
         employee.cedula,
@@ -234,6 +254,7 @@ function ReportsPage() {
         row?.workedDays ?? 0,
         employee.status === "activo" ? "Activo" : "Retirado",
       ]);
+
 
     return [
       {
