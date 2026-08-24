@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { CompanyLogos } from "@/components/hr/CompanyLogos";
+import { ImportEmployees } from "@/components/hr/ImportEmployees";
 import {
   Table,
   TableBody,
@@ -115,6 +116,10 @@ function SettingsPage() {
       </section>
 
       <CompanyLogos companies={companies} />
+
+      <ImportEmployees companies={companies} />
+
+
 
 
 

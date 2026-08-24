@@ -76,10 +76,13 @@ export type Database = {
           created_at: string
           email: string | null
           exit_date: string | null
+          first_name: string | null
           folder_number: string | null
           full_name: string
           hire_date: string | null
           id: string
+          landline: string | null
+          last_name: string | null
           municipality: string | null
           notes: string | null
           phone: string | null
@@ -96,10 +99,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           exit_date?: string | null
+          first_name?: string | null
           folder_number?: string | null
           full_name: string
           hire_date?: string | null
           id?: string
+          landline?: string | null
+          last_name?: string | null
           municipality?: string | null
           notes?: string | null
           phone?: string | null
@@ -116,10 +122,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           exit_date?: string | null
+          first_name?: string | null
           folder_number?: string | null
           full_name?: string
           hire_date?: string | null
           id?: string
+          landline?: string | null
+          last_name?: string | null
           municipality?: string | null
           notes?: string | null
           phone?: string | null
@@ -138,6 +147,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      import_batches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_count: number
+          error_count: number
+          errors: Json
+          file_name: string
+          id: string
+          total_rows: number
+          updated_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_count?: number
+          error_count?: number
+          errors?: Json
+          file_name: string
+          id?: string
+          total_rows?: number
+          updated_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_count?: number
+          error_count?: number
+          errors?: Json
+          file_name?: string
+          id?: string
+          total_rows?: number
+          updated_count?: number
+        }
+        Relationships: []
       }
       incapacities: {
         Row: {
