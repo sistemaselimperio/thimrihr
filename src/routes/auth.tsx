@@ -66,22 +66,20 @@ function AuthPage() {
         if (error) throw error;
         void navigate({ to: "/dashboard" });
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
         if (error) throw error;
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) {
-          toast.success("Cuenta creada. Ya puedes ingresar.");
-          setMode("login");
-        } else {
+        if (data.session) {
           toast.success("Cuenta creada. Bienvenida.");
           void navigate({ to: "/dashboard" });
+        } else {
+          toast.success(
+            `Cuenta creada. Te enviamos un correo de confirmación a ${email}. Ábrelo para activar tu acceso.`,
+          );
+          setMode("login");
         }
       }
     } catch (error) {
@@ -92,6 +90,30 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
+  const reenviarConfirmacion = async () => {
+    if (!email) {
+      toast.error("Escribe primero tu correo.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) throw error;
+      toast.success(`Reenviamos el correo de confirmación a ${email}.`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? traducirError(error.message) : "No fue posible reenviar",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
 
   return (
