@@ -82,7 +82,7 @@ function DocumentsPage() {
   }, [employee?.position, employee?.work_location]);
 
   const logoPath = isIslero
-    ? (company?.islero_logo_path ?? company?.logo_path ?? null)
+    ? (isleroLogo?.path ?? company?.logo_path ?? null)
     : (company?.logo_path ?? null);
 
   const [logo, setLogo] = useState<string | null>(null);

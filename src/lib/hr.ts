@@ -13,8 +13,6 @@ export interface Company {
   name: string;
   logo_path?: string | null;
   logo_name?: string | null;
-  islero_logo_path?: string | null;
-  islero_logo_name?: string | null;
 }
 
 export interface Employee {
