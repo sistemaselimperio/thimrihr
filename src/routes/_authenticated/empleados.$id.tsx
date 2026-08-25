@@ -40,7 +40,7 @@ import {
   useTerminations,
 } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
-import { openPrintableDocument } from "@/lib/print-doc";
+import { downloadDocumentPdf } from "@/lib/pdf-doc";
 import {
   INCAPACITY_LABELS,
   LEAVE_LABELS,
@@ -614,14 +614,14 @@ function EmployeeDetail() {
                         variant="outline"
                         className="gap-2"
                         onClick={() =>
-                          openPrintableDocument({
+                          void downloadDocumentPdf({
                             title: `${d.template_name} — ${d.employee_name}`,
                             text: d.content,
                             logoUrl: null,
                           })
                         }
                       >
-                        <FileDown className="size-4" /> Ver / PDF
+                        <FileDown className="size-4" /> Descargar PDF
                       </Button>
                     </TableCell>
                   </TableRow>

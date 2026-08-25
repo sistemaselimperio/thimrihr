@@ -34,7 +34,8 @@ import {
   type DocumentTemplate,
 } from "@/lib/data";
 import { categoryLabel, fillTemplate, renderDocument } from "@/lib/documents";
-import { AUTENTIC_URL, openPrintableDocument } from "@/lib/print-doc";
+import { AUTENTIC_URL } from "@/lib/print-doc";
+import { downloadDocumentPdf } from "@/lib/pdf-doc";
 import { fmtDate } from "@/lib/hr";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
@@ -177,17 +178,18 @@ function DocumentsPage() {
 
   const generatePdf = async () => {
     if (!guard()) return;
-    const ok = openPrintableDocument({
-      title: `${template!.name} — ${employee!.full_name}`,
-      text,
-      logoUrl: logo,
-    });
-    if (!ok) {
-      toast.error("El navegador bloqueó la ventana. Permite las ventanas emergentes.");
+    try {
+      await downloadDocumentPdf({
+        title: `${template!.name} — ${employee!.full_name}`,
+        text,
+        logoUrl: logo,
+      });
+    } catch {
+      toast.error("No se pudo generar el PDF.");
       return;
     }
     await saveHistory();
-    toast.success("PDF generado: usa “Guardar como PDF” en el diálogo de impresión.");
+    toast.success("PDF descargado en tu carpeta de Descargas.");
   };
 
   const toAutentic = async () => {
@@ -197,7 +199,7 @@ function DocumentsPage() {
   };
 
   const reprint = (content: string, title: string) => {
-    openPrintableDocument({ title, text: content, logoUrl: null });
+    void downloadDocumentPdf({ title, text: content, logoUrl: null });
   };
 
   const removeHistory = async (id: string) => {
