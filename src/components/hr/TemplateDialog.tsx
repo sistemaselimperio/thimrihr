@@ -36,6 +36,7 @@ interface Props {
 
 export function TemplateDialog({ open, onOpenChange, template }: Props) {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
   const { data: companies = [] } = useCompanies();
 
   const [name, setName] = useState("");

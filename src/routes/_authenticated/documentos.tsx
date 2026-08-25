@@ -60,6 +60,7 @@ export const Route = createFileRoute("/_authenticated/documentos")({
 
 function DocumentsPage() {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
   const { data: employees = [] } = useEmployees();
   const { data: companies = [] } = useCompanies();
   const { data: templates = [] } = useTemplates();
