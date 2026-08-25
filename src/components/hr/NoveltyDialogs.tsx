@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, Pencil, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Check, ChevronsUpDown, Loader2, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -16,6 +16,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -26,6 +34,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -33,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   deleteRow,
   insertRow,
@@ -62,23 +76,63 @@ function EmployeePicker({
   onChange: (id: string) => void;
   employees: Employee[];
 }) {
+  const [open, setOpen] = useState(false);
+  const selected = employees.find((e) => e.id === value);
+
   return (
     <div className="space-y-1.5">
       <Label>
         Empleado <span className="text-danger-foreground">*</span>
       </Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder="Seleccionar empleado" />
-        </SelectTrigger>
-        <SelectContent className="max-h-72">
-          {employees.map((e) => (
-            <SelectItem key={e.id} value={e.id}>
-              {e.full_name} — {e.cedula}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal"
+          >
+            {selected ? (
+              <span className="truncate">
+                {selected.full_name} — {selected.cedula}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Buscar por nombre o cédula</span>
+            )}
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+          <Command>
+            <CommandInput placeholder="Escribe nombre o cédula..." />
+            <CommandList>
+              <CommandEmpty>No se encontró empleado.</CommandEmpty>
+              <CommandGroup>
+                {employees.map((e) => (
+                  <CommandItem
+                    key={e.id}
+                    value={`${e.full_name} ${e.cedula} ${e.id}`}
+                    onSelect={() => {
+                      onChange(e.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 size-4",
+                        value === e.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className="flex-1 truncate">
+                      {e.full_name} — {e.cedula}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
