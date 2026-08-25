@@ -71,7 +71,18 @@ export function TemplateDialog({ open, onOpenChange, template }: Props) {
       else await insertRow("document_templates", row);
       await qc.invalidateQueries({ queryKey: qk.templates });
       onOpenChange(false);
-      toast.success(template ? "Documento actualizado" : "Documento creado");
+      celebrate({
+        variant: "goodjob",
+        title: "¡Buen trabajo!",
+        lines: [
+          template
+            ? "Cambios guardados exitosamente"
+            : "Documento base creado exitosamente",
+          `"${row.name}"`,
+        ],
+        actionLabel: "Continuar a documentos",
+        duration: 2600,
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo guardar");
     } finally {
