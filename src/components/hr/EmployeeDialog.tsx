@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { db, qk, updateRow, useCompanies } from "@/lib/data";
+import { qk, updateRow, useCompanies } from "@/lib/data";
+import { supabase } from "@/integrations/supabase/client";
 import { useCelebration } from "@/components/hr/Celebration";
 import { useNavigate } from "@tanstack/react-router";
 import type { Employee } from "@/lib/hr";
@@ -121,7 +122,7 @@ export function EmployeeDialog({
       if (employee) {
         await updateRow("employees", employee.id, row);
       } else {
-        const { data, error } = await db
+        const { data, error } = await (supabase as any)
           .from("employees")
           .insert(row)
           .select("id")
