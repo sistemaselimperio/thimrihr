@@ -111,7 +111,7 @@ export function CelebrationProvider({ children }: { children: React.ReactNode })
             className="relative w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-2xl animate-scale-in"
           >
             <div className="celebration-check mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-success">
-              <Check className="h-14 w-14 text-white" strokeWidth={3} />
+              <Check className="h-14 w-14 text-primary-foreground" strokeWidth={3} />
             </div>
 
             <h2 className="mt-6 text-2xl font-bold text-primary">{state.title}</h2>
