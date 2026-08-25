@@ -243,12 +243,48 @@
   animation: checkmarkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+@keyframes avatarBounce {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes textFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.celebration-avatar {
+  animation: avatarBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+.celebration-text {
+  animation: textFadeIn 0.5s ease-out 0.7s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .confetti-piece {
     animation: none;
     opacity: 0;
   }
-  .celebration-check {
+  .celebration-check,
+  .celebration-avatar,
+  .celebration-text {
     animation: none;
   }
 }
