@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useCelebration } from "@/components/hr/Celebration";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ interface Props {
 
 export function TemplateDialog({ open, onOpenChange, template }: Props) {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
   const { data: companies = [] } = useCompanies();
 
   const [name, setName] = useState("");
