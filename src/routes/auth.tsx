@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
+import portadaImperio from "@/assets/portada-imperio.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,25 +76,12 @@ function AuthPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
-      <div className="hidden flex-col justify-between bg-sidebar p-12 text-sidebar-foreground lg:flex">
-        <div>
-          <p className="font-display text-3xl font-extrabold tracking-tight">El Imperio</p>
-          <p className="mt-2 text-sm tracking-[0.2em] text-sidebar-foreground/60 uppercase">
-            Recursos Humanos
-          </p>
-        </div>
-        <div className="max-w-md space-y-4">
-          <h1 className="font-display text-4xl leading-tight font-bold">
-            Toda la información de tu gente, en un solo lugar.
-          </h1>
-          <p className="text-sm text-sidebar-foreground/70">
-            Empleados, novedades, vacaciones, quincenas y reportes de nómina de las 5
-            empresas del grupo, con cálculos automáticos.
-          </p>
-        </div>
-        <p className="text-xs text-sidebar-foreground/50">
-          Acceso restringido · Información confidencial
-        </p>
+      <div
+        className="relative hidden flex-col justify-between bg-primary bg-cover bg-center bg-no-repeat lg:flex"
+        style={{ backgroundImage: `url(${portadaImperio.url})` }}
+        aria-label="Portada Grupo Empresarial Imperio"
+      >
+        <div className="absolute inset-0 bg-primary/10" />
       </div>
 
       <div className="flex items-center justify-center bg-background p-8">
