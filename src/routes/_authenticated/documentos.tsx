@@ -29,6 +29,7 @@ import {
   useCompanies,
   useEmployees,
   useGeneratedDocuments,
+  useIsleroLogo,
   useTemplates,
   type DocumentTemplate,
 } from "@/lib/data";
@@ -75,6 +76,8 @@ function DocumentsPage() {
   const company = companies.find((c) => c.id === employee?.company_id);
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "—") : "Todas";
+
+  const { data: isleroLogo } = useIsleroLogo();
 
   const isIslero = useMemo(() => {
     const hay = `${employee?.position ?? ""} ${employee?.work_location ?? ""}`.toLowerCase();
