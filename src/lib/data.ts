@@ -60,7 +60,32 @@ export const qk = {
   templates: ["document_templates"] as const,
   generated: ["generated_documents"] as const,
   imports: ["import_batches"] as const,
+  settings: ["app_settings"] as const,
 };
+
+export const ISLERO_LOGO_KEY = "islero_logo";
+
+export interface StoredLogo {
+  path: string;
+  name: string;
+}
+
+/** Logo único para documentos de isleros / estación de servicio. */
+export function useIsleroLogo() {
+  return useQuery({
+    queryKey: [...qk.settings, ISLERO_LOGO_KEY],
+    queryFn: async (): Promise<StoredLogo | null> => {
+      const { data, error } = await db
+        .from("app_settings")
+        .select("value")
+        .eq("key", ISLERO_LOGO_KEY)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      const value = (data?.value ?? null) as StoredLogo | null;
+      return value?.path ? value : null;
+    },
+  });
+}
 
 export interface ImportBatch {
   id: string;

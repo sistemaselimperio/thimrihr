@@ -29,6 +29,7 @@ import {
   useCompanies,
   useEmployees,
   useGeneratedDocuments,
+  useIsleroLogo,
   useTemplates,
   type DocumentTemplate,
 } from "@/lib/data";
@@ -76,13 +77,15 @@ function DocumentsPage() {
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "—") : "Todas";
 
+  const { data: isleroLogo } = useIsleroLogo();
+
   const isIslero = useMemo(() => {
     const hay = `${employee?.position ?? ""} ${employee?.work_location ?? ""}`.toLowerCase();
     return hay.includes("isler");
   }, [employee?.position, employee?.work_location]);
 
   const logoPath = isIslero
-    ? (company?.islero_logo_path ?? company?.logo_path ?? null)
+    ? (isleroLogo?.path ?? company?.logo_path ?? null)
     : (company?.logo_path ?? null);
 
   const [logo, setLogo] = useState<string | null>(null);
