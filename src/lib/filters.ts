@@ -26,7 +26,7 @@ export const emptyFilters: HrFilters = {
   companyId: "all",
   position: "",
   workLocation: "",
-  status: "activo",
+  status: "todos",
   hireFrom: "",
   hireTo: "",
   expiry: "none",
@@ -39,7 +39,7 @@ export function activeFilterCount(f: HrFilters): number {
   if (f.companyId !== "all") n++;
   if (f.position.trim()) n++;
   if (f.workLocation.trim()) n++;
-  if (f.status !== "activo") n++;
+  if (f.status !== "todos") n++;
   if (f.hireFrom || f.hireTo) n++;
   if (f.expiry !== "none") n++;
   if (f.novelty !== "none") n++;
