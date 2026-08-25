@@ -22,7 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { insertRow, qk, updateRow, useCompanies } from "@/lib/data";
+import { db, qk, updateRow, useCompanies } from "@/lib/data";
+import { useCelebration } from "@/components/hr/Celebration";
+import { useNavigate } from "@tanstack/react-router";
 import type { Employee } from "@/lib/hr";
 
 type Form = {
@@ -63,6 +65,8 @@ export function EmployeeDialog({
   employee?: Employee | null;
 }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const celebrate = useCelebration();
   const { data: companies = [] } = useCompanies();
   const [form, setForm] = useState<Form>(blank);
   const [busy, setBusy] = useState(false);
@@ -111,11 +115,39 @@ export function EmployeeDialog({
         status: form.status,
         notes: form.notes.trim() || null,
       };
-      if (employee) await updateRow("employees", employee.id, row);
-      else await insertRow("employees", row);
+      const companyName =
+        companies.find((c) => c.id === form.company_id)?.name ?? "Sin empresa";
+      let newId: string | null = null;
+      if (employee) {
+        await updateRow("employees", employee.id, row);
+      } else {
+        const { data, error } = await db
+          .from("employees")
+          .insert(row)
+          .select("id")
+          .single();
+        if (error) throw new Error(error.message);
+        newId = (data as { id: string } | null)?.id ?? null;
+      }
       await qc.invalidateQueries({ queryKey: qk.employees });
-      toast.success(employee ? "Empleado actualizado" : "Empleado creado");
       onOpenChange(false);
+      celebrate({
+        title: employee
+          ? "¡Cambios guardados exitosamente!"
+          : "¡Empleado creado exitosamente!",
+        details: [
+          { label: "Empleado", value: row.full_name },
+          { label: "Cédula", value: row.cedula },
+          { label: "Cargo", value: row.position || "Sin cargo" },
+          { label: "Empresa", value: companyName },
+        ],
+        actionLabel: employee ? "Volver al perfil" : "Continuar a perfil",
+        intensity: employee ? "normal" : "high",
+        onDone: () => {
+          const id = employee?.id ?? newId;
+          if (id) void navigate({ to: "/empleados/$id", params: { id } });
+        },
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {
