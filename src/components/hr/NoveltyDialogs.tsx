@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, ChevronsUpDown, Loader2, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { useCelebration } from "@/components/hr/Celebration";
 
 import {
   AlertDialog,
@@ -152,6 +153,7 @@ export function IncapacityDialog({
 }) {
   const qc = useQueryClient();
   const { data: employees = [] } = useEmployees();
+  const celebrate = useCelebration();
   const [form, setForm] = useState({
     employee_id: employeeId ?? "",
     type: "general",
@@ -215,10 +217,22 @@ export function IncapacityDialog({
       else await insertRow("incapacities", payload);
 
       await qc.invalidateQueries({ queryKey: qk.incapacities });
-      toast.success(
-        record ? "Incapacidad actualizada" : `Incapacidad registrada (${days} días)`,
-      );
       onOpenChange(false);
+      celebrate({
+        title: record
+          ? "¡Cambios guardados exitosamente!"
+          : "¡Novedad registrada exitosamente!",
+        details: [
+          {
+            label: "Empleado",
+            value:
+              employees.find((e) => e.id === form.employee_id)?.full_name ?? "Empleado",
+          },
+          { label: "Novedad", value: `Incapacidad ${form.type}` },
+          { label: "Duración", value: `${days} días (${form.start_date} a ${form.end_date})` },
+        ],
+        actionLabel: "Continuar en novedades",
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {
@@ -358,6 +372,7 @@ export function LeaveDialog({
 }) {
   const qc = useQueryClient();
   const { data: employees = [] } = useEmployees();
+  const celebrate = useCelebration();
   const { data: leaves = [] } = useLeaves();
   const { data: entitlements = [] } = useEntitlements();
   const [form, setForm] = useState({
@@ -442,8 +457,25 @@ export function LeaveDialog({
       if (record) await updateRow("leaves", record.id, payload);
       else await insertRow("leaves", payload);
       await qc.invalidateQueries({ queryKey: qk.leaves });
-      toast.success(record ? "Permiso actualizado" : `Permiso registrado (${requested} días)`);
       onOpenChange(false);
+      celebrate({
+        title: record
+          ? "¡Cambios guardados exitosamente!"
+          : "¡Novedad registrada exitosamente!",
+        details: [
+          {
+            label: "Empleado",
+            value:
+              employees.find((e) => e.id === form.employee_id)?.full_name ?? "Empleado",
+          },
+          { label: "Novedad", value: `Permiso ${form.type}` },
+          {
+            label: "Duración",
+            value: `${requested} días (${form.start_date} a ${form.end_date})`,
+          },
+        ],
+        actionLabel: "Continuar en novedades",
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {
@@ -597,6 +629,7 @@ export function TerminationDialog({
 }) {
   const qc = useQueryClient();
   const { data: employees = [] } = useEmployees();
+  const celebrate = useCelebration();
   const [form, setForm] = useState({
     employee_id: employeeId ?? "",
     type: "renuncia",
@@ -646,12 +679,22 @@ export function TerminationDialog({
         qc.invalidateQueries({ queryKey: qk.terminations }),
         qc.invalidateQueries({ queryKey: qk.employees }),
       ]);
-      toast.success(
-        record
-          ? "Retiro actualizado"
-          : "Retiro registrado. El empleado pasó a estado retirado.",
-      );
       onOpenChange(false);
+      celebrate({
+        title: record
+          ? "¡Cambios guardados exitosamente!"
+          : "¡Novedad registrada exitosamente!",
+        details: [
+          {
+            label: "Empleado",
+            value:
+              employees.find((e) => e.id === form.employee_id)?.full_name ?? "Empleado",
+          },
+          { label: "Novedad", value: `Retiro ${form.type}` },
+          { label: "Fecha de salida", value: form.exit_date },
+        ],
+        actionLabel: "Continuar en novedades",
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo guardar");
     } finally {

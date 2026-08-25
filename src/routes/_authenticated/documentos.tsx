@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileDown, FilePlus2, History, Pencil, PenTool, Printer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useCelebration } from "@/components/hr/Celebration";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ export const Route = createFileRoute("/_authenticated/documentos")({
 
 function DocumentsPage() {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
   const { data: employees = [] } = useEmployees();
   const { data: companies = [] } = useCompanies();
   const { data: templates = [] } = useTemplates();
@@ -189,7 +191,14 @@ function DocumentsPage() {
       return;
     }
     await saveHistory();
-    toast.success("PDF descargado en tu carpeta de Descargas.");
+    celebrate({
+      title: "¡Documento generado exitosamente!",
+      details: [
+        { label: "Documento", value: template!.name },
+        { label: "Empleado", value: employee!.full_name },
+        { label: "Descarga", value: "Carpeta Descargas" },
+      ],
+    });
   };
 
   const toAutentic = async () => {

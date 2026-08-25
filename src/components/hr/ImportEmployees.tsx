@@ -15,6 +15,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { qk, useEmployees, useImportBatches } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
+import { useCelebration } from "@/components/hr/Celebration";
+import { useNavigate } from "@tanstack/react-router";
 import { fmtDate, type Company, type Employee } from "@/lib/hr";
 import {
   parseEmployeeWorkbook,
@@ -56,6 +58,8 @@ function matchCompany(sheet: string, companies: Company[]): string | null {
 
 export function ImportEmployees({ companies }: { companies: Company[] }) {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: employees = [] } = useEmployees();
   const { data: batches = [] } = useImportBatches();
@@ -176,9 +180,18 @@ export function ImportEmployees({ companies }: { companies: Company[] }) {
     setResult(null);
     setFile(null);
     if (inputRef.current) inputRef.current.value = "";
-    toast.success(
-      `${created + updated} empleados importados (${created} nuevos, ${updated} actualizados)`,
-    );
+    celebrate({
+      title: "¡Empleados importados exitosamente!",
+      details: [
+        { label: "Importados", value: `${created + updated} empleados` },
+        { label: "Nuevos", value: String(created) },
+        { label: "Actualizados", value: String(updated) },
+        { label: "Fecha", value: new Date().toLocaleString("es-CO") },
+      ],
+      actionLabel: "Ver empleados",
+      intensity: "max",
+      onDone: () => void navigate({ to: "/empleados" }),
+    });
     if (failures.length) toast.error(`${failures.length} filas no se pudieron guardar`);
   };
 

@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { FiltersProvider } from "@/components/layout/filters-context";
 import { Shell } from "@/components/layout/Shell";
+import { CelebrationProvider } from "@/components/hr/Celebration";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -16,9 +17,11 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   return (
     <FiltersProvider>
-      <Shell>
-        <Outlet />
-      </Shell>
+      <CelebrationProvider>
+        <Shell>
+          <Outlet />
+        </Shell>
+      </CelebrationProvider>
     </FiltersProvider>
   );
 }

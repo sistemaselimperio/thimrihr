@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useCelebration } from "@/components/hr/Celebration";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ interface Props {
 
 export function TemplateDialog({ open, onOpenChange, template }: Props) {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
   const { data: companies = [] } = useCompanies();
 
   const [name, setName] = useState("");
@@ -68,8 +70,16 @@ export function TemplateDialog({ open, onOpenChange, template }: Props) {
       if (template) await updateRow("document_templates", template.id, row);
       else await insertRow("document_templates", row);
       await qc.invalidateQueries({ queryKey: qk.templates });
-      toast.success(template ? "Documento actualizado" : "Documento creado");
       onOpenChange(false);
+      celebrate({
+        title: template
+          ? "¡Cambios guardados exitosamente!"
+          : "¡Documento creado exitosamente!",
+        details: [
+          { label: "Documento", value: row.name },
+          { label: "Categoría", value: category },
+        ],
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo guardar");
     } finally {
