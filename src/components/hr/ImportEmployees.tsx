@@ -58,6 +58,8 @@ function matchCompany(sheet: string, companies: Company[]): string | null {
 
 export function ImportEmployees({ companies }: { companies: Company[] }) {
   const qc = useQueryClient();
+  const celebrate = useCelebration();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: employees = [] } = useEmployees();
   const { data: batches = [] } = useImportBatches();
