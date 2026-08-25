@@ -7,6 +7,13 @@ export type CelebrationDetail = { label: string; value: string };
 
 export type CelebrationOptions = {
   title: string;
+  /** "success" = check verde/fondo azul (empleados). "goodjob" = carita feliz/fondo púrpura (documentos). */
+  variant?: "success" | "goodjob";
+  /** Líneas de texto simples (usadas en la variante "goodjob") */
+  lines?: string[];
+  /** Botón secundario opcional (ej. "Descargar") */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
   details?: CelebrationDetail[];
   actionLabel?: string;
   /** Confetti más intenso para eventos grandes (crear empleado, importar) */
@@ -23,7 +30,15 @@ export function useCelebration() {
   return useContext(CelebrationContext);
 }
 
-const COLORS = ["#22c55e", "#60a5fa", "#f87171", "#fbbf24", "#ec4899", "#fb923c"];
+const COLORS = [
+  "#ff4444",
+  "#ff9944",
+  "#ffdd44",
+  "#4488ff",
+  "#44dd44",
+  "#ff44aa",
+  "#aa44ff",
+];
 const SHAPES = ["★", "♥", "■", "●", "◆", "~"];
 
 type Piece = {
@@ -85,7 +100,9 @@ export function CelebrationProvider({ children }: { children: React.ReactNode })
           role="status"
           aria-live="polite"
           onClick={close}
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-primary/95 px-4 animate-fade-in"
+          className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden px-4 animate-fade-in ${
+            state.variant === "goodjob" ? "bg-[#6b5b95]/95" : "bg-primary/95"
+          }`}
         >
           <div aria-hidden className="pointer-events-none absolute inset-0">
             {pieces.map((piece, index) => (
@@ -106,31 +123,76 @@ export function CelebrationProvider({ children }: { children: React.ReactNode })
             ))}
           </div>
 
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-2xl animate-scale-in"
-          >
-            <div className="celebration-check mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-success">
-              <Check className="h-14 w-14 text-primary-foreground" strokeWidth={3} />
-            </div>
+          {state.variant === "goodjob" ? (
+            <div
+              onClick={(event) => event.stopPropagation()}
+              className="relative w-full max-w-md px-6 text-center"
+            >
+              <div className="celebration-avatar mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-[#a78bfa] text-6xl shadow-2xl">
+                <span aria-hidden>😊</span>
+              </div>
 
-            <h2 className="mt-6 text-2xl font-bold text-primary">{state.title}</h2>
+              <div className="celebration-text">
+                <h2 className="mt-8 text-4xl font-bold text-white drop-shadow">
+                  {state.title}
+                </h2>
 
-            {state.details && state.details.length > 0 && (
-              <dl className="mt-4 space-y-1 text-sm text-muted-foreground">
-                {state.details.map((detail) => (
-                  <div key={detail.label} className="flex justify-center gap-1.5">
-                    <dt className="font-medium text-foreground">{detail.label}:</dt>
-                    <dd>{detail.value}</dd>
+                {state.lines && state.lines.length > 0 && (
+                  <div className="mt-4 space-y-1 text-base text-white/85">
+                    {state.lines.map((line, index) => (
+                      <p key={index}>{line}</p>
+                    ))}
                   </div>
-                ))}
-              </dl>
-            )}
+                )}
 
-            <Button onClick={close} className="mt-6 w-full bg-success hover:bg-success/90">
-              {state.actionLabel ?? "Continuar"}
-            </Button>
-          </div>
+                <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  {state.secondaryLabel && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        state.onSecondary?.();
+                        close();
+                      }}
+                    >
+                      {state.secondaryLabel}
+                    </Button>
+                  )}
+                  <Button
+                    onClick={close}
+                    className="bg-success text-primary-foreground hover:bg-success/90"
+                  >
+                    {state.actionLabel ?? "Continuar"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={(event) => event.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-2xl animate-scale-in"
+            >
+              <div className="celebration-check mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-success">
+                <Check className="h-14 w-14 text-primary-foreground" strokeWidth={3} />
+              </div>
+
+              <h2 className="mt-6 text-2xl font-bold text-primary">{state.title}</h2>
+
+              {state.details && state.details.length > 0 && (
+                <dl className="mt-4 space-y-1 text-sm text-muted-foreground">
+                  {state.details.map((detail) => (
+                    <div key={detail.label} className="flex justify-center gap-1.5">
+                      <dt className="font-medium text-foreground">{detail.label}:</dt>
+                      <dd>{detail.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+
+              <Button onClick={close} className="mt-6 w-full bg-success hover:bg-success/90">
+                {state.actionLabel ?? "Continuar"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </CelebrationContext.Provider>
