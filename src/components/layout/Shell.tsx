@@ -20,6 +20,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import logoImperio from "@/assets/logo-imperio.jpeg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,18 +74,23 @@ function Sidebar({
     >
       <div className={["flex items-center py-6", open ? "px-5" : "justify-center px-2"].join(" ")}>
         {open ? (
-          <div>
-            <p className="font-display text-lg leading-none font-extrabold tracking-tight">
-              El Imperio
-            </p>
-            <p className="mt-1.5 text-[11px] tracking-[0.18em] text-sidebar-foreground/60 uppercase">
-              Recursos Humanos
+          <div className="flex flex-col items-center">
+            <img
+              src={logoImperio.url}
+              alt="El Imperio"
+              className="h-16 w-auto object-contain"
+            />
+            <p className="mt-2 text-center text-[11px] tracking-[0.12em] text-sidebar-foreground/60 uppercase">
+              Grupo Empresarial Imperio
             </p>
           </div>
         ) : (
-          <p className="font-display text-xl font-extrabold tracking-tight" title="El Imperio RRHH">
-            EI
-          </p>
+          <img
+            src={logoImperio.url}
+            alt="EI"
+            className="h-8 w-auto object-contain"
+            title="Grupo Empresarial Imperio"
+          />
         )}
       </div>
       <nav className={["flex flex-1 flex-col gap-1", open ? "px-3" : "px-2"].join(" ")}>
