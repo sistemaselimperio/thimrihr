@@ -75,9 +75,9 @@ function AuthPage() {
 
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
+    <div className="grid min-h-screen grid-rows-[16rem_1fr] lg:grid-cols-[1.1fr_1fr] lg:grid-rows-1">
       <div
-        className="relative hidden flex-col justify-between bg-primary bg-cover bg-center bg-no-repeat lg:flex"
+        className="relative flex flex-col justify-between bg-primary bg-cover bg-center bg-no-repeat lg:col-start-1"
         style={{ backgroundImage: `url(${portadaImperio.url})` }}
         aria-label="Portada Grupo Empresarial Imperio"
       >
