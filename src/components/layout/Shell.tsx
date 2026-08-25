@@ -224,9 +224,9 @@ function FiltersPopover() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="activo">Activos</SelectItem>
               <SelectItem value="retirado">Retirados</SelectItem>
-              <SelectItem value="todos">Todos</SelectItem>
             </SelectContent>
           </Select>
         </div>
