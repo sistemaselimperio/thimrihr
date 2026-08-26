@@ -150,10 +150,10 @@ function DocumentsPage() {
     if (extraPos === "end") return `${baseText}\n\n${add}`;
     const idx = Number(extraPos);
     if (!Number.isFinite(idx)) return `${baseText}\n\n${add}`;
-    const parts = [...paragraphs];
+    const parts = [...lines];
     parts.splice(idx + 1, 0, add);
     return parts.join("\n\n");
-  }, [baseText, extra, extraPos, paragraphs]);
+  }, [baseText, extra, extraPos, lines]);
 
   const openCreate = () => {
     setEditing(undefined);
@@ -418,9 +418,9 @@ function DocumentsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="start">Al inicio del documento</SelectItem>
-                    {paragraphs.map((p, i) => (
+                    {lines.map((l, i) => (
                       <SelectItem key={i} value={String(i)}>
-                        Después del párrafo {i + 1}: {p.trim().slice(0, 40)}…
+                        Después del renglón {i + 1}: {l.slice(0, 45)}…
                       </SelectItem>
                     ))}
                     <SelectItem value="end">Al final del documento</SelectItem>
