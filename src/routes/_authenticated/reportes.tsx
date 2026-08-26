@@ -140,9 +140,8 @@ function ReportsPage() {
         };
       })
       .filter((r) => r.row);
+  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, licenses, overrides, periodKey]);
 
-
-  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
   const totals = rows.reduce(
     (acc, r) => {
