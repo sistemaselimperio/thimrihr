@@ -244,6 +244,26 @@ function ReportsPage() {
         ];
       });
 
+    const licenciasRows = licenses
+      .filter((l) => byId.has(l.employee_id))
+      .filter((l) => l.start_date <= bounds.end && l.end_date >= bounds.start)
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .map((l): Cell[] => {
+        const e = byId.get(l.employee_id)!.employee;
+        const paid = PAID_LICENSE_TYPES.includes(l.type);
+        return [
+          ...base(e),
+          `${LICENSE_LABELS[l.type] ?? l.type}${paid ? "" : " *"}`,
+          fmtDate(l.start_date),
+          fmtDate(l.end_date),
+          overlapDays(l.start_date, l.end_date, bounds.start, bounds.end),
+          Number(l.days),
+          paid ? "Remunerada" : "Sin remuneración",
+          worked(e),
+        ];
+      });
+
+
     // Solo empleados con alguna novedad en la quincena seleccionada.
     const conNovedad = new Set<string>();
     list.forEach(({ employee: e, firstPeriodKey }) => {
