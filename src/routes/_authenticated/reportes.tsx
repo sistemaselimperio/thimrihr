@@ -356,7 +356,29 @@ function ReportsPage() {
         header: [...NOVELTY_HEADER.slice(0, 5), "Días base ajustados", "Días trabajados"],
         rows: descuentos,
       },
+      {
+        title: "7. LICENCIAS",
+        header: [
+          "Cédula",
+          "Nombre",
+          "Empresa",
+          "Cargo",
+          "Tipo de licencia",
+          "Fecha inicio",
+          "Fecha fin",
+          "Días en la quincena",
+          "Días totales",
+          "Remuneración",
+          "Días trabajados",
+        ],
+        rows: licenciasRows,
+      },
+      {
+        title: "* Licencia marcada con asterisco: no remunerada, descuenta días de la quincena.",
+        rows: [],
+      },
     ];
+
   };
 
   const exportReport = () => {
