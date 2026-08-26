@@ -8,6 +8,7 @@ import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
 import {
   IncapacityDialog,
   LeaveDialog,
+  LicenseDialog,
   NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
@@ -35,6 +36,7 @@ import {
   useEntitlements,
   useIncapacities,
   useLeaves,
+  useLicenses,
   useGeneratedDocuments,
   useOverrides,
   useTerminations,
@@ -44,13 +46,16 @@ import { downloadDocumentPdf } from "@/lib/pdf-doc";
 import {
   INCAPACITY_LABELS,
   LEAVE_LABELS,
+  LICENSE_LABELS,
   TERMINATION_LABELS,
   buildQuincenas,
   buildVacationSummary,
   daysInclusive,
   fmtDate,
   incapacityStatus,
+  licenseStatus,
 } from "@/lib/hr";
+
 
 export const Route = createFileRoute("/_authenticated/empleados/$id")({
   head: () => ({
@@ -90,6 +95,7 @@ function EmployeeDetail() {
   const { data: terminations = [] } = useTerminations();
   const { data: entitlements = [] } = useEntitlements();
   const { data: overrides = [] } = useOverrides();
+  const { data: licenses = [] } = useLicenses();
   const { data: generatedDocs = [] } = useGeneratedDocuments();
 
   const [year, setYear] = useState(new Date().getFullYear());
@@ -97,6 +103,7 @@ function EmployeeDetail() {
   const [incOpen, setIncOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [termOpen, setTermOpen] = useState(false);
+  const [licOpen, setLicOpen] = useState(false);
 
   const employee = employees.find((e) => e.id === id);
   const myIncapacities = incapacities.filter((i) => i.employee_id === id);
@@ -104,15 +111,17 @@ function EmployeeDetail() {
   const myTerminations = terminations.filter((t) => t.employee_id === id);
   const myEntitlements = entitlements.filter((v) => v.employee_id === id);
   const myOverrides = overrides.filter((o) => o.employee_id === id);
+  const myLicenses = licenses.filter((l) => l.employee_id === id);
   const myDocs = generatedDocs.filter((d) => d.employee_id === id);
 
   const quincenas = useMemo(
     () =>
       employee
-        ? buildQuincenas(employee, myIncapacities, myLeaves, myOverrides, year)
+        ? buildQuincenas(employee, myIncapacities, myLeaves, myOverrides, year, myLicenses)
         : [],
-    [employee, myIncapacities, myLeaves, myOverrides, year],
+    [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses],
   );
+
 
   const vacations = useMemo(
     () => (employee ? buildVacationSummary(employee, myEntitlements, myLeaves) : null),
@@ -319,6 +328,8 @@ function EmployeeDetail() {
           <TabsTrigger value="quincenas">Quincenas</TabsTrigger>
           <TabsTrigger value="incapacidades">Incapacidades</TabsTrigger>
           <TabsTrigger value="permisos">Permisos</TabsTrigger>
+          <TabsTrigger value="licencias">Licencias</TabsTrigger>
+
           <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="retiro">Retiro</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
@@ -494,6 +505,73 @@ function EmployeeDetail() {
           </div>
         </TabsContent>
 
+        <TabsContent value="licencias" className="space-y-3">
+          <Button variant="success" className="gap-2" onClick={() => setLicOpen(true)}>
+            <Plus className="size-4" /> Agregar licencia
+          </Button>
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Desde</TableHead>
+                  <TableHead>Hasta</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead>Motivo</TableHead>
+                  <TableHead>Observaciones</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myLicenses.map((l) => {
+                  const estado = licenseStatus(l);
+                  return (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-medium">
+                        {LICENSE_LABELS[l.type] ?? l.type}
+                      </TableCell>
+                      <TableCell className="numeric">{fmtDate(l.start_date)}</TableCell>
+                      <TableCell className="numeric">{fmtDate(l.end_date)}</TableCell>
+                      <TableCell className="numeric">{l.days}</TableCell>
+                      <TableCell>{l.reason}</TableCell>
+                      <TableCell className="text-muted-foreground">{l.notes ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            estado === "Activa"
+                              ? "bg-success/20 text-success-foreground"
+                              : estado === "Próxima"
+                                ? "bg-warning/20 text-warning-foreground"
+                                : "bg-retired text-retired-foreground"
+                          }
+                        >
+                          {estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <NoveltyRowActions
+                          kind="license"
+                          record={l}
+                          summary={`${LICENSE_LABELS[l.type] ?? l.type} · ${fmtDate(l.start_date)} → ${fmtDate(l.end_date)}`}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {myLicenses.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                      Sin licencias registradas.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+
         <TabsContent value="vacaciones" className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border bg-surface p-4 shadow-panel">
@@ -642,6 +720,8 @@ function EmployeeDetail() {
       <EmployeeDialog open={editOpen} onOpenChange={setEditOpen} employee={emp} />
       <IncapacityDialog open={incOpen} onOpenChange={setIncOpen} employeeId={emp.id} />
       <LeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} employeeId={emp.id} />
+      <LicenseDialog open={licOpen} onOpenChange={setLicOpen} employeeId={emp.id} />
+
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} employeeId={emp.id} />
     </div>
   );

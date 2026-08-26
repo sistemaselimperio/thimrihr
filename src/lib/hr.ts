@@ -58,7 +58,19 @@ export interface Leave {
   notes: string | null;
 }
 
+export interface License {
+  id: string;
+  employee_id: string;
+  type: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  reason: string;
+  notes: string | null;
+}
+
 export interface Termination {
+
   id: string;
   employee_id: string;
   type: string;
@@ -123,11 +135,41 @@ export const LEAVE_LABELS: Record<string, string> = {
   vacaciones: "Permiso con descuento de vacaciones",
 };
 
+export const LICENSE_LABELS: Record<string, string> = {
+  maternidad: "Licencia de maternidad",
+  paternidad: "Licencia de paternidad",
+  luto: "Licencia por luto",
+  calamidad: "Calamidad doméstica",
+  no_remunerada: "Licencia no remunerada",
+};
+
+/** Licencias remuneradas: no descuentan días de la quincena. */
+export const PAID_LICENSE_TYPES = ["maternidad", "paternidad", "luto", "calamidad"];
+
+/** Días legales sugeridos por tipo de licencia (Colombia). */
+export const LICENSE_DEFAULT_DAYS: Record<string, number | null> = {
+  maternidad: 126,
+  paternidad: 14,
+  luto: null,
+  calamidad: null,
+  no_remunerada: null,
+};
+
+export function licenseStatus(
+  license: Pick<License, "start_date" | "end_date">,
+  today = todayISO(),
+): "Próxima" | "Activa" | "Finalizada" {
+  if (license.start_date > today) return "Próxima";
+  if (license.end_date < today) return "Finalizada";
+  return "Activa";
+}
+
 export const TERMINATION_LABELS: Record<string, string> = {
   vencimiento: "Vencimiento de término",
   renuncia: "Renuncia",
   justa_causa: "Justa causa",
 };
+
 
 export const MAX_VACATION_LEAVE_DAYS = 7;
 export const VACATION_MIN_RESERVE = 7;
@@ -263,9 +305,14 @@ export interface QuincenaRow {
   leaveDays: number;
   incapacityDays: number;
   vacationDays: number;
+  /** Días de licencia remunerada en la quincena (no descuentan). */
+  paidLicenseDays: number;
+  /** Días de licencia no remunerada en la quincena (sí descuentan). */
+  unpaidLicenseDays: number;
   workedDays: number;
   notes: string | null;
 }
+
 
 /** Días base por defecto de una quincena para un empleado (recorta ingreso/salida). */
 export function defaultBaseDays(
@@ -289,6 +336,7 @@ export function buildQuincenas(
   leaves: Leave[],
   overrides: PayrollPeriodOverride[],
   year: number,
+  licenses: License[] = [],
 ): QuincenaRow[] {
   const today = todayISO();
   const overrideMap = new Map(overrides.map((o) => [o.period_key, o]));
@@ -323,10 +371,22 @@ export function buildQuincenas(
         else leaveDays += value;
       }
 
+      // Las licencias remuneradas no descuentan; la no remunerada sí.
+      let paidLicenseDays = 0;
+      let unpaidLicenseDays = 0;
+      for (const lic of licenses) {
+        const d = overlapDays(lic.start_date, lic.end_date, start, end);
+        if (d === 0) continue;
+        if (PAID_LICENSE_TYPES.includes(lic.type)) paidLicenseDays += d;
+        else unpaidLicenseDays += d;
+      }
+
       const baseDays = ov ? Number(ov.base_days) : defaultBaseDays(employee, key);
       const workedDays = Math.max(
         0,
-        Math.round((baseDays - leaveDays - incapacityDays - vacationDays) * 10) / 10,
+        Math.round(
+          (baseDays - leaveDays - incapacityDays - vacationDays - unpaidLicenseDays) * 10,
+        ) / 10,
       );
 
       return {
@@ -339,11 +399,15 @@ export function buildQuincenas(
         leaveDays,
         incapacityDays,
         vacationDays,
+        paidLicenseDays,
+        unpaidLicenseDays,
         workedDays,
         notes: ov?.notes ?? null,
       };
     });
 }
+
+
 
 /* -------------------------------------------------------------- vacaciones */
 

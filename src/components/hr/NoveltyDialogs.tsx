@@ -61,11 +61,15 @@ import {
   buildVacationSummary,
   daysInclusive,
   validateVacationLeave,
+  LICENSE_DEFAULT_DAYS,
+  LICENSE_LABELS,
   type Employee,
   type Incapacity,
   type Leave,
+  type License,
   type Termination,
 } from "@/lib/hr";
+
 
 function EmployeePicker({
   value,
@@ -742,30 +746,237 @@ export function TerminationDialog({
   );
 }
 
+/* ---------------------------------------------------------------- licencias */
+
+export function LicenseDialog({
+  open,
+  onOpenChange,
+  employeeId,
+  record,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  employeeId?: string;
+  record?: License;
+}) {
+  const qc = useQueryClient();
+  const { data: employees = [] } = useEmployees();
+  const [form, setForm] = useState({
+    employee_id: employeeId ?? "",
+    type: "maternidad",
+    start_date: "",
+    end_date: "",
+    reason: "",
+    notes: "",
+  });
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open)
+      setForm({
+        employee_id: record?.employee_id ?? employeeId ?? "",
+        type: record?.type ?? "maternidad",
+        start_date: record?.start_date ?? "",
+        end_date: record?.end_date ?? "",
+        reason: record?.reason ?? "",
+        notes: record?.notes ?? "",
+      });
+  }, [open, employeeId, record]);
+
+  const days =
+    form.start_date && form.end_date && form.end_date >= form.start_date
+      ? daysInclusive(form.start_date, form.end_date)
+      : 0;
+
+  const legalDays = LICENSE_DEFAULT_DAYS[form.type] ?? null;
+  const paid = form.type !== "no_remunerada";
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.employee_id) {
+      toast.error("Selecciona un empleado");
+      return;
+    }
+    if (!form.type) {
+      toast.error("El tipo de licencia es obligatorio");
+      return;
+    }
+    if (form.end_date < form.start_date) {
+      toast.error("La fecha final no puede ser anterior a la inicial");
+      return;
+    }
+    if (days <= 0) {
+      toast.error("Revisa las fechas de la licencia");
+      return;
+    }
+    if (!form.reason.trim()) {
+      toast.error("El motivo es obligatorio");
+      return;
+    }
+    setBusy(true);
+    try {
+      const payload = {
+        employee_id: form.employee_id,
+        type: form.type,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        days,
+        reason: form.reason.trim(),
+        notes: form.notes.trim() || null,
+      };
+      if (record) await updateRow("licenses", record.id, payload);
+      else await insertRow("licenses", payload);
+      await qc.invalidateQueries({ queryKey: qk.licenses });
+      onOpenChange(false);
+      toast.success(record ? "Cambios guardados" : "Licencia registrada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{record ? "Editar licencia" : "Agregar nueva licencia"}</DialogTitle>
+          <DialogDescription>
+            Las licencias remuneradas no descuentan días de la quincena; la licencia no
+            remunerada sí.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={(e) => void submit(e)} className="space-y-4">
+          {!employeeId && !record && (
+            <EmployeePicker
+              value={form.employee_id}
+              onChange={(v) => setForm((p) => ({ ...p, employee_id: v }))}
+              employees={employees}
+            />
+          )}
+
+          <div className="space-y-1.5">
+            <Label>
+              Tipo de licencia <span className="text-danger-foreground">*</span>
+            </Label>
+            <Select value={form.type} onValueChange={(v) => setForm((p) => ({ ...p, type: v }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(LICENSE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {paid ? "Remunerada — no descuenta días" : "Sin remuneración — descuenta días"}
+              {legalDays ? ` · Duración legal sugerida: ${legalDays} días` : ""}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="lic_start">
+                Fecha de inicio <span className="text-danger-foreground">*</span>
+              </Label>
+              <Input
+                id="lic_start"
+                type="date"
+                required
+                value={form.start_date}
+                onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lic_end">
+                Fecha de fin <span className="text-danger-foreground">*</span>
+              </Label>
+              <Input
+                id="lic_end"
+                type="date"
+                required
+                value={form.end_date}
+                onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <p className="rounded-md bg-surface-2 px-3 py-2 text-sm">
+            Duración calculada: <strong className="numeric">{days}</strong> días
+          </p>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="lic_reason">
+              Motivo <span className="text-danger-foreground">*</span>
+            </Label>
+            <Textarea
+              id="lic_reason"
+              rows={2}
+              required
+              placeholder="Ej: Nacimiento de hijo"
+              value={form.reason}
+              onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="lic_notes">Observaciones (opcional)</Label>
+            <Textarea
+              id="lic_notes"
+              rows={2}
+              placeholder="Parentesco, tipo de calamidad o aprobación"
+              value={form.notes}
+              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="success" disabled={busy}>
+              {busy && <Loader2 className="size-4 animate-spin" />}
+              {record ? "Guardar cambios" : "Guardar licencia"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 /* -------------------------------------------------- editar / eliminar filas */
 
-type NoveltyKind = "incapacity" | "leave" | "termination";
+type NoveltyKind = "incapacity" | "leave" | "termination" | "license";
 
 const TABLE_BY_KIND: Record<NoveltyKind, string> = {
   incapacity: "incapacities",
   leave: "leaves",
   termination: "terminations",
+  license: "licenses",
 };
 
 const KEYS_BY_KIND: Record<NoveltyKind, readonly unknown[][]> = {
   incapacity: [qk.incapacities as unknown as unknown[]],
   leave: [qk.leaves as unknown as unknown[]],
   termination: [qk.terminations as unknown as unknown[], qk.employees as unknown as unknown[]],
+  license: [qk.licenses as unknown as unknown[]],
 };
 
-/** Botones [Editar] [Eliminar] para una novedad (incapacidad, permiso o retiro). */
+/** Botones [Editar] [Eliminar] para una novedad (incapacidad, permiso, retiro o licencia). */
 export function NoveltyRowActions({
   kind,
   record,
   summary,
 }: {
   kind: NoveltyKind;
-  record: Incapacity | Leave | Termination;
+  record: Incapacity | Leave | Termination | License;
+
   /** Texto corto que describe la novedad en la confirmación de borrado. */
   summary: string;
 }) {
@@ -821,6 +1032,10 @@ export function NoveltyRowActions({
           record={record as Termination}
         />
       )}
+      {kind === "license" && (
+        <LicenseDialog open={editOpen} onOpenChange={setEditOpen} record={record as License} />
+      )}
+
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>

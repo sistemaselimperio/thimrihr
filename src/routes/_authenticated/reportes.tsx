@@ -25,12 +25,15 @@ import {
   useEmployees,
   useIncapacities,
   useLeaves,
+  useLicenses,
   useOverrides,
   useTerminations,
 } from "@/lib/data";
 import { downloadWorkbook, type Cell, type SheetBlock } from "@/lib/excel";
 import {
   INCAPACITY_LABELS,
+  LICENSE_LABELS,
+  PAID_LICENSE_TYPES,
   TERMINATION_LABELS,
   buildQuincenas,
   currentPeriodKey,
@@ -44,6 +47,7 @@ import {
   todayISO,
   type Employee,
 } from "@/lib/hr";
+
 
 export const Route = createFileRoute("/_authenticated/reportes")({
   head: () => ({
@@ -87,6 +91,8 @@ function ReportsPage() {
   const { data: leaves = [] } = useLeaves();
   const { data: overrides = [] } = useOverrides();
   const { data: terminations = [] } = useTerminations();
+  const { data: licenses = [] } = useLicenses();
+
 
   const [periodKey, setPeriodKey] = useState(currentPeriodKey());
   const [companyId, setCompanyId] = useState<string>("all");

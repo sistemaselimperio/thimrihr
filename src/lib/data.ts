@@ -5,10 +5,12 @@ import type {
   Employee,
   Incapacity,
   Leave,
+  License,
   PayrollPeriodOverride,
   Termination,
   VacationEntitlement,
 } from "./hr";
+
 
 /*
  * Capa de acceso genérica: las tablas se pasan por nombre, por lo que se usa un
@@ -52,6 +54,9 @@ async function selectAll<T>(table: string, order: string, ascending = true): Pro
 export const qk = {
   companies: ["companies"] as const,
   employees: ["employees"] as const,
+  licenses: ["licenses"] as const,
+
+
   incapacities: ["incapacities"] as const,
   leaves: ["leaves"] as const,
   terminations: ["terminations"] as const,
@@ -132,6 +137,14 @@ export function useLeaves() {
     queryFn: () => selectAll<Leave>("leaves", "start_date", false),
   });
 }
+
+export function useLicenses() {
+  return useQuery({
+    queryKey: qk.licenses,
+    queryFn: () => selectAll<License>("licenses", "start_date", false),
+  });
+}
+
 
 export function useTerminations() {
   return useQuery({
