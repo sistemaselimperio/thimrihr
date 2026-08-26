@@ -297,6 +297,12 @@ function ReportsPage() {
         rows: resumen,
       },
       { title: "1. INGRESOS", header: NOVELTY_HEADER, rows: ingresos },
+      {
+        title: "1b. PRIMERA QUINCENA DEL EMPLEADO",
+        header: [...NOVELTY_HEADER.slice(0, 5), "Días base", "Días trabajados"],
+        rows: primeraQuincena,
+      },
+
       { title: "2. RETIROS", header: NOVELTY_HEADER, rows: retiros },
       {
         title: "3. PERMISO POR DESCUENTO DE VACACIONES",
