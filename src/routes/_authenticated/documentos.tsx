@@ -258,7 +258,13 @@ function DocumentsPage() {
         </Button>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          if (v !== "generar") setExtra("");
+          setTab(v);
+        }}
+      >
         <TabsList>
           <TabsTrigger value="base">Documentos base</TabsTrigger>
           <TabsTrigger value="generar">Generar PDF</TabsTrigger>
