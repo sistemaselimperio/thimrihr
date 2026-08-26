@@ -284,6 +284,12 @@ function ReportsPage() {
     overrides
       .filter((o) => o.period_key === periodKey && byId.has(o.employee_id))
       .forEach((o) => conNovedad.add(o.employee_id));
+    licenses
+      .filter((l) => byId.has(l.employee_id) && l.start_date <= bounds.end && l.end_date >= bounds.start)
+      .forEach((l) => conNovedad.add(l.employee_id));
+
+      .filter((o) => o.period_key === periodKey && byId.has(o.employee_id))
+      .forEach((o) => conNovedad.add(o.employee_id));
 
     const resumen = list
       .filter(({ employee }) => conNovedad.has(employee.id))
