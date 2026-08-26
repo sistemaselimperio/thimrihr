@@ -83,7 +83,7 @@ function DocumentsPage() {
   const [search, setSearch] = useState("");
   /* Texto adicional temporal: se usa solo en el PDF actual, nunca se guarda en el borrador. */
   const [extra, setExtra] = useState("");
-  /* Posición de inserción: 0 = al inicio, n = después del párrafo n. */
+  /* Posición de inserción: "start" = al inicio, "end" = al final, n = después del renglón n. */
   const [extraPos, setExtraPos] = useState("end");
 
   const template = templates.find((t) => t.id === templateId);
@@ -137,8 +137,8 @@ function DocumentsPage() {
     return renderDocument(template.category, { employee, company, extra: "" });
   }, [employee, template, company]);
 
-  const paragraphs = useMemo(
-    () => baseText.split(/\n\s*\n/).filter((p) => p.trim()),
+  const lines = useMemo(
+    () => baseText.split(/\n/).map((l) => l.trim()).filter((l) => l.length > 0),
     [baseText],
   );
 
@@ -150,10 +150,10 @@ function DocumentsPage() {
     if (extraPos === "end") return `${baseText}\n\n${add}`;
     const idx = Number(extraPos);
     if (!Number.isFinite(idx)) return `${baseText}\n\n${add}`;
-    const parts = [...paragraphs];
+    const parts = [...lines];
     parts.splice(idx + 1, 0, add);
     return parts.join("\n\n");
-  }, [baseText, extra, extraPos, paragraphs]);
+  }, [baseText, extra, extraPos, lines]);
 
   const openCreate = () => {
     setEditing(undefined);
@@ -418,9 +418,9 @@ function DocumentsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="start">Al inicio del documento</SelectItem>
-                    {paragraphs.map((p, i) => (
+                    {lines.map((l, i) => (
                       <SelectItem key={i} value={String(i)}>
-                        Después del párrafo {i + 1}: {p.trim().slice(0, 40)}…
+                        Después del renglón {i + 1}: {l.slice(0, 45)}…
                       </SelectItem>
                     ))}
                     <SelectItem value="end">Al final del documento</SelectItem>
