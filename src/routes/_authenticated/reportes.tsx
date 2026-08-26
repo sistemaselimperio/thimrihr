@@ -169,6 +169,18 @@ function ReportsPage() {
         worked(employee),
       ]);
 
+    // Empleados cuya primera quincena liquidada es la seleccionada.
+    const primeraQuincena = list
+      .filter(({ firstPeriodKey }) => firstPeriodKey === periodKey)
+      .sort((a, b) => a.employee.full_name.localeCompare(b.employee.full_name))
+      .map(({ employee, row }): Cell[] => [
+        ...base(employee),
+        employee.hire_date ? `Ingreso ${fmtDate(employee.hire_date)}` : periodLabelLong(periodKey),
+        row?.baseDays ?? 0,
+        worked(employee),
+      ]);
+
+
     const retiros = terminations
       .filter((t) => byId.has(t.employee_id))
       .filter((t) => t.exit_date >= bounds.start && t.exit_date <= bounds.end)
