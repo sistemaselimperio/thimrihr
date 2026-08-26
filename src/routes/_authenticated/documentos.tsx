@@ -73,6 +73,8 @@ function DocumentsPage() {
   const [templateId, setTemplateId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [search, setSearch] = useState("");
+  /* Texto adicional temporal: se usa solo en el PDF actual, nunca se guarda en el borrador. */
+  const [extra, setExtra] = useState("");
 
   const template = templates.find((t) => t.id === templateId);
   const employee = employees.find((e) => e.id === employeeId);
