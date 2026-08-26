@@ -239,10 +239,12 @@ function ReportsPage() {
 
     // Solo empleados con alguna novedad en la quincena seleccionada.
     const conNovedad = new Set<string>();
-    list.forEach(({ employee: e }) => {
+    list.forEach(({ employee: e, firstPeriodKey }) => {
       if (e.hire_date && e.hire_date >= bounds.start && e.hire_date <= bounds.end)
         conNovedad.add(e.id);
+      if (firstPeriodKey === periodKey) conNovedad.add(e.id);
     });
+
     terminations
       .filter((t) => byId.has(t.employee_id) && t.exit_date >= bounds.start && t.exit_date <= bounds.end)
       .forEach((t) => conNovedad.add(t.employee_id));
