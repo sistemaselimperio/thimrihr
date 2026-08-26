@@ -131,6 +131,7 @@ function ReportsPage() {
           leaves.filter((l) => l.employee_id === e.id),
           overrides.filter((o) => o.employee_id === e.id),
           periodYear(periodKey),
+          licenses.filter((l) => l.employee_id === e.id),
         );
         return {
           employee: e,
@@ -139,6 +140,7 @@ function ReportsPage() {
         };
       })
       .filter((r) => r.row);
+
 
   }, [employees, selectedCompanies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
