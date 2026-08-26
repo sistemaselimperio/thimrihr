@@ -126,9 +126,14 @@ function ReportsPage() {
           overrides.filter((o) => o.employee_id === e.id),
           periodYear(periodKey),
         );
-        return { employee: e, row: quincenas.find((q) => q.periodKey === periodKey) };
+        return {
+          employee: e,
+          row: quincenas.find((q) => q.periodKey === periodKey),
+          firstPeriodKey: quincenas[0]?.periodKey ?? null,
+        };
       })
       .filter((r) => r.row);
+
   }, [employees, selectedCompanies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
   const totals = rows.reduce(
@@ -163,6 +168,18 @@ function ReportsPage() {
         "",
         worked(employee),
       ]);
+
+    // Empleados cuya primera quincena liquidada es la seleccionada.
+    const primeraQuincena = list
+      .filter(({ firstPeriodKey }) => firstPeriodKey === periodKey)
+      .sort((a, b) => a.employee.full_name.localeCompare(b.employee.full_name))
+      .map(({ employee, row }): Cell[] => [
+        ...base(employee),
+        employee.hire_date ? `Ingreso ${fmtDate(employee.hire_date)}` : periodLabelLong(periodKey),
+        row?.baseDays ?? 0,
+        worked(employee),
+      ]);
+
 
     const retiros = terminations
       .filter((t) => byId.has(t.employee_id))
@@ -222,10 +239,12 @@ function ReportsPage() {
 
     // Solo empleados con alguna novedad en la quincena seleccionada.
     const conNovedad = new Set<string>();
-    list.forEach(({ employee: e }) => {
+    list.forEach(({ employee: e, firstPeriodKey }) => {
       if (e.hire_date && e.hire_date >= bounds.start && e.hire_date <= bounds.end)
         conNovedad.add(e.id);
+      if (firstPeriodKey === periodKey) conNovedad.add(e.id);
     });
+
     terminations
       .filter((t) => byId.has(t.employee_id) && t.exit_date >= bounds.start && t.exit_date <= bounds.end)
       .forEach((t) => conNovedad.add(t.employee_id));
@@ -278,6 +297,12 @@ function ReportsPage() {
         rows: resumen,
       },
       { title: "1. INGRESOS", header: NOVELTY_HEADER, rows: ingresos },
+      {
+        title: "1b. PRIMERA QUINCENA DEL EMPLEADO",
+        header: [...NOVELTY_HEADER.slice(0, 5), "Días base", "Días trabajados"],
+        rows: primeraQuincena,
+      },
+
       { title: "2. RETIROS", header: NOVELTY_HEADER, rows: retiros },
       {
         title: "3. PERMISO POR DESCUENTO DE VACACIONES",
