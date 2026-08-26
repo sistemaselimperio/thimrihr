@@ -130,11 +130,23 @@ function DocumentsPage() {
     return renderDocument(template.category, { employee, company, extra: "" });
   }, [employee, template, company]);
 
+  const paragraphs = useMemo(
+    () => baseText.split(/\n\s*\n/).filter((p) => p.trim()),
+    [baseText],
+  );
+
   const text = useMemo(() => {
     if (!baseText) return "";
     const add = extra.trim();
-    return add ? `${baseText}\n\n${add}` : baseText;
-  }, [baseText, extra]);
+    if (!add) return baseText;
+    if (extraPos === "start") return `${add}\n\n${baseText}`;
+    if (extraPos === "end") return `${baseText}\n\n${add}`;
+    const idx = Number(extraPos);
+    if (!Number.isFinite(idx)) return `${baseText}\n\n${add}`;
+    const parts = [...paragraphs];
+    parts.splice(idx + 1, 0, add);
+    return parts.join("\n\n");
+  }, [baseText, extra, extraPos, paragraphs]);
 
   const openCreate = () => {
     setEditing(undefined);
