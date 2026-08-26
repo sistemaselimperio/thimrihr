@@ -170,6 +170,7 @@ function DocumentsPage() {
     setEmployeeId("");
     setSearch("");
     setExtra("");
+    setExtraPos("end");
     setTab("generar");
   };
 
@@ -282,7 +283,10 @@ function DocumentsPage() {
       <Tabs
         value={tab}
         onValueChange={(v) => {
-          if (v !== "generar") setExtra("");
+          if (v !== "generar") {
+            setExtra("");
+            setExtraPos("end");
+          }
           setTab(v);
         }}
       >
