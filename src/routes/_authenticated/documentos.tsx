@@ -121,11 +121,17 @@ function DocumentsPage() {
       .slice(0, 60);
   }, [employees, search, template?.company_id]);
 
-  const text = useMemo(() => {
+  const baseText = useMemo(() => {
     if (!employee || !template) return "";
     if (template.body?.trim()) return fillTemplate(template.body, employee, company);
     return renderDocument(template.category, { employee, company, extra: "" });
   }, [employee, template, company]);
+
+  const text = useMemo(() => {
+    if (!baseText) return "";
+    const add = extra.trim();
+    return add ? `${baseText}\n\n${add}` : baseText;
+  }, [baseText, extra]);
 
   const openCreate = () => {
     setEditing(undefined);
