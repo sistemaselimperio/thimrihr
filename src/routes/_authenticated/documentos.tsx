@@ -147,6 +147,7 @@ function DocumentsPage() {
     setTemplateId(t.id);
     setEmployeeId("");
     setSearch("");
+    setExtra("");
     setTab("generar");
   };
 
