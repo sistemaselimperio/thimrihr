@@ -368,6 +368,21 @@ function DocumentsPage() {
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <Label htmlFor="extra-text">Información adicional (temporal)</Label>
+                <Textarea
+                  id="extra-text"
+                  rows={4}
+                  placeholder="Escribe texto extra que se agregará solo a este documento…"
+                  value={extra}
+                  onChange={(e) => setExtra(e.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Este texto se agrega al documento que vas a generar y no se guarda en el
+                  documento base; al salir desaparece.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <Button variant="success" className="gap-2" onClick={() => void generatePdf()}>
                   <FileDown className="size-4" /> Descargar PDF
