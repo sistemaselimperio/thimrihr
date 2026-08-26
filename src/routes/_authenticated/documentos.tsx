@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -76,6 +83,8 @@ function DocumentsPage() {
   const [search, setSearch] = useState("");
   /* Texto adicional temporal: se usa solo en el PDF actual, nunca se guarda en el borrador. */
   const [extra, setExtra] = useState("");
+  /* Posición de inserción: 0 = al inicio, n = después del párrafo n. */
+  const [extraPos, setExtraPos] = useState("end");
 
   const template = templates.find((t) => t.id === templateId);
   const employee = employees.find((e) => e.id === employeeId);
@@ -128,11 +137,23 @@ function DocumentsPage() {
     return renderDocument(template.category, { employee, company, extra: "" });
   }, [employee, template, company]);
 
+  const paragraphs = useMemo(
+    () => baseText.split(/\n\s*\n/).filter((p) => p.trim()),
+    [baseText],
+  );
+
   const text = useMemo(() => {
     if (!baseText) return "";
     const add = extra.trim();
-    return add ? `${baseText}\n\n${add}` : baseText;
-  }, [baseText, extra]);
+    if (!add) return baseText;
+    if (extraPos === "start") return `${add}\n\n${baseText}`;
+    if (extraPos === "end") return `${baseText}\n\n${add}`;
+    const idx = Number(extraPos);
+    if (!Number.isFinite(idx)) return `${baseText}\n\n${add}`;
+    const parts = [...paragraphs];
+    parts.splice(idx + 1, 0, add);
+    return parts.join("\n\n");
+  }, [baseText, extra, extraPos, paragraphs]);
 
   const openCreate = () => {
     setEditing(undefined);
@@ -149,6 +170,7 @@ function DocumentsPage() {
     setEmployeeId("");
     setSearch("");
     setExtra("");
+    setExtraPos("end");
     setTab("generar");
   };
 
@@ -261,7 +283,10 @@ function DocumentsPage() {
       <Tabs
         value={tab}
         onValueChange={(v) => {
-          if (v !== "generar") setExtra("");
+          if (v !== "generar") {
+            setExtra("");
+            setExtraPos("end");
+          }
           setTab(v);
         }}
       >
@@ -384,9 +409,26 @@ function DocumentsPage() {
                   value={extra}
                   onChange={(e) => setExtra(e.target.value)}
                 />
+                <Label htmlFor="extra-pos" className="pt-1">
+                  ¿Dónde se agrega?
+                </Label>
+                <Select value={extraPos} onValueChange={setExtraPos}>
+                  <SelectTrigger id="extra-pos">
+                    <SelectValue placeholder="Elige la posición" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="start">Al inicio del documento</SelectItem>
+                    {paragraphs.map((p, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        Después del párrafo {i + 1}: {p.trim().slice(0, 40)}…
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="end">Al final del documento</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-[11px] text-muted-foreground">
-                  Este texto se agrega al documento que vas a generar y no se guarda en el
-                  documento base; al salir desaparece.
+                  Este texto se agrega en la posición elegida del documento que vas a generar y no
+                  se guarda en el documento base; al salir desaparece.
                 </p>
               </div>
 
