@@ -126,9 +126,14 @@ function ReportsPage() {
           overrides.filter((o) => o.employee_id === e.id),
           periodYear(periodKey),
         );
-        return { employee: e, row: quincenas.find((q) => q.periodKey === periodKey) };
+        return {
+          employee: e,
+          row: quincenas.find((q) => q.periodKey === periodKey),
+          firstPeriodKey: quincenas[0]?.periodKey ?? null,
+        };
       })
       .filter((r) => r.row);
+
   }, [employees, selectedCompanies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
   const totals = rows.reduce(
