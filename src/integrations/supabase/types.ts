@@ -364,6 +364,53 @@ export type Database = {
           },
         ]
       }
+      licenses: {
+        Row: {
+          created_at: string
+          days: number
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          reason: string
+          start_date: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days?: number
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          start_date: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          start_date?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licenses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_periods: {
         Row: {
           base_days: number

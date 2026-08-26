@@ -25,12 +25,15 @@ import {
   useEmployees,
   useIncapacities,
   useLeaves,
+  useLicenses,
   useOverrides,
   useTerminations,
 } from "@/lib/data";
 import { downloadWorkbook, type Cell, type SheetBlock } from "@/lib/excel";
 import {
   INCAPACITY_LABELS,
+  LICENSE_LABELS,
+  PAID_LICENSE_TYPES,
   TERMINATION_LABELS,
   buildQuincenas,
   currentPeriodKey,
@@ -44,6 +47,7 @@ import {
   todayISO,
   type Employee,
 } from "@/lib/hr";
+
 
 export const Route = createFileRoute("/_authenticated/reportes")({
   head: () => ({
@@ -87,6 +91,8 @@ function ReportsPage() {
   const { data: leaves = [] } = useLeaves();
   const { data: overrides = [] } = useOverrides();
   const { data: terminations = [] } = useTerminations();
+  const { data: licenses = [] } = useLicenses();
+
 
   const [periodKey, setPeriodKey] = useState(currentPeriodKey());
   const [companyId, setCompanyId] = useState<string>("all");
@@ -125,6 +131,7 @@ function ReportsPage() {
           leaves.filter((l) => l.employee_id === e.id),
           overrides.filter((o) => o.employee_id === e.id),
           periodYear(periodKey),
+          licenses.filter((l) => l.employee_id === e.id),
         );
         return {
           employee: e,
@@ -133,8 +140,8 @@ function ReportsPage() {
         };
       })
       .filter((r) => r.row);
+  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, licenses, overrides, periodKey]);
 
-  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, overrides, periodKey]);
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -237,6 +244,26 @@ function ReportsPage() {
         ];
       });
 
+    const licenciasRows = licenses
+      .filter((l) => byId.has(l.employee_id))
+      .filter((l) => l.start_date <= bounds.end && l.end_date >= bounds.start)
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .map((l): Cell[] => {
+        const e = byId.get(l.employee_id)!.employee;
+        const paid = PAID_LICENSE_TYPES.includes(l.type);
+        return [
+          ...base(e),
+          `${LICENSE_LABELS[l.type] ?? l.type}${paid ? "" : " *"}`,
+          fmtDate(l.start_date),
+          fmtDate(l.end_date),
+          overlapDays(l.start_date, l.end_date, bounds.start, bounds.end),
+          Number(l.days),
+          paid ? "Remunerada" : "Sin remuneración",
+          worked(e),
+        ];
+      });
+
+
     // Solo empleados con alguna novedad en la quincena seleccionada.
     const conNovedad = new Set<string>();
     list.forEach(({ employee: e, firstPeriodKey }) => {
@@ -257,6 +284,11 @@ function ReportsPage() {
     overrides
       .filter((o) => o.period_key === periodKey && byId.has(o.employee_id))
       .forEach((o) => conNovedad.add(o.employee_id));
+    licenses
+      .filter((l) => byId.has(l.employee_id) && l.start_date <= bounds.end && l.end_date >= bounds.start)
+      .forEach((l) => conNovedad.add(l.employee_id));
+
+
 
     const resumen = list
       .filter(({ employee }) => conNovedad.has(employee.id))
@@ -324,7 +356,29 @@ function ReportsPage() {
         header: [...NOVELTY_HEADER.slice(0, 5), "Días base ajustados", "Días trabajados"],
         rows: descuentos,
       },
+      {
+        title: "7. LICENCIAS",
+        header: [
+          "Cédula",
+          "Nombre",
+          "Empresa",
+          "Cargo",
+          "Tipo de licencia",
+          "Fecha inicio",
+          "Fecha fin",
+          "Días en la quincena",
+          "Días totales",
+          "Remuneración",
+          "Días trabajados",
+        ],
+        rows: licenciasRows,
+      },
+      {
+        title: "* Licencia marcada con asterisco: no remunerada, descuenta días de la quincena.",
+        rows: [],
+      },
     ];
+
   };
 
   const exportReport = () => {

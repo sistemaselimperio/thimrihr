@@ -5,11 +5,13 @@ import { Plus } from "lucide-react";
 import {
   IncapacityDialog,
   LeaveDialog,
+  LicenseDialog,
   NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
 
 import { useFilters } from "@/components/layout/filters-context";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -20,15 +22,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEmployees, useIncapacities, useLeaves, useTerminations } from "@/lib/data";
+import {
+  useEmployees,
+  useIncapacities,
+  useLeaves,
+  useLicenses,
+  useTerminations,
+} from "@/lib/data";
 import {
   INCAPACITY_LABELS,
   LEAVE_LABELS,
+  LICENSE_LABELS,
   TERMINATION_LABELS,
   daysInclusive,
   fmtDate,
   incapacityStatus,
+  licenseStatus,
 } from "@/lib/hr";
+
 
 export const Route = createFileRoute("/_authenticated/novedades")({
   head: () => ({
@@ -55,9 +66,12 @@ function NoveltiesPage() {
   const { data: incapacities = [] } = useIncapacities();
   const { data: leaves = [] } = useLeaves();
   const { data: terminations = [] } = useTerminations();
+  const { data: licenses = [] } = useLicenses();
   const [incOpen, setIncOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [termOpen, setTermOpen] = useState(false);
+  const [licOpen, setLicOpen] = useState(false);
+
 
   const byId = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
   const term = filters.search.trim().toLowerCase();
@@ -100,6 +114,9 @@ function NoveltiesPage() {
           <Button variant="outline" onClick={() => setLeaveOpen(true)}>
             Permiso
           </Button>
+          <Button variant="outline" onClick={() => setLicOpen(true)}>
+            Licencia
+          </Button>
           <Button variant="outline" onClick={() => setTermOpen(true)}>
             Retiro
           </Button>
@@ -110,8 +127,10 @@ function NoveltiesPage() {
         <TabsList>
           <TabsTrigger value="incapacidades">Incapacidades</TabsTrigger>
           <TabsTrigger value="permisos">Permisos y vacaciones</TabsTrigger>
+          <TabsTrigger value="licencias">Licencias</TabsTrigger>
           <TabsTrigger value="retiros">Retiros</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="incapacidades">
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
@@ -195,6 +214,70 @@ function NoveltiesPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="licencias">
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empleado</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Desde</TableHead>
+                  <TableHead>Hasta</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead>Motivo</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {licenses.filter((l) => matches(l.employee_id)).map((l) => {
+                  const estado = licenseStatus(l);
+                  return (
+                    <TableRow key={l.id}>
+                      <TableCell>
+                        <EmployeeLink employeeId={l.employee_id} />
+                      </TableCell>
+                      <TableCell>{LICENSE_LABELS[l.type] ?? l.type}</TableCell>
+                      <TableCell className="numeric">{fmtDate(l.start_date)}</TableCell>
+                      <TableCell className="numeric">{fmtDate(l.end_date)}</TableCell>
+                      <TableCell className="numeric">{l.days}</TableCell>
+                      <TableCell>{l.reason}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            estado === "Activa"
+                              ? "bg-success/20 text-success-foreground"
+                              : estado === "Próxima"
+                                ? "bg-warning/20 text-warning-foreground"
+                                : "bg-retired text-retired-foreground"
+                          }
+                        >
+                          {estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <NoveltyRowActions
+                          kind="license"
+                          record={l}
+                          summary={`${LICENSE_LABELS[l.type] ?? l.type} · ${fmtDate(l.start_date)} → ${fmtDate(l.end_date)}`}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {licenses.filter((l) => matches(l.employee_id)).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                      Aún no hay licencias registradas.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+
         <TabsContent value="retiros">
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
@@ -237,6 +320,8 @@ function NoveltiesPage() {
       <IncapacityDialog open={incOpen} onOpenChange={setIncOpen} />
       <LeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} />
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} />
+      <LicenseDialog open={licOpen} onOpenChange={setLicOpen} />
+
     </div>
   );
 }
