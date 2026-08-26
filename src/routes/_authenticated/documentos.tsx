@@ -76,6 +76,8 @@ function DocumentsPage() {
   const [search, setSearch] = useState("");
   /* Texto adicional temporal: se usa solo en el PDF actual, nunca se guarda en el borrador. */
   const [extra, setExtra] = useState("");
+  /* Posición de inserción: 0 = al inicio, n = después del párrafo n. */
+  const [extraPos, setExtraPos] = useState("end");
 
   const template = templates.find((t) => t.id === templateId);
   const employee = employees.find((e) => e.id === employeeId);
