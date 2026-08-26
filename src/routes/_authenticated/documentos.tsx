@@ -398,9 +398,26 @@ function DocumentsPage() {
                   value={extra}
                   onChange={(e) => setExtra(e.target.value)}
                 />
+                <Label htmlFor="extra-pos" className="pt-1">
+                  ¿Dónde se agrega?
+                </Label>
+                <Select value={extraPos} onValueChange={setExtraPos}>
+                  <SelectTrigger id="extra-pos">
+                    <SelectValue placeholder="Elige la posición" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="start">Al inicio del documento</SelectItem>
+                    {paragraphs.map((p, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        Después del párrafo {i + 1}: {p.trim().slice(0, 40)}…
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="end">Al final del documento</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-[11px] text-muted-foreground">
-                  Este texto se agrega al documento que vas a generar y no se guarda en el
-                  documento base; al salir desaparece.
+                  Este texto se agrega en la posición elegida del documento que vas a generar y no
+                  se guarda en el documento base; al salir desaparece.
                 </p>
               </div>
 
