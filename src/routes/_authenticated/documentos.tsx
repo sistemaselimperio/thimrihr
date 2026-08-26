@@ -8,6 +8,7 @@ import { useCelebration } from "@/components/hr/Celebration";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -73,6 +74,8 @@ function DocumentsPage() {
   const [templateId, setTemplateId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [search, setSearch] = useState("");
+  /* Texto adicional temporal: se usa solo en el PDF actual, nunca se guarda en el borrador. */
+  const [extra, setExtra] = useState("");
 
   const template = templates.find((t) => t.id === templateId);
   const employee = employees.find((e) => e.id === employeeId);
@@ -119,11 +122,17 @@ function DocumentsPage() {
       .slice(0, 60);
   }, [employees, search, template?.company_id]);
 
-  const text = useMemo(() => {
+  const baseText = useMemo(() => {
     if (!employee || !template) return "";
     if (template.body?.trim()) return fillTemplate(template.body, employee, company);
     return renderDocument(template.category, { employee, company, extra: "" });
   }, [employee, template, company]);
+
+  const text = useMemo(() => {
+    if (!baseText) return "";
+    const add = extra.trim();
+    return add ? `${baseText}\n\n${add}` : baseText;
+  }, [baseText, extra]);
 
   const openCreate = () => {
     setEditing(undefined);
@@ -139,6 +148,7 @@ function DocumentsPage() {
     setTemplateId(t.id);
     setEmployeeId("");
     setSearch("");
+    setExtra("");
     setTab("generar");
   };
 
@@ -248,7 +258,13 @@ function DocumentsPage() {
         </Button>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          if (v !== "generar") setExtra("");
+          setTab(v);
+        }}
+      >
         <TabsList>
           <TabsTrigger value="base">Documentos base</TabsTrigger>
           <TabsTrigger value="generar">Generar PDF</TabsTrigger>
@@ -357,6 +373,21 @@ function DocumentsPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="extra-text">Información adicional (temporal)</Label>
+                <Textarea
+                  id="extra-text"
+                  rows={4}
+                  placeholder="Escribe texto extra que se agregará solo a este documento…"
+                  value={extra}
+                  onChange={(e) => setExtra(e.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Este texto se agrega al documento que vas a generar y no se guarda en el
+                  documento base; al salir desaparece.
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
