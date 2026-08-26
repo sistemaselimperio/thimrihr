@@ -83,7 +83,7 @@ function DocumentsPage() {
   const [search, setSearch] = useState("");
   /* Texto adicional temporal: se usa solo en el PDF actual, nunca se guarda en el borrador. */
   const [extra, setExtra] = useState("");
-  /* Posición de inserción: 0 = al inicio, n = después del párrafo n. */
+  /* Posición de inserción: "start" = al inicio, "end" = al final, n = después del renglón n. */
   const [extraPos, setExtraPos] = useState("end");
 
   const template = templates.find((t) => t.id === templateId);
@@ -137,8 +137,8 @@ function DocumentsPage() {
     return renderDocument(template.category, { employee, company, extra: "" });
   }, [employee, template, company]);
 
-  const paragraphs = useMemo(
-    () => baseText.split(/\n\s*\n/).filter((p) => p.trim()),
+  const lines = useMemo(
+    () => baseText.split(/\n/).map((l) => l.trim()).filter((l) => l.length > 0),
     [baseText],
   );
 
