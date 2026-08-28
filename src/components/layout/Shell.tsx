@@ -44,7 +44,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanies, useEmployees } from "@/lib/data";
 import { activeFilterCount } from "@/lib/filters";
 import { downloadSheet } from "@/lib/excel";
-import { fmtDate } from "@/lib/hr";
+import { fmtDate, isFixedTerm } from "@/lib/hr";
 import { useFilters } from "./filters-context";
 
 const NAV = [

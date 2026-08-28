@@ -18,7 +18,7 @@ import {
 import { useCompanies, useEmployees, useIncapacities, useLeaves } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
 import { filterEmployees } from "@/lib/filters";
-import { fmtDate, type Employee } from "@/lib/hr";
+import { CONTRACT_TYPE_LABELS, fmtDate, isFixedTerm, type Employee } from "@/lib/hr";
 
 export const Route = createFileRoute("/_authenticated/empleados/")({
   head: () => ({
@@ -146,6 +146,11 @@ function EmployeesPage() {
                 <TableCell>{e.company_id ? (companyName.get(e.company_id) ?? "—") : "—"}</TableCell>
                 <TableCell>{e.position}</TableCell>
                 <TableCell className="numeric">{fmtDate(e.hire_date)}</TableCell>
+                <TableCell>
+                  {CONTRACT_TYPE_LABELS[
+                    e.contract_type ?? (e.contract_end_date ? "fijo" : "indefinido")
+                  ] ?? "—"}
+                </TableCell>
                 <TableCell className="numeric">
                   {isFixedTerm(e) ? fmtDate(e.contract_end_date) : "—"}
                 </TableCell>
