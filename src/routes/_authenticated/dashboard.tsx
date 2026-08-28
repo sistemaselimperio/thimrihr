@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity,
   BriefcaseBusiness,
@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 
 import { MiniCalendar } from "@/components/hr/MiniCalendar";
+import { RenewContractDialog } from "@/components/hr/RenewContractDialog";
 import { useFilters } from "@/components/layout/filters-context";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   useCompanies,
   useEmployees,
@@ -19,7 +21,7 @@ import {
   useLeaves,
 } from "@/lib/data";
 import { buildAlerts } from "@/lib/filters";
-import { INCAPACITY_LABELS, fmtDate } from "@/lib/hr";
+import { INCAPACITY_LABELS, fmtDate, type Employee } from "@/lib/hr";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
