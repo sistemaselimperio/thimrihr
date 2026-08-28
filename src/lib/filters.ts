@@ -68,12 +68,16 @@ export function filterEmployees(
         e.cedula.toLowerCase().includes(term) ||
         (e.first_name ?? "").toLowerCase().includes(term) ||
         (e.last_name ?? "").toLowerCase().includes(term) ||
+        (e.email ?? "").toLowerCase().includes(term) ||
+        (e.phone ?? "").toLowerCase().includes(term) ||
+        (e.landline ?? "").toLowerCase().includes(term) ||
         e.position.toLowerCase().includes(term) ||
         (e.municipality ?? "").toLowerCase().includes(term) ||
         (e.work_location ?? "").toLowerCase().includes(term) ||
         (e.folder_number ?? "").toLowerCase().includes(term);
       if (!hit) return false;
     }
+
     if (f.status !== "todos" && e.status !== f.status) return false;
     if (f.companyId !== "all" && e.company_id !== f.companyId) return false;
     if (f.position.trim() && !e.position.toLowerCase().includes(f.position.trim().toLowerCase()))
