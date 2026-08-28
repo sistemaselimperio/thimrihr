@@ -8,7 +8,9 @@ import type {
   License,
   PayrollPeriodOverride,
   Termination,
+  Vacation,
   VacationEntitlement,
+
 } from "./hr";
 
 
