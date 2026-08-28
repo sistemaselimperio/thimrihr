@@ -332,6 +332,65 @@ function Dashboard() {
         </div>
       </div>
 
+      {currentHires.length > 0 && (
+        <Dialog open={showIngresos} onOpenChange={setShowIngresos}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Ingresos esta quincena</DialogTitle>
+              <DialogDescription>
+                {periodLabelLong(currentPeriod)} · Quincena: {fmtDate(periodStart)} — {fmtDate(periodEnd)}
+              </DialogDescription>
+            </DialogHeader>
+            <ul className="max-h-[60vh] divide-y divide-border/60 overflow-auto">
+              {currentHires.map((employee) => (
+                <li key={employee.id} className="flex flex-col gap-1 py-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{employee.full_name}</span>
+                    <span className="numeric text-muted-foreground">
+                      {fmtDate(employee.hire_date)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Cédula: {employee.cedula} · Cargo: {employee.position}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Empresa: {companyMap.get(employee.company_id ?? "") ?? "—"}
+                  </div>
+                  <div className="mt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setShowIngresos(false);
+                        void navigate({
+                          to: "/empleados/$id",
+                          params: { id: employee.id },
+                        });
+                      }}
+                    >
+                      Ver perfil
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button variant="outline" onClick={() => setShowIngresos(false)}>
+                Cerrar
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowIngresos(false);
+                  void navigate({ to: "/empleados" });
+                }}
+              >
+                Ir a empleados
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {renew && (
         <RenewContractDialog
           open={Boolean(renew)}
