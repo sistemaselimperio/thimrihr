@@ -347,8 +347,6 @@ function EmployeeDetail() {
           <TabsTrigger value="permisos">Permisos</TabsTrigger>
           <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="licencias">Licencias</TabsTrigger>
-
-          <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="retiro">Retiro</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
