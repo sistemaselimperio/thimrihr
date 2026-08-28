@@ -461,6 +461,7 @@ export function buildVacationSummary(
   employee: Employee,
   entitlements: VacationEntitlement[],
   leaves: Leave[],
+  vacationPeriods: Vacation[] = [],
 ): VacationSummary {
   const hireYear = parseDate(employee.hire_date).getFullYear();
   const lastYear = employee.exit_date
@@ -473,20 +474,35 @@ export function buildVacationSummary(
   leaves
     .filter((l) => l.type === "vacaciones")
     .forEach((l) => years.add(parseDate(l.start_date).getFullYear()));
+  vacationPeriods.forEach((v) =>
+    years.add(Number(v.year) || parseDate(v.start_date).getFullYear()),
+  );
 
   const sorted = [...years].sort((a, b) => a - b);
   let running = 0;
   const rows: VacationYearRow[] = sorted.map((year) => {
     const ent = entitlements.find((e) => e.year === year);
     const entitled = ent ? Number(ent.entitled_days) : 15;
-    const used = leaves
+    const usedLeaves = leaves
       .filter(
         (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
       )
       .reduce((sum, l) => sum + Number(l.days), 0);
+    const usedPeriods = vacationPeriods
+      .filter((v) => (Number(v.year) || parseDate(v.start_date).getFullYear()) === year)
+      .reduce((sum, v) => sum + Number(v.days), 0);
+    const used = Math.round((usedLeaves + usedPeriods) * 10) / 10;
     running += entitled - used;
-    return { year, entitled, used, balance: Math.round(running * 10) / 10 };
+    return {
+      year,
+      entitled,
+      used,
+      usedLeaves: Math.round(usedLeaves * 10) / 10,
+      usedPeriods: Math.round(usedPeriods * 10) / 10,
+      balance: Math.round(running * 10) / 10,
+    };
   });
+
 
   const totalEntitled = rows.reduce((s, r) => s + r.entitled, 0);
   const totalUsed = rows.reduce((s, r) => s + r.used, 0);
