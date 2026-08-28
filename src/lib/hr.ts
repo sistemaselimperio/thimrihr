@@ -359,6 +359,8 @@ export function buildQuincenas(
   overrides: PayrollPeriodOverride[],
   year: number,
   licenses: License[] = [],
+  vacationPeriods: Vacation[] = [],
+
 ): QuincenaRow[] {
   const today = todayISO();
   const overrideMap = new Map(overrides.map((o) => [o.period_key, o]));
