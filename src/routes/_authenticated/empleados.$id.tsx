@@ -9,6 +9,7 @@ import {
   IncapacityDialog,
   LeaveDialog,
   LicenseDialog,
+  VacationDialog,
   NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
@@ -37,6 +38,7 @@ import {
   useIncapacities,
   useLeaves,
   useLicenses,
+  useVacations,
   useGeneratedDocuments,
   useOverrides,
   useTerminations,
@@ -54,6 +56,7 @@ import {
   fmtDate,
   incapacityStatus,
   licenseStatus,
+  vacationStatus,
 } from "@/lib/hr";
 
 
@@ -96,6 +99,7 @@ function EmployeeDetail() {
   const { data: entitlements = [] } = useEntitlements();
   const { data: overrides = [] } = useOverrides();
   const { data: licenses = [] } = useLicenses();
+  const { data: vacationRecords = [] } = useVacations();
   const { data: generatedDocs = [] } = useGeneratedDocuments();
 
   const [year, setYear] = useState(new Date().getFullYear());
@@ -104,6 +108,7 @@ function EmployeeDetail() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [termOpen, setTermOpen] = useState(false);
   const [licOpen, setLicOpen] = useState(false);
+  const [vacOpen, setVacOpen] = useState(false);
 
   const employee = employees.find((e) => e.id === id);
   const myIncapacities = incapacities.filter((i) => i.employee_id === id);
@@ -112,20 +117,32 @@ function EmployeeDetail() {
   const myEntitlements = entitlements.filter((v) => v.employee_id === id);
   const myOverrides = overrides.filter((o) => o.employee_id === id);
   const myLicenses = licenses.filter((l) => l.employee_id === id);
+  const myVacations = vacationRecords.filter((v) => v.employee_id === id);
   const myDocs = generatedDocs.filter((d) => d.employee_id === id);
 
   const quincenas = useMemo(
     () =>
       employee
-        ? buildQuincenas(employee, myIncapacities, myLeaves, myOverrides, year, myLicenses)
+        ? buildQuincenas(
+            employee,
+            myIncapacities,
+            myLeaves,
+            myOverrides,
+            year,
+            myLicenses,
+            myVacations,
+          )
         : [],
-    [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses],
+    [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses, myVacations],
   );
 
 
   const vacations = useMemo(
-    () => (employee ? buildVacationSummary(employee, myEntitlements, myLeaves) : null),
-    [employee, myEntitlements, myLeaves],
+    () =>
+      employee
+        ? buildVacationSummary(employee, myEntitlements, myLeaves, myVacations)
+        : null,
+    [employee, myEntitlements, myLeaves, myVacations],
   );
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando ficha…</p>;
@@ -328,6 +345,7 @@ function EmployeeDetail() {
           <TabsTrigger value="quincenas">Quincenas</TabsTrigger>
           <TabsTrigger value="incapacidades">Incapacidades</TabsTrigger>
           <TabsTrigger value="permisos">Permisos</TabsTrigger>
+          <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="licencias">Licencias</TabsTrigger>
 
           <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
@@ -721,6 +739,7 @@ function EmployeeDetail() {
       <IncapacityDialog open={incOpen} onOpenChange={setIncOpen} employeeId={emp.id} />
       <LeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} employeeId={emp.id} />
       <LicenseDialog open={licOpen} onOpenChange={setLicOpen} employeeId={emp.id} />
+      <VacationDialog open={vacOpen} onOpenChange={setVacOpen} employeeId={emp.id} />
 
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} employeeId={emp.id} />
     </div>
