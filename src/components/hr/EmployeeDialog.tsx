@@ -78,8 +78,8 @@ const PHONE_RE = /^\+?\d{6,15}$/;
 function splitName(full: string) {
   const parts = full.trim().split(/\s+/).filter(Boolean);
   if (parts.length <= 1) return { first: full.trim(), last: "" };
-  if (parts.length === 2) return { first: parts[0], last: parts[1] };
-  if (parts.length === 3) return { first: parts[0], last: parts.slice(1).join(" ") };
+  if (parts.length === 2) return { first: parts[0] ?? "", last: parts[1] ?? "" };
+  if (parts.length === 3) return { first: parts[0] ?? "", last: parts.slice(1).join(" ") };
   return { first: parts.slice(0, parts.length - 2).join(" "), last: parts.slice(-2).join(" ") };
 }
 
