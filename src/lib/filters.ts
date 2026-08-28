@@ -87,7 +87,7 @@ export function filterEmployees(
 
     if (f.expiry !== "none") {
       const window = Number(f.expiry);
-      if (!e.contract_end_date) return false;
+      if (!isFixedTerm(e)) return false;
       const d = daysUntil(e.contract_end_date, today);
       if (d < 0 || d > window) return false;
     }
@@ -108,7 +108,7 @@ export function filterEmployees(
     if (f.day) {
       const day = f.day;
       const hit =
-        e.contract_end_date === day ||
+        (isFixedTerm(e) && e.contract_end_date === day) ||
         e.hire_date === day ||
         e.exit_date === day ||
         ctx.incapacities.some(
@@ -138,7 +138,7 @@ export function buildAlerts(
   const byId = new Map(employees.map((e) => [e.id, e]));
 
   const expiring = employees
-    .filter((e) => e.status === "activo" && e.contract_end_date)
+    .filter((e) => e.status === "activo" && isFixedTerm(e))
     .map((e) => ({ employee: e, days: daysUntil(e.contract_end_date as string, today) }))
     .filter((r) => r.days >= 0 && r.days <= CONTRACT_ALERT_DAYS)
     .sort((a, b) => a.days - b.days);

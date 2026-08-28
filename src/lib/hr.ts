@@ -25,6 +25,7 @@ export interface Employee {
   position: string;
   hire_date: string;
   contract_end_date: string | null;
+  contract_type?: string | null;
   exit_date: string | null;
   phone: string | null;
   landline?: string | null;
@@ -192,6 +193,17 @@ export const TERMINATION_LABELS: Record<string, string> = {
   justa_causa: "Justa causa",
 };
 
+
+export const CONTRACT_TYPE_LABELS: Record<string, string> = {
+  fijo: "Término fijo",
+  indefinido: "Indefinido",
+};
+
+/** Un contrato genera alertas de vencimiento solo si es a término fijo con fecha. */
+export function isFixedTerm(e: Pick<Employee, "contract_type" | "contract_end_date">): boolean {
+  const type = e.contract_type ?? (e.contract_end_date ? "fijo" : "indefinido");
+  return type === "fijo" && Boolean(e.contract_end_date);
+}
 
 export const MAX_VACATION_LEAVE_DAYS = 7;
 export const VACATION_MIN_RESERVE = 7;
