@@ -100,7 +100,6 @@ function EmployeeDetail() {
   const { data: overrides = [] } = useOverrides();
   const { data: licenses = [] } = useLicenses();
   const { data: vacationRecords = [] } = useVacations();
-  const { data: generatedDocs = [] } = useGeneratedDocuments();
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [editOpen, setEditOpen] = useState(false);
@@ -118,7 +117,6 @@ function EmployeeDetail() {
   const myOverrides = overrides.filter((o) => o.employee_id === id);
   const myLicenses = licenses.filter((l) => l.employee_id === id);
   const myVacations = vacationRecords.filter((v) => v.employee_id === id);
-  const myDocs = generatedDocs.filter((d) => d.employee_id === id);
 
   const quincenas = useMemo(
     () =>
