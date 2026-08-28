@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { monthLong, toISO, todayISO, type Employee, type Incapacity, type Leave } from "@/lib/hr";
+import { isFixedTerm, monthLong, toISO, todayISO, type Employee, type Incapacity, type Leave } from "@/lib/hr";
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
