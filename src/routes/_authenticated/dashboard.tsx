@@ -201,6 +201,53 @@ function Dashboard() {
             </ul>
           </section>
 
+          <section className="panel-info rounded-xl p-4">
+            <header className="flex flex-wrap items-center gap-2">
+              <UserPlus className="size-4" />
+              <h2 className="font-display text-sm font-bold">Ingresos esta quincena</h2>
+              <Badge className="ml-auto bg-brand text-brand-foreground">{currentHires.length}</Badge>
+            </header>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Quincena: {fmtDate(periodStart)} — {fmtDate(periodEnd)}
+            </p>
+            <ul className="mt-3 divide-y divide-border/60">
+              {currentHires.slice(0, 3).map((employee) => (
+                <li key={employee.id} className="flex flex-col gap-0.5 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="font-medium underline-offset-4 hover:underline text-left"
+                      onClick={() =>
+                        void navigate({
+                          to: "/empleados/$id",
+                          params: { id: employee.id },
+                        })
+                      }
+                    >
+                      {employee.full_name}
+                    </button>
+                    <span className="numeric text-muted-foreground">{fmtDate(employee.hire_date)}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {employee.cedula} · {employee.position} · {companyMap.get(employee.company_id) ?? "—"}
+                  </div>
+                </li>
+              ))}
+              {currentHires.length === 0 && (
+                <li className="py-2 text-sm text-muted-foreground">Sin ingresos en esta quincena.</li>
+              )}
+            </ul>
+            {currentHires.length > 3 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full"
+                onClick={() => setShowIngresos(true)}
+              >
+                Ver {currentHires.length - 3} más
+              </Button>
+            )}
+          </section>
+
           <section className="panel-warning rounded-xl p-4">
             <header className="flex items-center gap-2">
               <Activity className="size-4" />
