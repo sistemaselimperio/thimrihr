@@ -39,12 +39,10 @@ import {
   useLeaves,
   useLicenses,
   useVacations,
-  useGeneratedDocuments,
   useOverrides,
   useTerminations,
 } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
-import { downloadDocumentPdf } from "@/lib/pdf-doc";
 import {
   INCAPACITY_LABELS,
   LEAVE_LABELS,
