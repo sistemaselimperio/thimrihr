@@ -768,55 +768,6 @@ function EmployeeDetail() {
             </Table>
           </div>
         </TabsContent>
-
-        <TabsContent value="documentos" className="space-y-3">
-          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead>Generado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {myDocs.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.template_name}</TableCell>
-                    <TableCell>{d.company_name ?? "—"}</TableCell>
-                    <TableCell className="numeric">
-                      {new Date(d.created_at).toLocaleString("es-CO")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() =>
-                          void downloadDocumentPdf({
-                            title: `${d.template_name} — ${d.employee_name}`,
-                            text: d.content,
-                            logoUrl: null,
-                          })
-                        }
-                      >
-                        <FileDown className="size-4" /> Descargar PDF
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {myDocs.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                      Aún no se han generado documentos para este empleado.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
       </Tabs>
 
       <EmployeeDialog open={editOpen} onOpenChange={setEditOpen} employee={emp} />
