@@ -34,6 +34,7 @@ type Form = {
   company_id: string;
   position: string;
   hire_date: string;
+  contract_type: string;
   contract_end_date: string;
   phone: string;
   work_location: string;
@@ -48,6 +49,7 @@ const blank: Form = {
   company_id: "",
   position: "",
   hire_date: "",
+  contract_type: "fijo",
   contract_end_date: "",
   phone: "",
   work_location: "",
@@ -82,6 +84,8 @@ export function EmployeeDialog({
             company_id: employee.company_id ?? "",
             position: employee.position,
             hire_date: employee.hire_date,
+            contract_type:
+              employee.contract_type ?? (employee.contract_end_date ? "fijo" : "indefinido"),
             contract_end_date: employee.contract_end_date ?? "",
             phone: employee.phone ?? "",
             work_location: employee.work_location ?? "",
@@ -101,6 +105,10 @@ export function EmployeeDialog({
       toast.error("Selecciona la empresa del empleado");
       return;
     }
+    if (form.contract_type === "fijo" && !form.contract_end_date) {
+      toast.error("Si seleccionas Término fijo, debes ingresar la fecha de fin de contrato");
+      return;
+    }
     setBusy(true);
     try {
       const row = {
@@ -109,7 +117,9 @@ export function EmployeeDialog({
         company_id: form.company_id,
         position: form.position.trim(),
         hire_date: form.hire_date,
-        contract_end_date: form.contract_end_date || null,
+        contract_type: form.contract_type,
+        contract_end_date:
+          form.contract_type === "indefinido" ? null : form.contract_end_date || null,
         phone: form.phone.trim() || null,
         work_location: form.work_location.trim() || null,
         work_schedule: form.work_schedule.trim() || null,
@@ -241,15 +251,47 @@ export function EmployeeDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="contract_end_date">Fin de contrato</Label>
+            <Label>
+              Tipo de contrato <span className="text-danger-foreground">*</span>
+            </Label>
+            <Select
+              value={form.contract_type}
+              onValueChange={(v) =>
+                set({
+                  contract_type: v,
+                  contract_end_date: v === "indefinido" ? "" : form.contract_end_date,
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fijo">Término fijo</SelectItem>
+                <SelectItem value="indefinido">Indefinido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="contract_end_date">
+              Fin de contrato
+              {form.contract_type === "fijo" && (
+                <span className="text-danger-foreground"> *</span>
+              )}
+            </Label>
             <Input
               id="contract_end_date"
               type="date"
-              value={form.contract_end_date}
+              disabled={form.contract_type === "indefinido"}
+              required={form.contract_type === "fijo"}
+              value={form.contract_type === "indefinido" ? "" : form.contract_end_date}
               onChange={(e) => set({ contract_end_date: e.target.value })}
             />
             <p className="text-[11px] text-muted-foreground">
-              Vacío = contrato a término indefinido.
+              {form.contract_type === "indefinido"
+                ? "— Sin fecha límite (contrato indefinido)."
+                : "Obligatoria para contratos a término fijo."}
             </p>
           </div>
 

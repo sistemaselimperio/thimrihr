@@ -18,7 +18,7 @@ import {
 import { useCompanies, useEmployees, useIncapacities, useLeaves } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
 import { filterEmployees } from "@/lib/filters";
-import { fmtDate, type Employee } from "@/lib/hr";
+import { CONTRACT_TYPE_LABELS, fmtDate, isFixedTerm, type Employee } from "@/lib/hr";
 
 export const Route = createFileRoute("/_authenticated/empleados/")({
   head: () => ({
@@ -62,14 +62,17 @@ function EmployeesPage() {
     downloadSheet("Empleados_filtrados.xlsx", "Empleados", [
       {
         title: "EMPLEADOS (SELECCIÓN ACTUAL)",
-        header: ["Cédula", "Nombre", "Empresa", "Cargo", "Ingreso", "Fin contrato", "Estado"],
+        header: ["Cédula", "Nombre", "Empresa", "Cargo", "Ingreso", "Tipo de contrato", "Fin contrato", "Estado"],
         rows: rows.map((e) => [
           e.cedula,
           e.full_name,
           e.company_id ? (companyName.get(e.company_id) ?? "") : "",
           e.position,
           fmtDate(e.hire_date),
-          e.contract_end_date ? fmtDate(e.contract_end_date) : "Indefinido",
+          CONTRACT_TYPE_LABELS[
+            e.contract_type ?? (e.contract_end_date ? "fijo" : "indefinido")
+          ] ?? "",
+          isFixedTerm(e) ? fmtDate(e.contract_end_date) : "—",
           e.status === "activo" ? "Activo" : "Retirado",
         ]),
       },
@@ -121,6 +124,7 @@ function EmployeesPage() {
               <TableHead>Empresa</TableHead>
               <TableHead>Cargo</TableHead>
               <TableHead>Ingreso</TableHead>
+              <TableHead>Tipo contrato</TableHead>
               <TableHead>Fin contrato</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead />
@@ -142,8 +146,13 @@ function EmployeesPage() {
                 <TableCell>{e.company_id ? (companyName.get(e.company_id) ?? "—") : "—"}</TableCell>
                 <TableCell>{e.position}</TableCell>
                 <TableCell className="numeric">{fmtDate(e.hire_date)}</TableCell>
+                <TableCell>
+                  {CONTRACT_TYPE_LABELS[
+                    e.contract_type ?? (e.contract_end_date ? "fijo" : "indefinido")
+                  ] ?? "—"}
+                </TableCell>
                 <TableCell className="numeric">
-                  {e.contract_end_date ? fmtDate(e.contract_end_date) : "Indefinido"}
+                  {isFixedTerm(e) ? fmtDate(e.contract_end_date) : "—"}
                 </TableCell>
                 <TableCell>
                   {e.status === "activo" ? (

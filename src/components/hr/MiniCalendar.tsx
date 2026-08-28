@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { monthLong, toISO, todayISO, type Employee, type Incapacity, type Leave } from "@/lib/hr";
+import { isFixedTerm, monthLong, toISO, todayISO, type Employee, type Incapacity, type Leave } from "@/lib/hr";
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
@@ -31,7 +31,7 @@ function buildMarks(
 
   for (const day of days) {
     for (const emp of employees) {
-      if (emp.contract_end_date === day) get(day).vencimiento = true;
+      if (isFixedTerm(emp) && emp.contract_end_date === day) get(day).vencimiento = true;
       if (emp.exit_date === day) get(day).salida = true;
     }
     for (const inc of incapacities) {
