@@ -123,6 +123,7 @@ export function ImportEmployees({ companies }: { companies: Company[] }) {
         landline: row.landline,
         email: row.email,
         contract_end_date: row.contract_end_date,
+        contract_type: row.contract_type,
         exit_date: row.exit_date,
         status: row.status,
         folder_number: row.folder_number,

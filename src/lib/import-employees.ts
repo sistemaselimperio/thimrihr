@@ -20,6 +20,7 @@ export interface ParsedEmployeeRow {
   email: string | null;
   hire_date: string | null;
   contract_end_date: string | null;
+  contract_type: "fijo" | "indefinido";
   exit_date: string | null;
   status: "activo" | "retirado";
   folder_number: string | null;
@@ -52,6 +53,7 @@ const FIELD_ALIASES: Record<keyof typeof FIELD_LABELS, string[]> = {
   email: ["email", "correo", "correoelectronico"],
   hire_date: ["fechadeingreso", "fechaingreso", "ingreso"],
   contract_end_date: ["findecontrato", "fincontrato", "vencimientocontrato"],
+  contract_type: ["tipocontrato", "tipodecontrato", "contrato"],
   exit_date: ["fechadesalida", "fechasalida", "salida", "retiro"],
   status: ["estado", "situacion"],
 };
@@ -69,6 +71,7 @@ export const FIELD_LABELS = {
   email: "Email",
   hire_date: "Fecha de Ingreso",
   contract_end_date: "Fin de Contrato",
+  contract_type: "Tipo Contrato",
   exit_date: "Fecha de Salida",
   status: "Estado",
 } as const;
@@ -246,6 +249,16 @@ export async function parseEmployeeWorkbook(file: File): Promise<ParseResult> {
         }
       });
 
+      const contractEnd = parsedDates.contract_end_date ?? null;
+      const rawContractType = (at(row, "contract_type") ?? "").toUpperCase();
+      const contractType: "fijo" | "indefinido" = rawContractType.includes("INDEF")
+        ? "indefinido"
+        : rawContractType.includes("FIJO")
+          ? "fijo"
+          : contractEnd
+            ? "fijo"
+            : "indefinido";
+
       const estado = (at(row, "status") ?? "").toUpperCase();
       const exit = parsedDates.exit_date ?? null;
       const status: "activo" | "retirado" =
@@ -265,7 +278,8 @@ export async function parseEmployeeWorkbook(file: File): Promise<ParseResult> {
         landline: at(row, "landline"),
         email,
         hire_date: parsedDates.hire_date ?? null,
-        contract_end_date: parsedDates.contract_end_date ?? null,
+        contract_end_date: contractType === "indefinido" ? null : contractEnd,
+        contract_type: contractType,
         exit_date: exit,
         status,
         folder_number: at(row, "folder_number"),
