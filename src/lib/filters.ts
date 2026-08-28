@@ -2,6 +2,7 @@ import {
   CONTRACT_ALERT_DAYS,
   EXIT_ALERT_DAYS,
   daysUntil,
+  isFixedTerm,
   todayISO,
   type Employee,
   type Incapacity,
