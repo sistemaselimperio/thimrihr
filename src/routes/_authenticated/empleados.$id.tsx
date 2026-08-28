@@ -605,6 +605,78 @@ function EmployeeDetail() {
               <p className="numeric font-display text-2xl font-bold">{vacations?.available ?? 0}</p>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Mínimo acumulable por ley: <strong>7 días</strong>
+              {vacations?.rows.find((r) => r.year === year)
+                ? ` · ${year}: permisos ${vacations.rows.find((r) => r.year === year)?.usedLeaves ?? 0} · vacaciones ${vacations.rows.find((r) => r.year === year)?.usedPeriods ?? 0}`
+                : ""}
+            </p>
+            <Button variant="success" className="gap-2" onClick={() => setVacOpen(true)}>
+              <Plus className="size-4" /> Agregar período de vacaciones
+            </Button>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Año</TableHead>
+                  <TableHead>Desde</TableHead>
+                  <TableHead>Hasta</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead>Observaciones</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myVacations.map((v) => {
+                  const estado = vacationStatus(v);
+                  return (
+                    <TableRow key={v.id}>
+                      <TableCell className="numeric font-medium">{v.year}</TableCell>
+                      <TableCell className="numeric">{fmtDate(v.start_date)}</TableCell>
+                      <TableCell className="numeric">{fmtDate(v.end_date)}</TableCell>
+                      <TableCell className="numeric">{v.days}</TableCell>
+                      <TableCell>{v.destination ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{v.notes ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            estado === "En curso"
+                              ? "bg-primary/20 text-primary"
+                              : estado === "Programada"
+                                ? "bg-warning/20 text-warning-foreground"
+                                : "bg-retired text-retired-foreground"
+                          }
+                        >
+                          {estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <NoveltyRowActions
+                          kind="vacation"
+                          record={v}
+                          summary={`Vacaciones ${fmtDate(v.start_date)} → ${fmtDate(v.end_date)}`}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {myVacations.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                      Sin períodos de vacaciones registrados.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
               <TableHeader>
@@ -636,6 +708,7 @@ function EmployeeDetail() {
             </Table>
           </div>
         </TabsContent>
+
 
         <TabsContent value="retiro" className="space-y-3">
           {emp.status === "activo" && (
