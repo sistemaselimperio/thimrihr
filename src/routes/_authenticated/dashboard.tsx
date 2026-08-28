@@ -69,6 +69,7 @@ function Stat({
 function Dashboard() {
   const navigate = useNavigate();
   const { patch } = useFilters();
+  const [renew, setRenew] = useState<Employee | null>(null);
   const { data: employees = [] } = useEmployees();
   const { data: companies = [] } = useCompanies();
   const { data: incapacities = [] } = useIncapacities();
@@ -246,6 +247,14 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {renew && (
+        <RenewContractDialog
+          open={Boolean(renew)}
+          onOpenChange={(v) => !v && setRenew(null)}
+          employee={renew}
+        />
+      )}
     </div>
   );
 }
