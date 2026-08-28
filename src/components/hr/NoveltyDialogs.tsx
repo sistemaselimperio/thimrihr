@@ -949,10 +949,260 @@ export function LicenseDialog({
   );
 }
 
+/* -------------------------------------------------------------- vacaciones */
+
+export function VacationDialog({
+  open,
+  onOpenChange,
+  employeeId,
+  record,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  employeeId?: string;
+  record?: Vacation;
+}) {
+  const qc = useQueryClient();
+  const { data: employees = [] } = useEmployees();
+  const { data: entitlements = [] } = useEntitlements();
+  const { data: leaves = [] } = useLeaves();
+  const { data: vacations = [] } = useVacations();
+  const [form, setForm] = useState({
+    employee_id: employeeId ?? "",
+    start_date: "",
+    end_date: "",
+    destination: "",
+    notes: "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [warnOpen, setWarnOpen] = useState(false);
+
+  useEffect(() => {
+    if (open)
+      setForm({
+        employee_id: record?.employee_id ?? employeeId ?? "",
+        start_date: record?.start_date ?? "",
+        end_date: record?.end_date ?? "",
+        destination: record?.destination ?? "",
+        notes: record?.notes ?? "",
+      });
+  }, [open, employeeId, record]);
+
+  const days =
+    form.start_date && form.end_date && form.end_date >= form.start_date
+      ? daysInclusive(form.start_date, form.end_date)
+      : 0;
+
+  const year = form.start_date ? Number(form.start_date.slice(0, 4)) : new Date().getFullYear();
+
+  const employee = employees.find((e) => e.id === form.employee_id);
+  const summary = useMemo(() => {
+    if (!employee) return null;
+    return buildVacationSummary(
+      employee,
+      entitlements.filter((v) => v.employee_id === employee.id),
+      leaves.filter((l) => l.employee_id === employee.id),
+      vacations.filter((v) => v.employee_id === employee.id && v.id !== record?.id),
+    );
+  }, [employee, entitlements, leaves, vacations, record?.id]);
+
+  const available = summary?.available ?? 0;
+  const insufficient = days > 0 && days > available;
+
+  const overlapping = vacations.some(
+    (v) =>
+      v.employee_id === form.employee_id &&
+      v.id !== record?.id &&
+      form.start_date &&
+      form.end_date &&
+      v.start_date <= form.end_date &&
+      v.end_date >= form.start_date,
+  );
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const payload = {
+        employee_id: form.employee_id,
+        year,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        days,
+        destination: form.destination.trim() || null,
+        notes: form.notes.trim() || null,
+      };
+      if (record) await updateRow("vacations", record.id, payload);
+      else await insertRow("vacations", payload);
+      await qc.invalidateQueries({ queryKey: qk.vacations });
+      setWarnOpen(false);
+      onOpenChange(false);
+      toast.success(record ? "Cambios guardados" : "Vacaciones registradas");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.employee_id) {
+      toast.error("Selecciona un empleado");
+      return;
+    }
+    if (!form.start_date || !form.end_date) {
+      toast.error("Las fechas de inicio y fin son obligatorias");
+      return;
+    }
+    if (form.end_date < form.start_date) {
+      toast.error("La fecha final no puede ser anterior a la inicial");
+      return;
+    }
+    if (days <= 0) {
+      toast.error("Revisa las fechas del período");
+      return;
+    }
+    if (overlapping) {
+      toast.error("Ya existe un período de vacaciones que se solapa con estas fechas");
+      return;
+    }
+    if (insufficient) {
+      setWarnOpen(true);
+      return;
+    }
+    void save();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {record ? "Editar período de vacaciones" : "Agregar período de vacaciones"}
+          </DialogTitle>
+          <DialogDescription>
+            Las vacaciones descuentan días de la quincena y del saldo disponible.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="space-y-4">
+          {!employeeId && !record && (
+            <EmployeePicker
+              value={form.employee_id}
+              onChange={(v) => setForm((p) => ({ ...p, employee_id: v }))}
+              employees={employees}
+            />
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="vac_start">
+                Fecha de inicio <span className="text-danger-foreground">*</span>
+              </Label>
+              <Input
+                id="vac_start"
+                type="date"
+                required
+                value={form.start_date}
+                onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="vac_end">
+                Fecha de fin <span className="text-danger-foreground">*</span>
+              </Label>
+              <Input
+                id="vac_end"
+                type="date"
+                required
+                value={form.end_date}
+                onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <p className="rounded-md bg-surface-2 px-3 py-2 text-sm">
+            Año: <strong className="numeric">{year}</strong> · Duración calculada:{" "}
+            <strong className="numeric">{days}</strong> días · Disponibles:{" "}
+            <strong className="numeric">{available}</strong>
+          </p>
+
+          {insufficient && (
+            <p className="flex items-start gap-2 rounded-md bg-warning/15 px-3 py-2 text-sm text-warning-foreground">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              Intentas registrar {days} días pero solo hay {available} disponibles. Se podrá
+              continuar, pero el exceso debe pagarse.
+            </p>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="vac_dest">Motivo / Destino (opcional)</Label>
+            <Input
+              id="vac_dest"
+              placeholder="Ej: Cartagena, viaje familiar"
+              value={form.destination}
+              onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="vac_notes">Observaciones (opcional)</Label>
+            <Textarea
+              id="vac_notes"
+              rows={2}
+              placeholder="Ej: Vacaciones programadas con la familia"
+              value={form.notes}
+              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="success" disabled={busy}>
+              {busy && <Loader2 className="size-4 animate-spin" />}
+              {record ? "Guardar cambios" : "Guardar vacaciones"}
+            </Button>
+          </DialogFooter>
+        </form>
+
+        <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="size-4 text-warning-foreground" /> Saldo insuficiente
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Intentas registrar {days} días de vacaciones pero solo hay {available} días
+                disponibles. ¿Deseas continuar? El exceso debería pagarse.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={busy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void save();
+                }}
+              >
+                {busy && <Loader2 className="size-4 animate-spin" />}
+                Continuar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /* -------------------------------------------------- editar / eliminar filas */
 
-type NoveltyKind = "incapacity" | "leave" | "termination" | "license";
+type NoveltyKind = "incapacity" | "leave" | "termination" | "license" | "vacation";
+
+
 
 const TABLE_BY_KIND: Record<NoveltyKind, string> = {
   incapacity: "incapacities",
