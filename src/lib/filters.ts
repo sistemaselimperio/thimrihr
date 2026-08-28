@@ -89,7 +89,7 @@ export function filterEmployees(
     if (f.expiry !== "none") {
       const window = Number(f.expiry);
       if (!isFixedTerm(e)) return false;
-      const d = daysUntil(e.contract_end_date, today);
+      const d = daysUntil(e.contract_end_date as string, today);
       if (d < 0 || d > window) return false;
     }
 
