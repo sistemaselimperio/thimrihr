@@ -114,6 +114,7 @@ export type Database = {
           cedula: string
           company_id: string | null
           contract_end_date: string | null
+          contract_type: string
           created_at: string
           email: string | null
           exit_date: string | null
@@ -137,6 +138,7 @@ export type Database = {
           cedula: string
           company_id?: string | null
           contract_end_date?: string | null
+          contract_type?: string
           created_at?: string
           email?: string | null
           exit_date?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           cedula?: string
           company_id?: string | null
           contract_end_date?: string | null
+          contract_type?: string
           created_at?: string
           email?: string | null
           exit_date?: string | null
