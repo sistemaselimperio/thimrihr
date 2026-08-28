@@ -55,6 +55,8 @@ import {
   daysInclusive,
   fmtDate,
   incapacityStatus,
+  CONTRACT_TYPE_LABELS,
+  isFixedTerm,
   licenseStatus,
   vacationStatus,
 } from "@/lib/hr";
@@ -206,7 +208,13 @@ function EmployeeDetail() {
           ["Cédula", emp.cedula],
           ["Cargo", emp.position],
           ["Ingreso", fmtDate(emp.hire_date)],
-          ["Fin contrato", emp.contract_end_date ? fmtDate(emp.contract_end_date) : "Indefinido"],
+          [
+            "Tipo de contrato",
+            CONTRACT_TYPE_LABELS[
+              emp.contract_type ?? (emp.contract_end_date ? "fijo" : "indefinido")
+            ] ?? "",
+          ],
+          ["Fin contrato", isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "—"],
           ["Estado", emp.status === "activo" ? "Activo" : "Retirado"],
         ],
       },
@@ -298,8 +306,18 @@ function EmployeeDetail() {
             <Field label="Horario" value={emp.work_schedule ?? "—"} />
             <Field label="Fecha de ingreso" value={fmtDate(emp.hire_date)} />
             <Field
+              label="Tipo de contrato"
+              value={
+                CONTRACT_TYPE_LABELS[
+                  emp.contract_type ?? (emp.contract_end_date ? "fijo" : "indefinido")
+                ] ?? "—"
+              }
+            />
+            <Field
               label="Fin de contrato"
-              value={emp.contract_end_date ? fmtDate(emp.contract_end_date) : "Indefinido"}
+              value={
+                isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "— (sin fecha límite)"
+              }
             />
             <Field label="Fecha de salida" value={emp.exit_date ? fmtDate(emp.exit_date) : "—"} />
             <Field label="Estado" value={emp.status === "activo" ? "Activo" : "Retirado"} />

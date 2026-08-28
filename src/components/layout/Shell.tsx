@@ -330,7 +330,7 @@ function TopBar({
           e.company_id ? (names.get(e.company_id) ?? "") : "",
           e.position,
           fmtDate(e.hire_date),
-          e.contract_end_date ? fmtDate(e.contract_end_date) : "Indefinido",
+          isFixedTerm(e) ? fmtDate(e.contract_end_date) : "Indefinido",
           e.exit_date ? fmtDate(e.exit_date) : "",
           e.phone ?? "",
           e.work_location ?? "",
