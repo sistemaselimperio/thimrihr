@@ -393,6 +393,7 @@ function NoveltiesPage() {
       <LeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} />
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} />
       <LicenseDialog open={licOpen} onOpenChange={setLicOpen} />
+      <VacationDialog open={vacOpen} onOpenChange={setVacOpen} />
 
     </div>
   );
