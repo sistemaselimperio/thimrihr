@@ -395,6 +395,13 @@ export function buildQuincenas(
         else leaveDays += value;
       }
 
+      // Períodos de vacaciones: descuentan días de la quincena.
+      for (const vac of vacationPeriods) {
+        vacationDays += overlapDays(vac.start_date, vac.end_date, start, end);
+      }
+
+
+
       // Las licencias remuneradas no descuentan; la no remunerada sí.
       let paidLicenseDays = 0;
       let unpaidLicenseDays = 0;
