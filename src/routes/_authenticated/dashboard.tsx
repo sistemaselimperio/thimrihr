@@ -6,6 +6,7 @@ import {
   CalendarClock,
   DoorOpen,
   UserMinus,
+  UserPlus,
   Users,
 } from "lucide-react";
 
@@ -15,13 +16,27 @@ import { useFilters } from "@/components/layout/filters-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   useCompanies,
   useEmployees,
   useIncapacities,
   useLeaves,
 } from "@/lib/data";
 import { buildAlerts } from "@/lib/filters";
-import { INCAPACITY_LABELS, fmtDate, type Employee } from "@/lib/hr";
+import {
+  currentPeriodKey,
+  fmtDate,
+  periodBounds,
+  periodLabelLong,
+  INCAPACITY_LABELS,
+  type Employee,
+} from "@/lib/hr";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
