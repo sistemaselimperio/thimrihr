@@ -228,7 +228,7 @@ function Dashboard() {
                     <span className="numeric text-muted-foreground">{fmtDate(employee.hire_date)}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {employee.cedula} · {employee.position} · {companyMap.get(employee.company_id) ?? "—"}
+                    {employee.cedula} · {employee.position} · {companyMap.get(employee.company_id ?? "") ?? "—"}
                   </div>
                 </li>
               ))}
