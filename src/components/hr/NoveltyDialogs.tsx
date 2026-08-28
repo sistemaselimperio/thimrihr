@@ -56,6 +56,7 @@ import {
   useEmployees,
   useEntitlements,
   useLeaves,
+  useVacations,
 } from "@/lib/data";
 import {
   buildVacationSummary,
@@ -68,6 +69,7 @@ import {
   type Leave,
   type License,
   type Termination,
+  type Vacation,
 } from "@/lib/hr";
 
 
@@ -1209,6 +1211,7 @@ const TABLE_BY_KIND: Record<NoveltyKind, string> = {
   leave: "leaves",
   termination: "terminations",
   license: "licenses",
+  vacation: "vacations",
 };
 
 const KEYS_BY_KIND: Record<NoveltyKind, readonly unknown[][]> = {
@@ -1216,6 +1219,7 @@ const KEYS_BY_KIND: Record<NoveltyKind, readonly unknown[][]> = {
   leave: [qk.leaves as unknown as unknown[]],
   termination: [qk.terminations as unknown as unknown[], qk.employees as unknown as unknown[]],
   license: [qk.licenses as unknown as unknown[]],
+  vacation: [qk.vacations as unknown as unknown[]],
 };
 
 /** Botones [Editar] [Eliminar] para una novedad (incapacidad, permiso, retiro o licencia). */
@@ -1225,7 +1229,7 @@ export function NoveltyRowActions({
   summary,
 }: {
   kind: NoveltyKind;
-  record: Incapacity | Leave | Termination | License;
+  record: Incapacity | Leave | Termination | License | Vacation;
 
   /** Texto corto que describe la novedad en la confirmación de borrado. */
   summary: string;
@@ -1284,6 +1288,9 @@ export function NoveltyRowActions({
       )}
       {kind === "license" && (
         <LicenseDialog open={editOpen} onOpenChange={setEditOpen} record={record as License} />
+      )}
+      {kind === "vacation" && (
+        <VacationDialog open={editOpen} onOpenChange={setEditOpen} record={record as Vacation} />
       )}
 
 
