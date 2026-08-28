@@ -85,6 +85,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const { patch } = useFilters();
   const [renew, setRenew] = useState<Employee | null>(null);
+  const [showIngresos, setShowIngresos] = useState(false);
   const { data: employees = [] } = useEmployees();
   const { data: companies = [] } = useCompanies();
   const { data: incapacities = [] } = useIncapacities();
@@ -93,6 +94,27 @@ function Dashboard() {
   const alerts = useMemo(() => buildAlerts(employees, incapacities), [employees, incapacities]);
   const active = employees.filter((e) => e.status === "activo").length;
   const retired = employees.length - active;
+
+  const companyMap = useMemo(
+    () => new Map(companies.map((c) => [c.id, c.name])),
+    [companies],
+  );
+
+  const currentPeriod = useMemo(() => currentPeriodKey(), []);
+  const { start: periodStart, end: periodEnd } = useMemo(
+    () => periodBounds(currentPeriod),
+    [currentPeriod],
+  );
+  const currentHires = useMemo(() => {
+    return employees
+      .filter(
+        (e) =>
+          e.status === "activo" &&
+          e.hire_date >= periodStart &&
+          e.hire_date <= periodEnd,
+      )
+      .sort((a, b) => a.hire_date.localeCompare(b.hire_date));
+  }, [employees, periodStart, periodEnd]);
 
   const pickDay = (day: string) => {
     patch({ day, status: "todos" });
