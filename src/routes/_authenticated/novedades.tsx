@@ -8,6 +8,7 @@ import {
   LicenseDialog,
   NoveltyRowActions,
   TerminationDialog,
+  VacationDialog,
 } from "@/components/hr/NoveltyDialogs";
 
 import { useFilters } from "@/components/layout/filters-context";
@@ -28,6 +29,7 @@ import {
   useLeaves,
   useLicenses,
   useTerminations,
+  useVacations,
 } from "@/lib/data";
 import {
   INCAPACITY_LABELS,
@@ -38,6 +40,7 @@ import {
   fmtDate,
   incapacityStatus,
   licenseStatus,
+  vacationStatus,
 } from "@/lib/hr";
 
 
@@ -67,10 +70,12 @@ function NoveltiesPage() {
   const { data: leaves = [] } = useLeaves();
   const { data: terminations = [] } = useTerminations();
   const { data: licenses = [] } = useLicenses();
+  const { data: vacations = [] } = useVacations();
   const [incOpen, setIncOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [termOpen, setTermOpen] = useState(false);
   const [licOpen, setLicOpen] = useState(false);
+  const [vacOpen, setVacOpen] = useState(false);
 
 
   const byId = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
@@ -114,6 +119,9 @@ function NoveltiesPage() {
           <Button variant="outline" onClick={() => setLeaveOpen(true)}>
             Permiso
           </Button>
+          <Button variant="outline" onClick={() => setVacOpen(true)}>
+            Vacaciones
+          </Button>
           <Button variant="outline" onClick={() => setLicOpen(true)}>
             Licencia
           </Button>
@@ -127,6 +135,7 @@ function NoveltiesPage() {
         <TabsList>
           <TabsTrigger value="incapacidades">Incapacidades</TabsTrigger>
           <TabsTrigger value="permisos">Permisos y vacaciones</TabsTrigger>
+          <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="licencias">Licencias</TabsTrigger>
           <TabsTrigger value="retiros">Retiros</TabsTrigger>
         </TabsList>
@@ -209,6 +218,69 @@ function NoveltiesPage() {
                   </TableRow>
                 ))}
 
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="vacaciones">
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empleado</TableHead>
+                  <TableHead>Año</TableHead>
+                  <TableHead>Desde</TableHead>
+                  <TableHead>Hasta</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vacations.filter((v) => matches(v.employee_id)).map((v) => {
+                  const estado = vacationStatus(v);
+                  return (
+                    <TableRow key={v.id}>
+                      <TableCell>
+                        <EmployeeLink employeeId={v.employee_id} />
+                      </TableCell>
+                      <TableCell className="numeric">{v.year}</TableCell>
+                      <TableCell className="numeric">{fmtDate(v.start_date)}</TableCell>
+                      <TableCell className="numeric">{fmtDate(v.end_date)}</TableCell>
+                      <TableCell className="numeric">{v.days}</TableCell>
+                      <TableCell>{v.destination ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            estado === "En curso"
+                              ? "bg-primary/20 text-primary"
+                              : estado === "Programada"
+                                ? "bg-warning/20 text-warning-foreground"
+                                : "bg-retired text-retired-foreground"
+                          }
+                        >
+                          {estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <NoveltyRowActions
+                          kind="vacation"
+                          record={v}
+                          summary={`Vacaciones ${fmtDate(v.start_date)} → ${fmtDate(v.end_date)}`}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {vacations.filter((v) => matches(v.employee_id)).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                      Aún no hay períodos de vacaciones registrados.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -321,6 +393,7 @@ function NoveltiesPage() {
       <LeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} />
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} />
       <LicenseDialog open={licOpen} onOpenChange={setLicOpen} />
+      <VacationDialog open={vacOpen} onOpenChange={setVacOpen} />
 
     </div>
   );

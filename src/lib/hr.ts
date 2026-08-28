@@ -69,6 +69,28 @@ export interface License {
   notes: string | null;
 }
 
+export interface Vacation {
+  id: string;
+  employee_id: string;
+  year: number;
+  start_date: string;
+  end_date: string;
+  days: number;
+  destination: string | null;
+  notes: string | null;
+}
+
+export function vacationStatus(
+  v: Pick<Vacation, "start_date" | "end_date">,
+  today = todayISO(),
+): "Programada" | "En curso" | "Finalizada" {
+  if (v.start_date > today) return "Programada";
+  if (v.end_date < today) return "Finalizada";
+  return "En curso";
+}
+
+
+
 export interface Termination {
 
   id: string;
@@ -337,6 +359,8 @@ export function buildQuincenas(
   overrides: PayrollPeriodOverride[],
   year: number,
   licenses: License[] = [],
+  vacationPeriods: Vacation[] = [],
+
 ): QuincenaRow[] {
   const today = todayISO();
   const overrideMap = new Map(overrides.map((o) => [o.period_key, o]));
@@ -370,6 +394,13 @@ export function buildQuincenas(
         if (lv.type === "vacaciones") vacationDays += value;
         else leaveDays += value;
       }
+
+      // Períodos de vacaciones: descuentan días de la quincena.
+      for (const vac of vacationPeriods) {
+        vacationDays += overlapDays(vac.start_date, vac.end_date, start, end);
+      }
+
+
 
       // Las licencias remuneradas no descuentan; la no remunerada sí.
       let paidLicenseDays = 0;
@@ -415,6 +446,11 @@ export interface VacationYearRow {
   year: number;
   entitled: number;
   used: number;
+  /** Días usados por permisos con descuento de vacaciones. */
+  usedLeaves?: number;
+  /** Días usados en períodos de vacaciones registrados. */
+  usedPeriods?: number;
+
   /** Saldo acumulado al cerrar ese año. */
   balance: number;
 }
@@ -430,6 +466,7 @@ export function buildVacationSummary(
   employee: Employee,
   entitlements: VacationEntitlement[],
   leaves: Leave[],
+  vacationPeriods: Vacation[] = [],
 ): VacationSummary {
   const hireYear = parseDate(employee.hire_date).getFullYear();
   const lastYear = employee.exit_date
@@ -442,20 +479,35 @@ export function buildVacationSummary(
   leaves
     .filter((l) => l.type === "vacaciones")
     .forEach((l) => years.add(parseDate(l.start_date).getFullYear()));
+  vacationPeriods.forEach((v) =>
+    years.add(Number(v.year) || parseDate(v.start_date).getFullYear()),
+  );
 
   const sorted = [...years].sort((a, b) => a - b);
   let running = 0;
   const rows: VacationYearRow[] = sorted.map((year) => {
     const ent = entitlements.find((e) => e.year === year);
     const entitled = ent ? Number(ent.entitled_days) : 15;
-    const used = leaves
+    const usedLeaves = leaves
       .filter(
         (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
       )
       .reduce((sum, l) => sum + Number(l.days), 0);
+    const usedPeriods = vacationPeriods
+      .filter((v) => (Number(v.year) || parseDate(v.start_date).getFullYear()) === year)
+      .reduce((sum, v) => sum + Number(v.days), 0);
+    const used = Math.round((usedLeaves + usedPeriods) * 10) / 10;
     running += entitled - used;
-    return { year, entitled, used, balance: Math.round(running * 10) / 10 };
+    return {
+      year,
+      entitled,
+      used,
+      usedLeaves: Math.round(usedLeaves * 10) / 10,
+      usedPeriods: Math.round(usedPeriods * 10) / 10,
+      balance: Math.round(running * 10) / 10,
+    };
   });
+
 
   const totalEntitled = rows.reduce((s, r) => s + r.entitled, 0);
   const totalUsed = rows.reduce((s, r) => s + r.used, 0);

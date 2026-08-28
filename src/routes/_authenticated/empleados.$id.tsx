@@ -9,6 +9,7 @@ import {
   IncapacityDialog,
   LeaveDialog,
   LicenseDialog,
+  VacationDialog,
   NoveltyRowActions,
   TerminationDialog,
 } from "@/components/hr/NoveltyDialogs";
@@ -37,6 +38,7 @@ import {
   useIncapacities,
   useLeaves,
   useLicenses,
+  useVacations,
   useGeneratedDocuments,
   useOverrides,
   useTerminations,
@@ -54,6 +56,7 @@ import {
   fmtDate,
   incapacityStatus,
   licenseStatus,
+  vacationStatus,
 } from "@/lib/hr";
 
 
@@ -96,6 +99,7 @@ function EmployeeDetail() {
   const { data: entitlements = [] } = useEntitlements();
   const { data: overrides = [] } = useOverrides();
   const { data: licenses = [] } = useLicenses();
+  const { data: vacationRecords = [] } = useVacations();
   const { data: generatedDocs = [] } = useGeneratedDocuments();
 
   const [year, setYear] = useState(new Date().getFullYear());
@@ -104,6 +108,7 @@ function EmployeeDetail() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [termOpen, setTermOpen] = useState(false);
   const [licOpen, setLicOpen] = useState(false);
+  const [vacOpen, setVacOpen] = useState(false);
 
   const employee = employees.find((e) => e.id === id);
   const myIncapacities = incapacities.filter((i) => i.employee_id === id);
@@ -112,20 +117,32 @@ function EmployeeDetail() {
   const myEntitlements = entitlements.filter((v) => v.employee_id === id);
   const myOverrides = overrides.filter((o) => o.employee_id === id);
   const myLicenses = licenses.filter((l) => l.employee_id === id);
+  const myVacations = vacationRecords.filter((v) => v.employee_id === id);
   const myDocs = generatedDocs.filter((d) => d.employee_id === id);
 
   const quincenas = useMemo(
     () =>
       employee
-        ? buildQuincenas(employee, myIncapacities, myLeaves, myOverrides, year, myLicenses)
+        ? buildQuincenas(
+            employee,
+            myIncapacities,
+            myLeaves,
+            myOverrides,
+            year,
+            myLicenses,
+            myVacations,
+          )
         : [],
-    [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses],
+    [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses, myVacations],
   );
 
 
   const vacations = useMemo(
-    () => (employee ? buildVacationSummary(employee, myEntitlements, myLeaves) : null),
-    [employee, myEntitlements, myLeaves],
+    () =>
+      employee
+        ? buildVacationSummary(employee, myEntitlements, myLeaves, myVacations)
+        : null,
+    [employee, myEntitlements, myLeaves, myVacations],
   );
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando ficha…</p>;
@@ -328,9 +345,8 @@ function EmployeeDetail() {
           <TabsTrigger value="quincenas">Quincenas</TabsTrigger>
           <TabsTrigger value="incapacidades">Incapacidades</TabsTrigger>
           <TabsTrigger value="permisos">Permisos</TabsTrigger>
-          <TabsTrigger value="licencias">Licencias</TabsTrigger>
-
           <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
+          <TabsTrigger value="licencias">Licencias</TabsTrigger>
           <TabsTrigger value="retiro">Retiro</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
@@ -589,6 +605,78 @@ function EmployeeDetail() {
               <p className="numeric font-display text-2xl font-bold">{vacations?.available ?? 0}</p>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Mínimo acumulable por ley: <strong>7 días</strong>
+              {vacations?.rows.find((r) => r.year === year)
+                ? ` · ${year}: permisos ${vacations.rows.find((r) => r.year === year)?.usedLeaves ?? 0} · vacaciones ${vacations.rows.find((r) => r.year === year)?.usedPeriods ?? 0}`
+                : ""}
+            </p>
+            <Button variant="success" className="gap-2" onClick={() => setVacOpen(true)}>
+              <Plus className="size-4" /> Agregar período de vacaciones
+            </Button>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Año</TableHead>
+                  <TableHead>Desde</TableHead>
+                  <TableHead>Hasta</TableHead>
+                  <TableHead>Días</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead>Observaciones</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myVacations.map((v) => {
+                  const estado = vacationStatus(v);
+                  return (
+                    <TableRow key={v.id}>
+                      <TableCell className="numeric font-medium">{v.year}</TableCell>
+                      <TableCell className="numeric">{fmtDate(v.start_date)}</TableCell>
+                      <TableCell className="numeric">{fmtDate(v.end_date)}</TableCell>
+                      <TableCell className="numeric">{v.days}</TableCell>
+                      <TableCell>{v.destination ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{v.notes ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            estado === "En curso"
+                              ? "bg-primary/20 text-primary"
+                              : estado === "Programada"
+                                ? "bg-warning/20 text-warning-foreground"
+                                : "bg-retired text-retired-foreground"
+                          }
+                        >
+                          {estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <NoveltyRowActions
+                          kind="vacation"
+                          record={v}
+                          summary={`Vacaciones ${fmtDate(v.start_date)} → ${fmtDate(v.end_date)}`}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {myVacations.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                      Sin períodos de vacaciones registrados.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
               <TableHeader>
@@ -620,6 +708,7 @@ function EmployeeDetail() {
             </Table>
           </div>
         </TabsContent>
+
 
         <TabsContent value="retiro" className="space-y-3">
           {emp.status === "activo" && (
@@ -721,6 +810,7 @@ function EmployeeDetail() {
       <IncapacityDialog open={incOpen} onOpenChange={setIncOpen} employeeId={emp.id} />
       <LeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} employeeId={emp.id} />
       <LicenseDialog open={licOpen} onOpenChange={setLicOpen} employeeId={emp.id} />
+      <VacationDialog open={vacOpen} onOpenChange={setVacOpen} employeeId={emp.id} />
 
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} employeeId={emp.id} />
     </div>

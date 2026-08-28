@@ -8,7 +8,9 @@ import type {
   License,
   PayrollPeriodOverride,
   Termination,
+  Vacation,
   VacationEntitlement,
+
 } from "./hr";
 
 
@@ -55,6 +57,8 @@ export const qk = {
   companies: ["companies"] as const,
   employees: ["employees"] as const,
   licenses: ["licenses"] as const,
+  vacations: ["vacations"] as const,
+
 
 
   incapacities: ["incapacities"] as const,
@@ -144,6 +148,15 @@ export function useLicenses() {
     queryFn: () => selectAll<License>("licenses", "start_date", false),
   });
 }
+
+export function useVacations() {
+  return useQuery({
+    queryKey: qk.vacations,
+    queryFn: () => selectAll<Vacation>("vacations", "start_date", false),
+  });
+}
+
+
 
 
 export function useTerminations() {

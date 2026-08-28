@@ -26,6 +26,7 @@ import {
   useIncapacities,
   useLeaves,
   useLicenses,
+  useVacations,
   useOverrides,
   useTerminations,
 } from "@/lib/data";
@@ -92,6 +93,7 @@ function ReportsPage() {
   const { data: overrides = [] } = useOverrides();
   const { data: terminations = [] } = useTerminations();
   const { data: licenses = [] } = useLicenses();
+  const { data: vacationPeriods = [] } = useVacations();
 
 
   const [periodKey, setPeriodKey] = useState(currentPeriodKey());
@@ -132,6 +134,7 @@ function ReportsPage() {
           overrides.filter((o) => o.employee_id === e.id),
           periodYear(periodKey),
           licenses.filter((l) => l.employee_id === e.id),
+          vacationPeriods.filter((v) => v.employee_id === e.id),
         );
         return {
           employee: e,
@@ -140,7 +143,7 @@ function ReportsPage() {
         };
       })
       .filter((r) => r.row);
-  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, licenses, overrides, periodKey]);
+  }, [employees, selectedCompanies, status, bounds, incapacities, leaves, licenses, vacationPeriods, overrides, periodKey]);
 
 
   const totals = rows.reduce(
@@ -264,6 +267,23 @@ function ReportsPage() {
       });
 
 
+    const vacacionesRows = vacationPeriods
+      .filter((v) => byId.has(v.employee_id))
+      .filter((v) => v.start_date <= bounds.end && v.end_date >= bounds.start)
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .map((v): Cell[] => {
+        const e = byId.get(v.employee_id)!.employee;
+        return [
+          ...base(e),
+          fmtDate(v.start_date),
+          fmtDate(v.end_date),
+          overlapDays(v.start_date, v.end_date, bounds.start, bounds.end),
+          Number(v.days),
+          v.destination ?? "",
+          worked(e),
+        ];
+      });
+
     // Solo empleados con alguna novedad en la quincena seleccionada.
     const conNovedad = new Set<string>();
     list.forEach(({ employee: e, firstPeriodKey }) => {
@@ -287,6 +307,9 @@ function ReportsPage() {
     licenses
       .filter((l) => byId.has(l.employee_id) && l.start_date <= bounds.end && l.end_date >= bounds.start)
       .forEach((l) => conNovedad.add(l.employee_id));
+    vacationPeriods
+      .filter((v) => byId.has(v.employee_id) && v.start_date <= bounds.end && v.end_date >= bounds.start)
+      .forEach((v) => conNovedad.add(v.employee_id));
 
 
 
@@ -372,6 +395,22 @@ function ReportsPage() {
           "Días trabajados",
         ],
         rows: licenciasRows,
+      },
+      {
+        title: "8. VACACIONES",
+        header: [
+          "Cédula",
+          "Nombre",
+          "Empresa",
+          "Cargo",
+          "Fecha inicio",
+          "Fecha fin",
+          "Días en la quincena",
+          "Días totales",
+          "Destino",
+          "Días trabajados",
+        ],
+        rows: vacacionesRows,
       },
       {
         title: "* Licencia marcada con asterisco: no remunerada, descuenta días de la quincena.",

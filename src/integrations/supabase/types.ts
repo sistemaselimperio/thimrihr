@@ -546,6 +546,53 @@ export type Database = {
           },
         ]
       }
+      vacations: {
+        Row: {
+          created_at: string
+          days: number
+          destination: string | null
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          start_date: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          days?: number
+          destination?: string | null
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          start_date: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          destination?: string | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          start_date?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
