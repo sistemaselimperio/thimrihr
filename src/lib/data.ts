@@ -55,6 +55,8 @@ export const qk = {
   companies: ["companies"] as const,
   employees: ["employees"] as const,
   licenses: ["licenses"] as const,
+  vacations: ["vacations"] as const,
+
 
 
   incapacities: ["incapacities"] as const,
