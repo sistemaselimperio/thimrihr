@@ -148,6 +148,9 @@ function Dashboard() {
                   <Badge variant="outline" className="numeric">
                     {days} d
                   </Badge>
+                  <Button size="sm" variant="outline" onClick={() => setRenew(employee)}>
+                    Renovar
+                  </Button>
                 </li>
               ))}
               {alerts.expiring.length === 0 && (
