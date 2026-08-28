@@ -446,6 +446,11 @@ export interface VacationYearRow {
   year: number;
   entitled: number;
   used: number;
+  /** Días usados por permisos con descuento de vacaciones. */
+  usedLeaves?: number;
+  /** Días usados en períodos de vacaciones registrados. */
+  usedPeriods?: number;
+
   /** Saldo acumulado al cerrar ese año. */
   balance: number;
 }
