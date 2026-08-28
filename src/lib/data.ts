@@ -147,6 +147,15 @@ export function useLicenses() {
   });
 }
 
+export function useVacations() {
+  return useQuery({
+    queryKey: qk.vacations,
+    queryFn: () => selectAll<Vacation>("vacations", "start_date", false),
+  });
+}
+
+
+
 
 export function useTerminations() {
   return useQuery({
