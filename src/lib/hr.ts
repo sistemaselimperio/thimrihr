@@ -3,6 +3,8 @@
  * Todo el cálculo es determinístico y se deriva de las novedades registradas.
  */
 
+import { workingDaysInclusive, workingOverlapDays } from "./holidays";
+
 export type EmployeeStatus = "activo" | "retirado";
 export type IncapacityType = "general" | "laboral";
 export type LeaveType = "sin_pago" | "vacaciones";
@@ -255,8 +257,17 @@ export function daysUntil(iso: string, from = todayISO()): number {
   return Math.round(ms / 86400000);
 }
 
-export function daysInclusive(startISO: string, endISO: string): number {
+/** Días calendario entre dos fechas, inclusive. */
+export function calendarDaysInclusive(startISO: string, endISO: string): number {
   return Math.max(0, daysUntil(endISO, startISO) + 1);
+}
+
+/**
+ * Duración en días LABORALES (excluye domingos y festivos colombianos).
+ * Es el cálculo usado para vacaciones, permisos, incapacidades y licencias.
+ */
+export function daysInclusive(startISO: string, endISO: string): number {
+  return workingDaysInclusive(startISO, endISO);
 }
 
 export function addDays(iso: string, n: number): string {
@@ -323,10 +334,7 @@ export function overlapDays(
   bStart: string,
   bEnd: string,
 ): number {
-  const start = aStart > bStart ? aStart : bStart;
-  const end = aEnd < bEnd ? aEnd : bEnd;
-  if (start > end) return 0;
-  return daysInclusive(start, end);
+  return workingOverlapDays(aStart, aEnd, bStart, bEnd);
 }
 
 export interface QuincenaRow {
@@ -358,8 +366,8 @@ export function defaultBaseDays(
   const effStart = employee.hire_date > start ? employee.hire_date : start;
   const effEnd = employee.exit_date && employee.exit_date < end ? employee.exit_date : end;
   if (effStart > effEnd) return 0;
-  const real = daysInclusive(effStart, effEnd);
-  const full = daysInclusive(start, end);
+  const real = calendarDaysInclusive(effStart, effEnd);
+  const full = calendarDaysInclusive(start, end);
   // Se normaliza a 15 días base (convención de nómina colombiana).
   return Math.min(nominal, Math.round((real / full) * nominal * 10) / 10);
 }
@@ -391,17 +399,17 @@ export function buildQuincenas(
 
       let incapacityDays = 0;
       for (const inc of incapacities) {
-        incapacityDays += overlapDays(inc.start_date, inc.end_date, start, end);
+        incapacityDays += workingOverlapDays(inc.start_date, inc.end_date, start, end);
       }
 
       let leaveDays = 0;
       let vacationDays = 0;
       for (const lv of leaves) {
-        const d = overlapDays(lv.start_date, lv.end_date, start, end);
+        const d = workingOverlapDays(lv.start_date, lv.end_date, start, end);
         if (d === 0) continue;
         // Si el permiso cabe completo en la quincena se respeta el valor
         // declarado (permite medios días); si se parte, se usa el solape.
-        const spanned = daysInclusive(lv.start_date, lv.end_date);
+        const spanned = workingDaysInclusive(lv.start_date, lv.end_date);
         const value = d === spanned ? Number(lv.days) : d;
         if (lv.type === "vacaciones") vacationDays += value;
         else leaveDays += value;
@@ -409,7 +417,7 @@ export function buildQuincenas(
 
       // Períodos de vacaciones: descuentan días de la quincena.
       for (const vac of vacationPeriods) {
-        vacationDays += overlapDays(vac.start_date, vac.end_date, start, end);
+        vacationDays += workingOverlapDays(vac.start_date, vac.end_date, start, end);
       }
 
 
@@ -418,7 +426,7 @@ export function buildQuincenas(
       let paidLicenseDays = 0;
       let unpaidLicenseDays = 0;
       for (const lic of licenses) {
-        const d = overlapDays(lic.start_date, lic.end_date, start, end);
+        const d = workingOverlapDays(lic.start_date, lic.end_date, start, end);
         if (d === 0) continue;
         if (PAID_LICENSE_TYPES.includes(lic.type)) paidLicenseDays += d;
         else unpaidLicenseDays += d;

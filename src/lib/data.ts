@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { setHolidayRegistry, type Holiday } from "./holidays";
+import { syncHolidays } from "./holidays.functions";
 import type {
   Company,
   Employee,
@@ -70,6 +75,7 @@ export const qk = {
   generated: ["generated_documents"] as const,
   imports: ["import_batches"] as const,
   settings: ["app_settings"] as const,
+  holidays: ["holidays"] as const,
 };
 
 export const ISLERO_LOGO_KEY = "islero_logo";
@@ -241,4 +247,64 @@ export async function openFile(bucket: string, path: string) {
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
   if (error) throw new Error(error.message);
   window.open(data.signedUrl, "_blank", "noopener");
+}
+
+/* ------------------------------------------------------------------ festivos */
+
+export function useHolidays() {
+  return useQuery({
+    queryKey: qk.holidays,
+    queryFn: () => selectAll<Holiday>("holidays", "date"),
+    staleTime: 60 * 60_000,
+  });
+}
+
+/**
+ * Carga automática de festivos: si faltan los del año actual (o del próximo),
+ * se descargan desde la API pública y se guardan. Mantiene además el registro
+ * en memoria que usan los cálculos de días laborales.
+ */
+export function useHolidaySync() {
+  const qc = useQueryClient();
+  const { data: holidays, isSuccess } = useHolidays();
+  const sync = useServerFn(syncHolidays);
+  const asked = useRef(false);
+
+  useEffect(() => {
+    setHolidayRegistry((holidays ?? []).map((h) => h.date));
+  }, [holidays]);
+
+  useEffect(() => {
+    if (!isSuccess || asked.current) return;
+    const year = new Date().getFullYear();
+    const years = [year, year + 1].filter(
+      (y) => !(holidays ?? []).some((h) => Number(h.year) === y),
+    );
+    if (!years.length) return;
+    asked.current = true;
+    void sync({ data: { years } })
+      .then((res) => {
+        void qc.invalidateQueries({ queryKey: qk.holidays });
+        if (res?.online) toast.success(`Festivos de ${years.join(" y ")} cargados`);
+        else toast.warning("Usando festivos sin conexión");
+      })
+      .catch(() => toast.warning("No se pudo cargar festivos, usando almacenados"));
+  }, [isSuccess, holidays, sync, qc]);
+
+  return holidays ?? [];
+}
+
+/** Recarga forzada desde la API. */
+export function useReloadHolidays() {
+  const qc = useQueryClient();
+  const sync = useServerFn(syncHolidays);
+  return useMutation({
+    mutationFn: async (years: number[]) => sync({ data: { years } }),
+    onSuccess: (res) => {
+      void qc.invalidateQueries({ queryKey: qk.holidays });
+      if (res?.online) toast.success("Festivos actualizados desde Internet");
+      else toast.warning("Usando festivos sin conexión");
+    },
+    onError: () => toast.error("No se pudo conectar con el servicio de festivos"),
+  });
 }

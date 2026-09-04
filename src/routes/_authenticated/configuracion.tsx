@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { CompanyLogos } from "@/components/hr/CompanyLogos";
+import { HolidaysPanel } from "@/components/hr/HolidaysPanel";
 import { ImportEmployees } from "@/components/hr/ImportEmployees";
 import {
   Table,
@@ -58,6 +59,10 @@ function SettingsPage() {
     },
     { rule: "Días de vacaciones que deben reservarse", value: `${VACATION_MIN_RESERVE} días` },
     { rule: "Días base por quincena", value: "15 días (ajustables por empleado)" },
+    {
+      rule: "Días excluidos del cálculo de novedades",
+      value: "Domingos y festivos colombianos (automáticos)",
+    },
   ];
 
   return (
@@ -118,6 +123,8 @@ function SettingsPage() {
       <CompanyLogos companies={companies} />
 
       <ImportEmployees companies={companies} />
+
+      <HolidaysPanel />
 
 
 
