@@ -626,10 +626,27 @@ function EmployeeDetail() {
                 ? ` · ${year}: permisos ${vacations.rows.find((r) => r.year === year)?.usedLeaves ?? 0} · vacaciones ${vacations.rows.find((r) => r.year === year)?.usedPeriods ?? 0}`
                 : ""}
             </p>
-            <Button variant="success" className="gap-2" onClick={() => setVacOpen(true)}>
-              <Plus className="size-4" /> Agregar período de vacaciones
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                className="gap-2"
+                disabled={recalcing}
+                title="Calcula basado en días reales trabajados"
+                onClick={() => void recalcCurrentYear()}
+              >
+                <RefreshCw className={`size-4 ${recalcing ? "animate-spin" : ""}`} />
+                {recalcing ? "Calculando derecho…" : "Recalcular derecho"}
+              </Button>
+              <Button variant="success" className="gap-2" onClick={() => setVacOpen(true)}>
+                <Plus className="size-4" /> Agregar período de vacaciones
+              </Button>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            El recálculo aplica al año en curso ({currentYear}): (días trabajados / 365) × 15. Los
+            años anteriores se editan manualmente en la tabla de derechos.
+          </p>
+
 
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
