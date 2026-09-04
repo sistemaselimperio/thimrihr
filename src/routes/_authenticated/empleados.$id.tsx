@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Download, FileDown, Paperclip, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, Download, FileDown, Paperclip, Pencil, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
@@ -56,6 +56,7 @@ import {
   CONTRACT_TYPE_LABELS,
   isFixedTerm,
   licenseStatus,
+  recalcEntitlement,
   vacationStatus,
 } from "@/lib/hr";
 
@@ -108,6 +109,8 @@ function EmployeeDetail() {
   const [termOpen, setTermOpen] = useState(false);
   const [licOpen, setLicOpen] = useState(false);
   const [vacOpen, setVacOpen] = useState(false);
+  const [recalcing, setRecalcing] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   const employee = employees.find((e) => e.id === id);
   const myIncapacities = incapacities.filter((i) => i.employee_id === id);
@@ -179,6 +182,17 @@ function EmployeeDetail() {
     }
   };
 
+  const saveEntitlementSilent = async (yearValue: number, days: number) => {
+    const existing = myEntitlements.find((v) => v.year === yearValue);
+    await upsertRow("vacation_entitlements", {
+      ...(existing ? { id: existing.id } : {}),
+      employee_id: emp.id,
+      year: yearValue,
+      entitled_days: days,
+    });
+    await qc.invalidateQueries({ queryKey: qk.entitlements });
+  };
+
   const saveEntitlement = async (yearValue: number, days: string) => {
     const existing = myEntitlements.find((v) => v.year === yearValue);
     try {
@@ -192,6 +206,37 @@ function EmployeeDetail() {
       toast.success("Días de vacaciones actualizados");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo guardar");
+    }
+  };
+
+  const recalcCurrentYear = async () => {
+    setRecalcing(true);
+    try {
+      const result = recalcEntitlement(
+        emp,
+        myLeaves,
+        myIncapacities,
+        myLicenses,
+        currentYear,
+      );
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      const previous =
+        myEntitlements.find((e) => e.year === currentYear)?.entitled_days ?? null;
+      if (previous !== null && Number(previous) === result.entitled) {
+        toast.success(`Derecho ya era correcto: ${result.entitled} días`);
+        return;
+      }
+      await saveEntitlementSilent(currentYear, result.entitled);
+      toast.success(
+        `Derecho recalculado: ${result.entitled} días (${result.workedDays} días trabajados, ${result.discounts} de descuentos)`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al recalcular");
+    } finally {
+      setRecalcing(false);
     }
   };
 
