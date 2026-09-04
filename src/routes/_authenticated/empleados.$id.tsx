@@ -212,33 +212,35 @@ function EmployeeDetail() {
   const recalcCurrentYear = async () => {
     setRecalcing(true);
     try {
-      const result = recalcEntitlement(
-        emp,
-        myLeaves,
-        myIncapacities,
-        myLicenses,
-        currentYear,
-      );
-      if (result.error) {
-        toast.error(result.error);
+      const years = (vacations?.rows ?? []).map((r) => r.year);
+      const targets = years.length ? years : [currentYear];
+      let changed = 0;
+      const detail: string[] = [];
+      for (const y of targets) {
+        const result = recalcEntitlement(emp, myLeaves, y);
+        if (result.error) continue;
+        detail.push(`${y}: ${result.entitled}`);
+        const previous = myEntitlements.find((e) => e.year === y)?.entitled_days ?? null;
+        if (previous !== null && Number(previous) === result.entitled) continue;
+        await saveEntitlementSilent(y, result.entitled);
+        changed++;
+      }
+      if (!detail.length) {
+        toast.error("No se pudo recalcular: revisa la fecha de ingreso.");
         return;
       }
-      const previous =
-        myEntitlements.find((e) => e.year === currentYear)?.entitled_days ?? null;
-      if (previous !== null && Number(previous) === result.entitled) {
-        toast.success(`Derecho ya era correcto: ${result.entitled} días`);
+      if (changed === 0) {
+        toast.success(`Derecho ya era correcto (${detail.join(" · ")})`);
         return;
       }
-      await saveEntitlementSilent(currentYear, result.entitled);
-      toast.success(
-        `Derecho recalculado: ${result.entitled} días (${result.workedDays} días trabajados, ${result.discounts} de descuentos)`,
-      );
+      toast.success(`Derecho recalculado — ${detail.join(" · ")} días`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al recalcular");
     } finally {
       setRecalcing(false);
     }
   };
+
 
   const exportSheet = () => {
     downloadSheet(`Hoja_${emp.cedula}.xlsx`, "Hoja de vida", [
@@ -647,22 +649,57 @@ function EmployeeDetail() {
 
 
         <TabsContent value="vacaciones" className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border bg-surface p-4 shadow-panel">
-              <p className="text-xs text-muted-foreground uppercase">Derecho acumulado</p>
-              <p className="numeric font-display text-2xl font-bold">
-                {vacations?.totalEntitled ?? 0}
-              </p>
-            </div>
-            <div className="rounded-xl border bg-surface p-4 shadow-panel">
-              <p className="text-xs text-muted-foreground uppercase">Tomados</p>
-              <p className="numeric font-display text-2xl font-bold">{vacations?.totalUsed ?? 0}</p>
-            </div>
-            <div className="panel-success rounded-xl p-4">
-              <p className="text-xs text-muted-foreground uppercase">Disponibles</p>
-              <p className="numeric font-display text-2xl font-bold">{vacations?.available ?? 0}</p>
-            </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {(vacations?.rows ?? []).map((r) => (
+              <div key={r.year} className="rounded-xl border bg-surface p-4 shadow-panel">
+                <p className="text-xs text-muted-foreground uppercase">
+                  Año {r.year}
+                  {r.from && r.to ? ` (${fmtDate(r.from)} — ${fmtDate(r.to)})` : ""}
+                </p>
+                <dl className="mt-2 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Derecho acumulado</dt>
+                    <dd className="numeric font-semibold">{r.entitled} días</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Tomados</dt>
+                    <dd className="numeric font-semibold">{r.used} días</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Disponibles {r.year}</dt>
+                    <dd
+                      className={`numeric font-semibold ${
+                        (r.availableYear ?? 0) < 0 ? "text-danger" : "text-success"
+                      }`}
+                    >
+                      {r.availableYear ?? 0} días
+                      {(r.availableYear ?? 0) < 0 ? " (DEBE)" : ""}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
           </div>
+
+          <div className="panel-success rounded-xl p-4">
+            <p className="text-xs text-muted-foreground uppercase">Total disponible</p>
+            <p className="numeric font-display text-3xl font-bold">
+              {(vacations?.available ?? 0) < 0
+                ? `Debe ${Math.abs(vacations?.available ?? 0)} días`
+                : `${vacations?.available ?? 0} días`}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {(vacations?.rows ?? [])
+                .map((r) => `${r.year}: ${r.availableYear ?? 0}`)
+                .join(" + ") || "Sin años registrados"}
+            </p>
+          </div>
+
+          {(vacations?.owed ?? 0) > 0 && (
+            <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+              ⚠️ Nota: debe {vacations?.owed} días de vacaciones de años con saldo negativo.
+            </p>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
@@ -676,7 +713,7 @@ function EmployeeDetail() {
                 variant="outline"
                 className="gap-2"
                 disabled={recalcing}
-                title="Calcula basado en días reales trabajados"
+                title="Calcula basado en días laborales reales"
                 onClick={() => void recalcCurrentYear()}
               >
                 <RefreshCw className={`size-4 ${recalcing ? "animate-spin" : ""}`} />
@@ -688,9 +725,11 @@ function EmployeeDetail() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            El recálculo aplica al año en curso ({currentYear}): (días trabajados / 365) × 15. Los
-            años anteriores se editan manualmente en la tabla de derechos.
+            Fórmula: (días laborales × 15) ÷ 360, año por año. Se excluyen domingos, festivos
+            colombianos y los permisos con descuento de vacaciones. El año de ingreso se prorratea
+            desde la fecha de ingreso y el año en curso hasta hoy.
           </p>
+
 
 
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">

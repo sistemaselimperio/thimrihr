@@ -470,7 +470,13 @@ export interface VacationYearRow {
   usedLeaves?: number;
   /** Días usados en períodos de vacaciones registrados. */
   usedPeriods?: number;
-
+  /** Rango real considerado en el año (ingreso / 01-ene → hoy, salida o 31-dic). */
+  from?: string | undefined;
+  to?: string | undefined;
+  /** Días laborales del rango (sin domingos ni festivos). */
+  workingDays?: number | undefined;
+  /** Disponibles del año: derecho − tomados (puede ser negativo). */
+  availableYear?: number | undefined;
   /** Saldo acumulado al cerrar ese año. */
   balance: number;
 }
@@ -480,6 +486,61 @@ export interface VacationSummary {
   totalEntitled: number;
   totalUsed: number;
   available: number;
+  /** Días en deuda de años anteriores (valor positivo). */
+  owed: number;
+}
+
+/**
+ * Rango efectivo del año para causar vacaciones: arranca en el ingreso si
+ * ingresó ese año y termina hoy (año en curso), en la salida o el 31 de dic.
+ */
+export function vacationYearRange(
+  employee: Pick<Employee, "hire_date" | "exit_date">,
+  year: number,
+  today = todayISO(),
+): { from: string; to: string } | null {
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year}-12-31`;
+  const from = employee.hire_date > yearStart ? employee.hire_date : yearStart;
+  let to = yearEnd;
+  if (today < to) to = today;
+  if (employee.exit_date && employee.exit_date < to) to = employee.exit_date;
+  if (!from || from > to) return null;
+  return { from, to };
+}
+
+/**
+ * Derecho causado en un año: (días laborales × 15) ÷ 360.
+ * Los días laborales excluyen domingos y festivos colombianos, y se restan los
+ * permisos con descuento de vacaciones de ese año (nada más).
+ */
+export function entitlementForYear(
+  employee: Employee,
+  leaves: Leave[],
+  year: number,
+  today = todayISO(),
+): { entitled: number; raw: number; workingDays: number; discounts: number; from: string; to: string } | null {
+  const range = vacationYearRange(employee, year, today);
+  if (!range) return null;
+  const gross = workingDaysInclusive(range.from, range.to);
+  const discounts =
+    Math.round(
+      leaves
+        .filter(
+          (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
+        )
+        .reduce((s, l) => s + Number(l.days), 0) * 10,
+    ) / 10;
+  const workingDays = Math.max(0, Math.round((gross - discounts) * 10) / 10);
+  const raw = (workingDays * 15) / 360;
+  return {
+    entitled: Math.round(raw),
+    raw: Math.round(raw * 100) / 100,
+    workingDays,
+    discounts,
+    from: range.from,
+    to: range.to,
+  };
 }
 
 export function buildVacationSummary(
@@ -487,11 +548,12 @@ export function buildVacationSummary(
   entitlements: VacationEntitlement[],
   leaves: Leave[],
   vacationPeriods: Vacation[] = [],
+  today = todayISO(),
 ): VacationSummary {
   const hireYear = parseDate(employee.hire_date).getFullYear();
   const lastYear = employee.exit_date
     ? parseDate(employee.exit_date).getFullYear()
-    : new Date().getFullYear();
+    : parseDate(today).getFullYear();
 
   const years = new Set<number>();
   for (let y = hireYear; y <= lastYear; y++) years.add(y);
@@ -506,8 +568,9 @@ export function buildVacationSummary(
   const sorted = [...years].sort((a, b) => a - b);
   let running = 0;
   const rows: VacationYearRow[] = sorted.map((year) => {
+    const computed = entitlementForYear(employee, leaves, year, today);
     const ent = entitlements.find((e) => e.year === year);
-    const entitled = ent ? Number(ent.entitled_days) : 15;
+    const entitled = ent ? Number(ent.entitled_days) : (computed?.entitled ?? 0);
     const usedLeaves = leaves
       .filter(
         (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
@@ -524,103 +587,72 @@ export function buildVacationSummary(
       used,
       usedLeaves: Math.round(usedLeaves * 10) / 10,
       usedPeriods: Math.round(usedPeriods * 10) / 10,
+      from: computed?.from,
+      to: computed?.to,
+      workingDays: computed?.workingDays,
+      availableYear: Math.round((entitled - used) * 10) / 10,
       balance: Math.round(running * 10) / 10,
     };
   });
 
-
   const totalEntitled = rows.reduce((s, r) => s + r.entitled, 0);
   const totalUsed = rows.reduce((s, r) => s + r.used, 0);
+  const owed = rows.reduce(
+    (s, r) => s + Math.max(0, -(r.availableYear ?? 0)),
+    0,
+  );
   return {
     rows,
     totalEntitled,
     totalUsed,
     available: Math.round((totalEntitled - totalUsed) * 10) / 10,
+    owed: Math.round(owed * 10) / 10,
   };
 }
 
 export interface EntitlementRecalc {
-  totalDays: number;
-  leaveDays: number;
-  incapacityDays: number;
-  licenseDays: number;
-  discounts: number;
+  /** Días laborales netos usados en la fórmula. */
   workedDays: number;
+  /** Días descontados por permisos con descuento de vacaciones. */
+  discounts: number;
   raw: number;
   entitled: number;
-  error?: string;
+  from?: string | undefined;
+  to?: string | undefined;
+  error?: string | undefined;
 }
 
 /**
- * Derecho de vacaciones prorrateado: (días trabajados / 365) × 15.
- * Descuenta permisos con descuento de vacaciones, incapacidades y licencias
- * no remuneradas registradas en el año indicado.
+ * Recalcula el derecho de un año con la fórmula colombiana:
+ * (días laborales × 15) ÷ 360, prorrateando el año de ingreso.
  */
 export function recalcEntitlement(
   employee: Employee,
   leaves: Leave[],
-  incapacities: Incapacity[],
-  licenses: License[],
   year = new Date().getFullYear(),
   today = todayISO(),
 ): EntitlementRecalc {
-  const empty: EntitlementRecalc = {
-    totalDays: 0,
-    leaveDays: 0,
-    incapacityDays: 0,
-    licenseDays: 0,
-    discounts: 0,
-    workedDays: 0,
-    raw: 0,
-    entitled: 0,
-  };
+  const empty: EntitlementRecalc = { workedDays: 0, discounts: 0, raw: 0, entitled: 0 };
 
   if (!employee.hire_date)
     return { ...empty, error: "El empleado no tiene fecha de ingreso registrada." };
   if (daysUntil(employee.hire_date, today) > 0)
     return { ...empty, error: "La fecha de ingreso no puede ser futura." };
 
-  const end = employee.exit_date && daysUntil(employee.exit_date, today) < 0
-    ? employee.exit_date
-    : today;
-  const totalDays = calendarDaysInclusive(employee.hire_date, end);
+  const computed = entitlementForYear(employee, leaves, year, today);
+  if (!computed)
+    return { ...empty, error: `El empleado no tenía contrato vigente en ${year}.` };
 
-  const inYear = (iso: string) => parseDate(iso).getFullYear() === year;
-  const leaveDays = leaves
-    .filter((l) => l.type === "vacaciones" && inYear(l.start_date))
-    .reduce((s, l) => s + Number(l.days), 0);
-  const incapacityDays = incapacities
-    .filter((i) => inYear(i.start_date))
-    .reduce((s, i) => s + daysInclusive(i.start_date, i.end_date), 0);
-  const licenseDays = licenses
-    .filter((l) => l.type === "no_remunerada" && inYear(l.start_date))
-    .reduce((s, l) => s + Number(l.days), 0);
-
-  const discounts = Math.round((leaveDays + incapacityDays + licenseDays) * 10) / 10;
-  const workedDays = totalDays - discounts;
-  const base = {
-    ...empty,
-    totalDays,
-    leaveDays: Math.round(leaveDays * 10) / 10,
-    incapacityDays: Math.round(incapacityDays * 10) / 10,
-    licenseDays: Math.round(licenseDays * 10) / 10,
-    discounts,
-  };
-
-  if (workedDays <= 0)
-    return {
-      ...base,
-      error: `Los descuentos (${discounts} días) son mayores a los días trabajados (${totalDays} días). Verifica permisos e incapacidades.`,
-    };
-
-  const raw = (workedDays / 365) * 15;
   return {
-    ...base,
-    workedDays,
-    raw: Math.round(raw * 100) / 100,
-    entitled: Math.ceil(raw),
+    workedDays: computed.workingDays,
+    discounts: computed.discounts,
+    raw: computed.raw,
+    entitled: computed.entitled,
+    from: computed.from,
+    to: computed.to,
   };
 }
+
 
 
 /** Validación legal del permiso con descuento de vacaciones. */
