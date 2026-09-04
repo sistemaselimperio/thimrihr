@@ -539,6 +539,90 @@ export function buildVacationSummary(
   };
 }
 
+export interface EntitlementRecalc {
+  totalDays: number;
+  leaveDays: number;
+  incapacityDays: number;
+  licenseDays: number;
+  discounts: number;
+  workedDays: number;
+  raw: number;
+  entitled: number;
+  error?: string;
+}
+
+/**
+ * Derecho de vacaciones prorrateado: (días trabajados / 365) × 15.
+ * Descuenta permisos con descuento de vacaciones, incapacidades y licencias
+ * no remuneradas registradas en el año indicado.
+ */
+export function recalcEntitlement(
+  employee: Employee,
+  leaves: Leave[],
+  incapacities: Incapacity[],
+  licenses: License[],
+  year = new Date().getFullYear(),
+  today = todayISO(),
+): EntitlementRecalc {
+  const empty: EntitlementRecalc = {
+    totalDays: 0,
+    leaveDays: 0,
+    incapacityDays: 0,
+    licenseDays: 0,
+    discounts: 0,
+    workedDays: 0,
+    raw: 0,
+    entitled: 0,
+  };
+
+  if (!employee.hire_date)
+    return { ...empty, error: "El empleado no tiene fecha de ingreso registrada." };
+  if (daysUntil(employee.hire_date, today) > 0)
+    return { ...empty, error: "La fecha de ingreso no puede ser futura." };
+
+  const end = employee.exit_date && daysUntil(employee.exit_date, today) < 0
+    ? employee.exit_date
+    : today;
+  const totalDays = calendarDaysInclusive(employee.hire_date, end);
+
+  const inYear = (iso: string) => parseDate(iso).getFullYear() === year;
+  const leaveDays = leaves
+    .filter((l) => l.type === "vacaciones" && inYear(l.start_date))
+    .reduce((s, l) => s + Number(l.days), 0);
+  const incapacityDays = incapacities
+    .filter((i) => inYear(i.start_date))
+    .reduce((s, i) => s + daysInclusive(i.start_date, i.end_date), 0);
+  const licenseDays = licenses
+    .filter((l) => l.type === "no_remunerada" && inYear(l.start_date))
+    .reduce((s, l) => s + Number(l.days), 0);
+
+  const discounts = Math.round((leaveDays + incapacityDays + licenseDays) * 10) / 10;
+  const workedDays = totalDays - discounts;
+  const base = {
+    ...empty,
+    totalDays,
+    leaveDays: Math.round(leaveDays * 10) / 10,
+    incapacityDays: Math.round(incapacityDays * 10) / 10,
+    licenseDays: Math.round(licenseDays * 10) / 10,
+    discounts,
+  };
+
+  if (workedDays <= 0)
+    return {
+      ...base,
+      error: `Los descuentos (${discounts} días) son mayores a los días trabajados (${totalDays} días). Verifica permisos e incapacidades.`,
+    };
+
+  const raw = (workedDays / 365) * 15;
+  return {
+    ...base,
+    workedDays,
+    raw: Math.round(raw * 100) / 100,
+    entitled: Math.ceil(raw),
+  };
+}
+
+
 /** Validación legal del permiso con descuento de vacaciones. */
 export function validateVacationLeave(
   requestedDays: number,
