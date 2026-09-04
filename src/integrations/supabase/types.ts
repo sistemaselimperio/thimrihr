@@ -240,6 +240,30 @@ export type Database = {
           },
         ]
       }
+      holidays: {
+        Row: {
+          created_at: string
+          date: string
+          name: string
+          source: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          name: string
+          source?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          name?: string
+          source?: string
+          year?: number
+        }
+        Relationships: []
+      }
       import_batches: {
         Row: {
           created_at: string
