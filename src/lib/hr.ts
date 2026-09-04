@@ -471,12 +471,12 @@ export interface VacationYearRow {
   /** Días usados en períodos de vacaciones registrados. */
   usedPeriods?: number;
   /** Rango real considerado en el año (ingreso / 01-ene → hoy, salida o 31-dic). */
-  from?: string;
-  to?: string;
+  from?: string | undefined;
+  to?: string | undefined;
   /** Días laborales del rango (sin domingos ni festivos). */
-  workingDays?: number;
+  workingDays?: number | undefined;
   /** Disponibles del año: derecho − tomados (puede ser negativo). */
-  availableYear?: number;
+  availableYear?: number | undefined;
   /** Saldo acumulado al cerrar ese año. */
   balance: number;
 }
@@ -617,9 +617,9 @@ export interface EntitlementRecalc {
   discounts: number;
   raw: number;
   entitled: number;
-  from?: string;
-  to?: string;
-  error?: string;
+  from?: string | undefined;
+  to?: string | undefined;
+  error?: string | undefined;
 }
 
 /**
