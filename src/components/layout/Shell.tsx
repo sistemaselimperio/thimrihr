@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useCompanies, useEmployees } from "@/lib/data";
+import { useCompanies, useEmployees, useHolidaySync } from "@/lib/data";
 import { activeFilterCount } from "@/lib/filters";
 import { downloadSheet } from "@/lib/excel";
 import { fmtDate, isFixedTerm } from "@/lib/hr";
@@ -413,6 +413,8 @@ function TopBar({
 
 export function Shell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Carga automática de festivos colombianos (API + respaldo local).
+  useHolidaySync();
 
   return (
     <div className="flex min-h-screen bg-background">
