@@ -212,33 +212,35 @@ function EmployeeDetail() {
   const recalcCurrentYear = async () => {
     setRecalcing(true);
     try {
-      const result = recalcEntitlement(
-        emp,
-        myLeaves,
-        myIncapacities,
-        myLicenses,
-        currentYear,
-      );
-      if (result.error) {
-        toast.error(result.error);
+      const years = (vacations?.rows ?? []).map((r) => r.year);
+      const targets = years.length ? years : [currentYear];
+      let changed = 0;
+      const detail: string[] = [];
+      for (const y of targets) {
+        const result = recalcEntitlement(emp, myLeaves, y);
+        if (result.error) continue;
+        detail.push(`${y}: ${result.entitled}`);
+        const previous = myEntitlements.find((e) => e.year === y)?.entitled_days ?? null;
+        if (previous !== null && Number(previous) === result.entitled) continue;
+        await saveEntitlementSilent(y, result.entitled);
+        changed++;
+      }
+      if (!detail.length) {
+        toast.error("No se pudo recalcular: revisa la fecha de ingreso.");
         return;
       }
-      const previous =
-        myEntitlements.find((e) => e.year === currentYear)?.entitled_days ?? null;
-      if (previous !== null && Number(previous) === result.entitled) {
-        toast.success(`Derecho ya era correcto: ${result.entitled} días`);
+      if (changed === 0) {
+        toast.success(`Derecho ya era correcto (${detail.join(" · ")})`);
         return;
       }
-      await saveEntitlementSilent(currentYear, result.entitled);
-      toast.success(
-        `Derecho recalculado: ${result.entitled} días (${result.workedDays} días trabajados, ${result.discounts} de descuentos)`,
-      );
+      toast.success(`Derecho recalculado — ${detail.join(" · ")} días`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al recalcular");
     } finally {
       setRecalcing(false);
     }
   };
+
 
   const exportSheet = () => {
     downloadSheet(`Hoja_${emp.cedula}.xlsx`, "Hoja de vida", [
