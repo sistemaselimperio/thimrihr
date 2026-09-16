@@ -94,6 +94,27 @@ function Dashboard() {
   const { data: companies = [] } = useCompanies();
   const { data: incapacities = [] } = useIncapacities();
   const { data: leaves = [] } = useLeaves();
+  const { data: vacationPeriods = [] } = useVacations();
+
+  const today = todayISO();
+  const employeeById = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
+
+  /** Empleados que están en vacaciones HOY y períodos programados próximos. */
+  const vacationsToday = useMemo(
+    () =>
+      vacationPeriods
+        .filter((v) => v.start_date <= today && v.end_date >= today)
+        .map((v) => ({ vacation: v, employee: employeeById.get(v.employee_id) }))
+        .filter((r) => Boolean(r.employee))
+        .sort((a, b) => a.vacation.start_date.localeCompare(b.vacation.start_date)),
+    [vacationPeriods, employeeById, today],
+  );
+
+  const vacationsUpcoming = useMemo(
+    () => vacationPeriods.filter((v) => v.start_date > today).length,
+    [vacationPeriods, today],
+  );
+
 
   const alerts = useMemo(() => buildAlerts(employees, incapacities), [employees, incapacities]);
   const active = employees.filter((e) => e.status === "activo").length;
