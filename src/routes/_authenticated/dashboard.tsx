@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   CalendarClock,
   DoorOpen,
+  Palmtree,
   UserMinus,
   UserPlus,
   Users,
