@@ -60,7 +60,6 @@ import {
   vacationStatus,
 } from "@/lib/hr";
 
-
 export const Route = createFileRoute("/_authenticated/empleados/$id")({
   head: () => ({
     meta: [
@@ -137,12 +136,8 @@ function EmployeeDetail() {
     [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses, myVacations],
   );
 
-
   const vacations = useMemo(
-    () =>
-      employee
-        ? buildVacationSummary(employee, myEntitlements, myLeaves, myVacations)
-        : null,
+    () => (employee ? buildVacationSummary(employee, myEntitlements, myLeaves, myVacations) : null),
     [employee, myEntitlements, myLeaves, myVacations],
   );
 
@@ -226,7 +221,6 @@ function EmployeeDetail() {
       setRecalcing(false);
     }
   };
-
 
   const exportSheet = () => {
     downloadSheet(`Hoja_${emp.cedula}.xlsx`, "Hoja de vida", [
@@ -324,9 +318,7 @@ function EmployeeDetail() {
             <Field
               label="Empresa"
               value={
-                emp.company_id
-                  ? (companies.find((c) => c.id === emp.company_id)?.name ?? "—")
-                  : "—"
+                emp.company_id ? (companies.find((c) => c.id === emp.company_id)?.name ?? "—") : "—"
               }
             />
             <Field label="Cargo" value={emp.position} />
@@ -344,15 +336,12 @@ function EmployeeDetail() {
             />
             <Field
               label="Fin de contrato"
-              value={
-                isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "— (sin fecha límite)"
-              }
+              value={isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "— (sin fecha límite)"}
             />
             <Field label="Fecha de salida" value={emp.exit_date ? fmtDate(emp.exit_date) : "—"} />
             <Field label="Estado" value={emp.status === "activo" ? "Activo" : "Retirado"} />
           </div>
         </div>
-
 
         {emp.notes && (
           <div className="border-t pt-4">
@@ -425,7 +414,10 @@ function EmployeeDetail() {
                 ))}
                 {quincenas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin quincenas para {year}.
                     </TableCell>
                   </TableRow>
@@ -468,7 +460,9 @@ function EmployeeDetail() {
                           variant="ghost"
                           size="sm"
                           className="gap-1"
-                          onClick={() => void openFile("certificados", i.certificate_path as string)}
+                          onClick={() =>
+                            void openFile("certificados", i.certificate_path as string)
+                          }
                         >
                           <Paperclip className="size-3.5" /> Ver
                         </Button>
@@ -488,7 +482,10 @@ function EmployeeDetail() {
 
                 {myIncapacities.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin incapacidades registradas.
                     </TableCell>
                   </TableRow>
@@ -533,12 +530,14 @@ function EmployeeDetail() {
                 ))}
                 {myLeaves.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin permisos registrados.
                     </TableCell>
                   </TableRow>
                 )}
-
               </TableBody>
             </Table>
           </div>
@@ -600,7 +599,10 @@ function EmployeeDetail() {
                 })}
                 {myLicenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin licencias registradas.
                     </TableCell>
                   </TableRow>
@@ -609,7 +611,6 @@ function EmployeeDetail() {
             </Table>
           </div>
         </TabsContent>
-
 
         <TabsContent value="vacaciones" className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -622,7 +623,9 @@ function EmployeeDetail() {
                   )}
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {r.from && r.to ? `${fmtDate(r.from)} — ${fmtDate(r.to)}` : "Sin contrato vigente"}
+                  {r.from && r.to
+                    ? `${fmtDate(r.from)} — ${fmtDate(r.to)}`
+                    : "Sin contrato vigente"}
                 </p>
                 <dl className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
@@ -650,7 +653,9 @@ function EmployeeDetail() {
                     <dt className="text-muted-foreground">Disponibles</dt>
                     <dd
                       className={`numeric font-semibold ${
-                        (r.availableYear ?? 0) < 0 ? "text-danger-foreground" : "text-success-foreground"
+                        (r.availableYear ?? 0) < 0
+                          ? "text-danger-foreground"
+                          : "text-success-foreground"
                       }`}
                     >
                       {r.availableYear ?? 0} días
@@ -758,7 +763,10 @@ function EmployeeDetail() {
                 })}
                 {myVacations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin períodos de vacaciones registrados.
                     </TableCell>
                   </TableRow>
@@ -767,7 +775,6 @@ function EmployeeDetail() {
             </Table>
           </div>
         </TabsContent>
-
 
         <TabsContent value="retiro" className="space-y-3">
           {emp.status === "activo" && (
@@ -804,12 +811,14 @@ function EmployeeDetail() {
                 ))}
                 {myTerminations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin registros de retiro.
                     </TableCell>
                   </TableRow>
                 )}
-
               </TableBody>
             </Table>
           </div>

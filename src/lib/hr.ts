@@ -92,10 +92,7 @@ export function vacationStatus(
   return "En curso";
 }
 
-
-
 export interface Termination {
-
   id: string;
   employee_id: string;
   type: string;
@@ -194,7 +191,6 @@ export const TERMINATION_LABELS: Record<string, string> = {
   renuncia: "Renuncia",
   justa_causa: "Justa causa",
 };
-
 
 export const CONTRACT_TYPE_LABELS: Record<string, string> = {
   fijo: "Término fijo",
@@ -328,12 +324,7 @@ export function currentPeriodKey(): string {
 }
 
 /** Días de solape entre [aStart,aEnd] y [bStart,bEnd], inclusive. */
-export function overlapDays(
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string,
-): number {
+export function overlapDays(aStart: string, aEnd: string, bStart: string, bEnd: string): number {
   return workingOverlapDays(aStart, aEnd, bStart, bEnd);
 }
 
@@ -354,7 +345,6 @@ export interface QuincenaRow {
   workedDays: number;
   notes: string | null;
 }
-
 
 /** Días base por defecto de una quincena para un empleado (recorta ingreso/salida). */
 export function defaultBaseDays(
@@ -380,7 +370,6 @@ export function buildQuincenas(
   year: number,
   licenses: License[] = [],
   vacationPeriods: Vacation[] = [],
-
 ): QuincenaRow[] {
   const today = todayISO();
   const overrideMap = new Map(overrides.map((o) => [o.period_key, o]));
@@ -420,8 +409,6 @@ export function buildQuincenas(
         vacationDays += workingOverlapDays(vac.start_date, vac.end_date, start, end);
       }
 
-
-
       // Las licencias remuneradas no descuentan; la no remunerada sí.
       let paidLicenseDays = 0;
       let unpaidLicenseDays = 0;
@@ -457,8 +444,6 @@ export function buildQuincenas(
       };
     });
 }
-
-
 
 /* -------------------------------------------------------------- vacaciones */
 
@@ -521,16 +506,21 @@ export function entitlementForYear(
   leaves: Leave[],
   year: number,
   today = todayISO(),
-): { entitled: number; raw: number; workingDays: number; discounts: number; from: string; to: string } | null {
+): {
+  entitled: number;
+  raw: number;
+  workingDays: number;
+  discounts: number;
+  from: string;
+  to: string;
+} | null {
   const range = vacationYearRange(employee, year, today);
   if (!range) return null;
   const gross = workingDaysInclusive(range.from, range.to);
   const discounts =
     Math.round(
       leaves
-        .filter(
-          (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
-        )
+        .filter((l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year)
         .reduce((s, l) => s + Number(l.days), 0) * 10,
     ) / 10;
   const workingDays = Math.max(0, Math.round((gross - discounts) * 10) / 10);
@@ -561,9 +551,7 @@ export function buildVacationSummary(
 ): VacationSummary {
   const currentYear = parseDate(today).getFullYear();
   const hireYear = employee.hire_date ? parseDate(employee.hire_date).getFullYear() : currentYear;
-  const lastYear = employee.exit_date
-    ? parseDate(employee.exit_date).getFullYear()
-    : currentYear;
+  const lastYear = employee.exit_date ? parseDate(employee.exit_date).getFullYear() : currentYear;
 
   const years = new Set<number>();
   for (let y = hireYear; y <= lastYear; y++) years.add(y);
@@ -584,9 +572,7 @@ export function buildVacationSummary(
         ? Number(stored.entitled_days)
         : (computed?.entitled ?? 0);
     const usedLeaves = leaves
-      .filter(
-        (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
-      )
+      .filter((l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year)
       .reduce((sum, l) => sum + Number(l.days), 0);
     const usedPeriods = vacationPeriods
       .filter((v) => (Number(v.year) || parseDate(v.start_date).getFullYear()) === year)
@@ -650,8 +636,7 @@ export function recalcEntitlement(
     return { ...empty, error: "La fecha de ingreso no puede ser futura." };
 
   const computed = entitlementForYear(employee, leaves, year, today);
-  if (!computed)
-    return { ...empty, error: `El empleado no tenía contrato vigente en ${year}.` };
+  if (!computed) return { ...empty, error: `El empleado no tenía contrato vigente en ${year}.` };
 
   return {
     workedDays: computed.workingDays,
@@ -662,8 +647,6 @@ export function recalcEntitlement(
     to: computed.to,
   };
 }
-
-
 
 /** Validación legal del permiso con descuento de vacaciones. */
 export function validateVacationLeave(

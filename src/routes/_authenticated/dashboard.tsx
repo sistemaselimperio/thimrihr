@@ -23,13 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  useCompanies,
-  useEmployees,
-  useIncapacities,
-  useLeaves,
-  useVacations,
-} from "@/lib/data";
+import { useCompanies, useEmployees, useIncapacities, useLeaves, useVacations } from "@/lib/data";
 import { buildAlerts } from "@/lib/filters";
 import {
   currentPeriodKey,
@@ -115,15 +109,11 @@ function Dashboard() {
     [vacationPeriods, today],
   );
 
-
   const alerts = useMemo(() => buildAlerts(employees, incapacities), [employees, incapacities]);
   const active = employees.filter((e) => e.status === "activo").length;
   const retired = employees.length - active;
 
-  const companyMap = useMemo(
-    () => new Map(companies.map((c) => [c.id, c.name])),
-    [companies],
-  );
+  const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
 
   const currentPeriod = useMemo(() => currentPeriodKey(), []);
   const { start: periodStart, end: periodEnd } = useMemo(
@@ -133,10 +123,7 @@ function Dashboard() {
   const currentHires = useMemo(() => {
     return employees
       .filter(
-        (e) =>
-          e.status === "activo" &&
-          e.hire_date >= periodStart &&
-          e.hire_date <= periodEnd,
+        (e) => e.status === "activo" && e.hire_date >= periodStart && e.hire_date <= periodEnd,
       )
       .sort((a, b) => a.hire_date.localeCompare(b.hire_date));
   }, [employees, periodStart, periodEnd]);
@@ -230,7 +217,9 @@ function Dashboard() {
             <header className="flex flex-wrap items-center gap-2">
               <UserPlus className="size-4" />
               <h2 className="font-display text-sm font-bold">Ingresos esta quincena</h2>
-              <Badge className="ml-auto bg-brand text-brand-foreground">{currentHires.length}</Badge>
+              <Badge className="ml-auto bg-brand text-brand-foreground">
+                {currentHires.length}
+              </Badge>
             </header>
             <p className="mt-1 text-xs text-muted-foreground">
               Quincena: {fmtDate(periodStart)} — {fmtDate(periodEnd)}
@@ -250,15 +239,20 @@ function Dashboard() {
                     >
                       {employee.full_name}
                     </button>
-                    <span className="numeric text-muted-foreground">{fmtDate(employee.hire_date)}</span>
+                    <span className="numeric text-muted-foreground">
+                      {fmtDate(employee.hire_date)}
+                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {employee.cedula} · {employee.position} · {companyMap.get(employee.company_id ?? "") ?? "—"}
+                    {employee.cedula} · {employee.position} ·{" "}
+                    {companyMap.get(employee.company_id ?? "") ?? "—"}
                   </div>
                 </li>
               ))}
               {currentHires.length === 0 && (
-                <li className="py-2 text-sm text-muted-foreground">Sin ingresos en esta quincena.</li>
+                <li className="py-2 text-sm text-muted-foreground">
+                  Sin ingresos en esta quincena.
+                </li>
               )}
             </ul>
             {currentHires.length > 3 && (
@@ -301,9 +295,7 @@ function Dashboard() {
                 </li>
               ))}
               {alerts.activeIncapacities.length === 0 && (
-                <li className="py-2 text-sm text-muted-foreground">
-                  Nadie está incapacitado hoy.
-                </li>
+                <li className="py-2 text-sm text-muted-foreground">Nadie está incapacitado hoy.</li>
               )}
             </ul>
           </section>
@@ -340,9 +332,8 @@ function Dashboard() {
                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {fmtDate(vacation.start_date)} → {fmtDate(vacation.end_date)} ·{" "}
-                    {vacation.days} días ·{" "}
-                    {companyMap.get(employee!.company_id ?? "") ?? "—"}
+                    {fmtDate(vacation.start_date)} → {fmtDate(vacation.end_date)} · {vacation.days}{" "}
+                    días · {companyMap.get(employee!.company_id ?? "") ?? "—"}
                   </div>
                 </li>
               ))}
@@ -353,7 +344,6 @@ function Dashboard() {
               )}
             </ul>
           </section>
-
 
           <section className="panel-success rounded-xl p-4">
             <header className="flex items-center gap-2">
@@ -410,7 +400,8 @@ function Dashboard() {
             <DialogHeader>
               <DialogTitle>Ingresos esta quincena</DialogTitle>
               <DialogDescription>
-                {periodLabelLong(currentPeriod)} · Quincena: {fmtDate(periodStart)} — {fmtDate(periodEnd)}
+                {periodLabelLong(currentPeriod)} · Quincena: {fmtDate(periodStart)} —{" "}
+                {fmtDate(periodEnd)}
               </DialogDescription>
             </DialogHeader>
             <ul className="max-h-[60vh] divide-y divide-border/60 overflow-auto">
