@@ -15,6 +15,7 @@ export interface Company {
   name: string;
   logo_path?: string | null;
   logo_name?: string | null;
+  nit?: string | null;
 }
 
 export interface Employee {

@@ -44,6 +44,7 @@ export type Database = {
           logo_name: string | null
           logo_path: string | null
           name: string
+          nit: string | null
         }
         Insert: {
           created_at?: string
@@ -53,6 +54,7 @@ export type Database = {
           logo_name?: string | null
           logo_path?: string | null
           name: string
+          nit?: string | null
         }
         Update: {
           created_at?: string
@@ -62,6 +64,7 @@ export type Database = {
           logo_name?: string | null
           logo_path?: string | null
           name?: string
+          nit?: string | null
         }
         Relationships: []
       }
