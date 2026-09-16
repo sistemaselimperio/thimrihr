@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   CalendarClock,
   DoorOpen,
+  Palmtree,
   UserMinus,
   UserPlus,
   Users,
@@ -22,18 +23,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  useCompanies,
-  useEmployees,
-  useIncapacities,
-  useLeaves,
-} from "@/lib/data";
+import { useCompanies, useEmployees, useIncapacities, useLeaves, useVacations } from "@/lib/data";
 import { buildAlerts } from "@/lib/filters";
 import {
   currentPeriodKey,
   fmtDate,
   periodBounds,
   periodLabelLong,
+  todayISO,
+  vacationStatus,
   INCAPACITY_LABELS,
   type Employee,
 } from "@/lib/hr";
@@ -90,15 +88,32 @@ function Dashboard() {
   const { data: companies = [] } = useCompanies();
   const { data: incapacities = [] } = useIncapacities();
   const { data: leaves = [] } = useLeaves();
+  const { data: vacationPeriods = [] } = useVacations();
+
+  const today = todayISO();
+  const employeeById = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
+
+  /** Empleados que están en vacaciones HOY y períodos programados próximos. */
+  const vacationsToday = useMemo(
+    () =>
+      vacationPeriods
+        .filter((v) => v.start_date <= today && v.end_date >= today)
+        .map((v) => ({ vacation: v, employee: employeeById.get(v.employee_id) }))
+        .filter((r) => Boolean(r.employee))
+        .sort((a, b) => a.vacation.start_date.localeCompare(b.vacation.start_date)),
+    [vacationPeriods, employeeById, today],
+  );
+
+  const vacationsUpcoming = useMemo(
+    () => vacationPeriods.filter((v) => v.start_date > today).length,
+    [vacationPeriods, today],
+  );
 
   const alerts = useMemo(() => buildAlerts(employees, incapacities), [employees, incapacities]);
   const active = employees.filter((e) => e.status === "activo").length;
   const retired = employees.length - active;
 
-  const companyMap = useMemo(
-    () => new Map(companies.map((c) => [c.id, c.name])),
-    [companies],
-  );
+  const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
 
   const currentPeriod = useMemo(() => currentPeriodKey(), []);
   const { start: periodStart, end: periodEnd } = useMemo(
@@ -108,10 +123,7 @@ function Dashboard() {
   const currentHires = useMemo(() => {
     return employees
       .filter(
-        (e) =>
-          e.status === "activo" &&
-          e.hire_date >= periodStart &&
-          e.hire_date <= periodEnd,
+        (e) => e.status === "activo" && e.hire_date >= periodStart && e.hire_date <= periodEnd,
       )
       .sort((a, b) => a.hire_date.localeCompare(b.hire_date));
   }, [employees, periodStart, periodEnd]);
@@ -205,7 +217,9 @@ function Dashboard() {
             <header className="flex flex-wrap items-center gap-2">
               <UserPlus className="size-4" />
               <h2 className="font-display text-sm font-bold">Ingresos esta quincena</h2>
-              <Badge className="ml-auto bg-brand text-brand-foreground">{currentHires.length}</Badge>
+              <Badge className="ml-auto bg-brand text-brand-foreground">
+                {currentHires.length}
+              </Badge>
             </header>
             <p className="mt-1 text-xs text-muted-foreground">
               Quincena: {fmtDate(periodStart)} — {fmtDate(periodEnd)}
@@ -225,15 +239,20 @@ function Dashboard() {
                     >
                       {employee.full_name}
                     </button>
-                    <span className="numeric text-muted-foreground">{fmtDate(employee.hire_date)}</span>
+                    <span className="numeric text-muted-foreground">
+                      {fmtDate(employee.hire_date)}
+                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {employee.cedula} · {employee.position} · {companyMap.get(employee.company_id ?? "") ?? "—"}
+                    {employee.cedula} · {employee.position} ·{" "}
+                    {companyMap.get(employee.company_id ?? "") ?? "—"}
                   </div>
                 </li>
               ))}
               {currentHires.length === 0 && (
-                <li className="py-2 text-sm text-muted-foreground">Sin ingresos en esta quincena.</li>
+                <li className="py-2 text-sm text-muted-foreground">
+                  Sin ingresos en esta quincena.
+                </li>
               )}
             </ul>
             {currentHires.length > 3 && (
@@ -276,8 +295,51 @@ function Dashboard() {
                 </li>
               ))}
               {alerts.activeIncapacities.length === 0 && (
+                <li className="py-2 text-sm text-muted-foreground">Nadie está incapacitado hoy.</li>
+              )}
+            </ul>
+          </section>
+
+          <section className="panel-info rounded-xl p-4">
+            <header className="flex flex-wrap items-center gap-2">
+              <Palmtree className="size-4" />
+              <h2 className="font-display text-sm font-bold">Vacaciones hoy</h2>
+              <Badge className="ml-auto bg-brand text-brand-foreground">
+                {vacationsToday.length}
+              </Badge>
+            </header>
+            <p className="mt-1 text-xs text-muted-foreground">
+              En período de vacaciones hoy: {vacationsToday.length} · Programadas:{" "}
+              {vacationsUpcoming}
+            </p>
+            <ul className="mt-3 divide-y divide-border/60">
+              {vacationsToday.map(({ vacation, employee }) => (
+                <li key={vacation.id} className="flex flex-col gap-1 py-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      className="text-left font-medium underline-offset-4 hover:underline"
+                      onClick={() =>
+                        void navigate({
+                          to: "/empleados/$id",
+                          params: { id: employee!.id },
+                        })
+                      }
+                    >
+                      {employee!.full_name}
+                    </button>
+                    <Badge className="bg-warning/20 text-warning-foreground">
+                      {vacationStatus(vacation)}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {fmtDate(vacation.start_date)} → {fmtDate(vacation.end_date)} · {vacation.days}{" "}
+                    días · {companyMap.get(employee!.company_id ?? "") ?? "—"}
+                  </div>
+                </li>
+              ))}
+              {vacationsToday.length === 0 && (
                 <li className="py-2 text-sm text-muted-foreground">
-                  Nadie está incapacitado hoy.
+                  Nadie está en vacaciones hoy.
                 </li>
               )}
             </ul>
@@ -338,7 +400,8 @@ function Dashboard() {
             <DialogHeader>
               <DialogTitle>Ingresos esta quincena</DialogTitle>
               <DialogDescription>
-                {periodLabelLong(currentPeriod)} · Quincena: {fmtDate(periodStart)} — {fmtDate(periodEnd)}
+                {periodLabelLong(currentPeriod)} · Quincena: {fmtDate(periodStart)} —{" "}
+                {fmtDate(periodEnd)}
               </DialogDescription>
             </DialogHeader>
             <ul className="max-h-[60vh] divide-y divide-border/60 overflow-auto">

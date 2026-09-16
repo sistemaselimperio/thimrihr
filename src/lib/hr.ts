@@ -92,10 +92,7 @@ export function vacationStatus(
   return "En curso";
 }
 
-
-
 export interface Termination {
-
   id: string;
   employee_id: string;
   type: string;
@@ -194,7 +191,6 @@ export const TERMINATION_LABELS: Record<string, string> = {
   renuncia: "Renuncia",
   justa_causa: "Justa causa",
 };
-
 
 export const CONTRACT_TYPE_LABELS: Record<string, string> = {
   fijo: "Término fijo",
@@ -328,12 +324,7 @@ export function currentPeriodKey(): string {
 }
 
 /** Días de solape entre [aStart,aEnd] y [bStart,bEnd], inclusive. */
-export function overlapDays(
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string,
-): number {
+export function overlapDays(aStart: string, aEnd: string, bStart: string, bEnd: string): number {
   return workingOverlapDays(aStart, aEnd, bStart, bEnd);
 }
 
@@ -354,7 +345,6 @@ export interface QuincenaRow {
   workedDays: number;
   notes: string | null;
 }
-
 
 /** Días base por defecto de una quincena para un empleado (recorta ingreso/salida). */
 export function defaultBaseDays(
@@ -380,7 +370,6 @@ export function buildQuincenas(
   year: number,
   licenses: License[] = [],
   vacationPeriods: Vacation[] = [],
-
 ): QuincenaRow[] {
   const today = todayISO();
   const overrideMap = new Map(overrides.map((o) => [o.period_key, o]));
@@ -420,8 +409,6 @@ export function buildQuincenas(
         vacationDays += workingOverlapDays(vac.start_date, vac.end_date, start, end);
       }
 
-
-
       // Las licencias remuneradas no descuentan; la no remunerada sí.
       let paidLicenseDays = 0;
       let unpaidLicenseDays = 0;
@@ -458,15 +445,13 @@ export function buildQuincenas(
     });
 }
 
-
-
 /* -------------------------------------------------------------- vacaciones */
 
 export interface VacationYearRow {
   year: number;
   entitled: number;
   used: number;
-  /** Días usados por permisos con descuento de vacaciones. */
+  /** Días usados por permisos con descuento de vacaciones (ya restados del derecho). */
   usedLeaves?: number;
   /** Días usados en períodos de vacaciones registrados. */
   usedPeriods?: number;
@@ -477,6 +462,8 @@ export interface VacationYearRow {
   workingDays?: number | undefined;
   /** Disponibles del año: derecho − tomados (puede ser negativo). */
   availableYear?: number | undefined;
+  /** Año en curso: el derecho es automático y no editable. */
+  isCurrent?: boolean;
   /** Saldo acumulado al cerrar ese año. */
   balance: number;
 }
@@ -486,7 +473,7 @@ export interface VacationSummary {
   totalEntitled: number;
   totalUsed: number;
   available: number;
-  /** Días en deuda de años anteriores (valor positivo). */
+  /** Días en deuda de años con saldo negativo (valor positivo). */
   owed: number;
 }
 
@@ -510,7 +497,7 @@ export function vacationYearRange(
 }
 
 /**
- * Derecho causado en un año: (días laborales × 15) ÷ 360.
+ * Derecho causado en un año: (días laborales × 15) ÷ 360, redondeado al alza.
  * Los días laborales excluyen domingos y festivos colombianos, y se restan los
  * permisos con descuento de vacaciones de ese año (nada más).
  */
@@ -519,22 +506,27 @@ export function entitlementForYear(
   leaves: Leave[],
   year: number,
   today = todayISO(),
-): { entitled: number; raw: number; workingDays: number; discounts: number; from: string; to: string } | null {
+): {
+  entitled: number;
+  raw: number;
+  workingDays: number;
+  discounts: number;
+  from: string;
+  to: string;
+} | null {
   const range = vacationYearRange(employee, year, today);
   if (!range) return null;
   const gross = workingDaysInclusive(range.from, range.to);
   const discounts =
     Math.round(
       leaves
-        .filter(
-          (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
-        )
+        .filter((l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year)
         .reduce((s, l) => s + Number(l.days), 0) * 10,
     ) / 10;
   const workingDays = Math.max(0, Math.round((gross - discounts) * 10) / 10);
   const raw = (workingDays * 15) / 360;
   return {
-    entitled: Math.round(raw),
+    entitled: Math.ceil(Math.round(raw * 100) / 100),
     raw: Math.round(raw * 100) / 100,
     workingDays,
     discounts,
@@ -543,6 +535,13 @@ export function entitlementForYear(
   };
 }
 
+/**
+ * Resumen de vacaciones año por año.
+ * - Año en curso: derecho SIEMPRE automático (no editable).
+ * - Años anteriores: derecho editable (valor guardado) y, si no hay valor
+ *   guardado, se usa el cálculo automático como punto de partida.
+ * - Tomados: suma de los períodos de vacaciones registrados en ese año.
+ */
 export function buildVacationSummary(
   employee: Employee,
   entitlements: VacationEntitlement[],
@@ -550,17 +549,13 @@ export function buildVacationSummary(
   vacationPeriods: Vacation[] = [],
   today = todayISO(),
 ): VacationSummary {
-  const hireYear = parseDate(employee.hire_date).getFullYear();
-  const lastYear = employee.exit_date
-    ? parseDate(employee.exit_date).getFullYear()
-    : parseDate(today).getFullYear();
+  const currentYear = parseDate(today).getFullYear();
+  const hireYear = employee.hire_date ? parseDate(employee.hire_date).getFullYear() : currentYear;
+  const lastYear = employee.exit_date ? parseDate(employee.exit_date).getFullYear() : currentYear;
 
   const years = new Set<number>();
   for (let y = hireYear; y <= lastYear; y++) years.add(y);
   entitlements.forEach((e) => years.add(e.year));
-  leaves
-    .filter((l) => l.type === "vacaciones")
-    .forEach((l) => years.add(parseDate(l.start_date).getFullYear()));
   vacationPeriods.forEach((v) =>
     years.add(Number(v.year) || parseDate(v.start_date).getFullYear()),
   );
@@ -569,17 +564,20 @@ export function buildVacationSummary(
   let running = 0;
   const rows: VacationYearRow[] = sorted.map((year) => {
     const computed = entitlementForYear(employee, leaves, year, today);
-    const ent = entitlements.find((e) => e.year === year);
-    const entitled = ent ? Number(ent.entitled_days) : (computed?.entitled ?? 0);
+    const isCurrent = year === currentYear;
+    const stored = entitlements.find((e) => e.year === year);
+    const entitled = isCurrent
+      ? (computed?.entitled ?? 0)
+      : stored
+        ? Number(stored.entitled_days)
+        : (computed?.entitled ?? 0);
     const usedLeaves = leaves
-      .filter(
-        (l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year,
-      )
+      .filter((l) => l.type === "vacaciones" && parseDate(l.start_date).getFullYear() === year)
       .reduce((sum, l) => sum + Number(l.days), 0);
     const usedPeriods = vacationPeriods
       .filter((v) => (Number(v.year) || parseDate(v.start_date).getFullYear()) === year)
       .reduce((sum, v) => sum + Number(v.days), 0);
-    const used = Math.round((usedLeaves + usedPeriods) * 10) / 10;
+    const used = Math.round(usedPeriods * 10) / 10;
     running += entitled - used;
     return {
       year,
@@ -591,16 +589,14 @@ export function buildVacationSummary(
       to: computed?.to,
       workingDays: computed?.workingDays,
       availableYear: Math.round((entitled - used) * 10) / 10,
+      isCurrent,
       balance: Math.round(running * 10) / 10,
     };
   });
 
   const totalEntitled = rows.reduce((s, r) => s + r.entitled, 0);
   const totalUsed = rows.reduce((s, r) => s + r.used, 0);
-  const owed = rows.reduce(
-    (s, r) => s + Math.max(0, -(r.availableYear ?? 0)),
-    0,
-  );
+  const owed = rows.reduce((s, r) => s + Math.max(0, -(r.availableYear ?? 0)), 0);
   return {
     rows,
     totalEntitled,
@@ -640,8 +636,7 @@ export function recalcEntitlement(
     return { ...empty, error: "La fecha de ingreso no puede ser futura." };
 
   const computed = entitlementForYear(employee, leaves, year, today);
-  if (!computed)
-    return { ...empty, error: `El empleado no tenía contrato vigente en ${year}.` };
+  if (!computed) return { ...empty, error: `El empleado no tenía contrato vigente en ${year}.` };
 
   return {
     workedDays: computed.workingDays,
@@ -652,8 +647,6 @@ export function recalcEntitlement(
     to: computed.to,
   };
 }
-
-
 
 /** Validación legal del permiso con descuento de vacaciones. */
 export function validateVacationLeave(

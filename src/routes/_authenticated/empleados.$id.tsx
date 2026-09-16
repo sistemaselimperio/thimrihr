@@ -60,7 +60,6 @@ import {
   vacationStatus,
 } from "@/lib/hr";
 
-
 export const Route = createFileRoute("/_authenticated/empleados/$id")({
   head: () => ({
     meta: [
@@ -137,12 +136,8 @@ function EmployeeDetail() {
     [employee, myIncapacities, myLeaves, myOverrides, year, myLicenses, myVacations],
   );
 
-
   const vacations = useMemo(
-    () =>
-      employee
-        ? buildVacationSummary(employee, myEntitlements, myLeaves, myVacations)
-        : null,
+    () => (employee ? buildVacationSummary(employee, myEntitlements, myLeaves, myVacations) : null),
     [employee, myEntitlements, myLeaves, myVacations],
   );
 
@@ -209,38 +204,23 @@ function EmployeeDetail() {
     }
   };
 
+  /** Recalcula únicamente el derecho del año en curso. */
   const recalcCurrentYear = async () => {
     setRecalcing(true);
     try {
-      const years = (vacations?.rows ?? []).map((r) => r.year);
-      const targets = years.length ? years : [currentYear];
-      let changed = 0;
-      const detail: string[] = [];
-      for (const y of targets) {
-        const result = recalcEntitlement(emp, myLeaves, y);
-        if (result.error) continue;
-        detail.push(`${y}: ${result.entitled}`);
-        const previous = myEntitlements.find((e) => e.year === y)?.entitled_days ?? null;
-        if (previous !== null && Number(previous) === result.entitled) continue;
-        await saveEntitlementSilent(y, result.entitled);
-        changed++;
-      }
-      if (!detail.length) {
-        toast.error("No se pudo recalcular: revisa la fecha de ingreso.");
+      const result = recalcEntitlement(emp, myLeaves, currentYear);
+      if (result.error) {
+        toast.error(result.error);
         return;
       }
-      if (changed === 0) {
-        toast.success(`Derecho ya era correcto (${detail.join(" · ")})`);
-        return;
-      }
-      toast.success(`Derecho recalculado — ${detail.join(" · ")} días`);
+      await saveEntitlementSilent(currentYear, result.entitled);
+      toast.success(`✓ Derecho recalculado: ${result.entitled} días (${currentYear})`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al recalcular");
     } finally {
       setRecalcing(false);
     }
   };
-
 
   const exportSheet = () => {
     downloadSheet(`Hoja_${emp.cedula}.xlsx`, "Hoja de vida", [
@@ -338,9 +318,7 @@ function EmployeeDetail() {
             <Field
               label="Empresa"
               value={
-                emp.company_id
-                  ? (companies.find((c) => c.id === emp.company_id)?.name ?? "—")
-                  : "—"
+                emp.company_id ? (companies.find((c) => c.id === emp.company_id)?.name ?? "—") : "—"
               }
             />
             <Field label="Cargo" value={emp.position} />
@@ -358,36 +336,10 @@ function EmployeeDetail() {
             />
             <Field
               label="Fin de contrato"
-              value={
-                isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "— (sin fecha límite)"
-              }
+              value={isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "— (sin fecha límite)"}
             />
             <Field label="Fecha de salida" value={emp.exit_date ? fmtDate(emp.exit_date) : "—"} />
             <Field label="Estado" value={emp.status === "activo" ? "Activo" : "Retirado"} />
-          </div>
-        </div>
-
-        <div className="space-y-3 border-t pt-4">
-          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
-            Información adicional
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            <Field
-              label={`Vacaciones ${year}`}
-              value={
-                vacations
-                  ? `${vacations.rows.find((r) => r.year === year)?.entitled ?? 0} derecho | ${
-                      vacations.rows.find((r) => r.year === year)?.used ?? 0
-                    } usadas`
-                  : "—"
-              }
-            />
-            <Field
-              label="Vacaciones disponibles"
-              value={vacations ? `${vacations.available} días` : "—"}
-            />
-            <Field label="Incapacidades" value={`${myIncapacities.length} registradas`} />
-            <Field label="Permisos" value={`${myLeaves.length} registrados`} />
           </div>
         </div>
 
@@ -462,7 +414,10 @@ function EmployeeDetail() {
                 ))}
                 {quincenas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin quincenas para {year}.
                     </TableCell>
                   </TableRow>
@@ -505,7 +460,9 @@ function EmployeeDetail() {
                           variant="ghost"
                           size="sm"
                           className="gap-1"
-                          onClick={() => void openFile("certificados", i.certificate_path as string)}
+                          onClick={() =>
+                            void openFile("certificados", i.certificate_path as string)
+                          }
                         >
                           <Paperclip className="size-3.5" /> Ver
                         </Button>
@@ -525,7 +482,10 @@ function EmployeeDetail() {
 
                 {myIncapacities.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin incapacidades registradas.
                     </TableCell>
                   </TableRow>
@@ -570,12 +530,14 @@ function EmployeeDetail() {
                 ))}
                 {myLeaves.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin permisos registrados.
                     </TableCell>
                   </TableRow>
                 )}
-
               </TableBody>
             </Table>
           </div>
@@ -637,7 +599,10 @@ function EmployeeDetail() {
                 })}
                 {myLicenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin licencias registradas.
                     </TableCell>
                   </TableRow>
@@ -647,36 +612,61 @@ function EmployeeDetail() {
           </div>
         </TabsContent>
 
-
-        <TabsContent value="vacaciones" className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
+        <TabsContent value="vacaciones" className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {(vacations?.rows ?? []).map((r) => (
               <div key={r.year} className="rounded-xl border bg-surface p-4 shadow-panel">
-                <p className="text-xs text-muted-foreground uppercase">
-                  Año {r.year}
-                  {r.from && r.to ? ` (${fmtDate(r.from)} — ${fmtDate(r.to)})` : ""}
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-display text-sm font-bold">Año {r.year}</p>
+                  {r.isCurrent && (
+                    <Badge className="bg-primary/15 text-primary">Año actual · automático</Badge>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {r.from && r.to
+                    ? `${fmtDate(r.from)} — ${fmtDate(r.to)}`
+                    : "Sin contrato vigente"}
                 </p>
-                <dl className="mt-2 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Derecho acumulado</dt>
-                    <dd className="numeric font-semibold">{r.entitled} días</dd>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-muted-foreground">Derecho</dt>
+                    <dd className="numeric font-semibold">
+                      {r.isCurrent ? (
+                        `${r.entitled} días`
+                      ) : (
+                        <Input
+                          className="numeric h-8 w-24 text-right"
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          defaultValue={r.entitled}
+                          onBlur={(e) => void saveEntitlement(r.year, e.target.value)}
+                        />
+                      )}
+                    </dd>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <dt className="text-muted-foreground">Tomados</dt>
                     <dd className="numeric font-semibold">{r.used} días</dd>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Disponibles {r.year}</dt>
+                  <div className="flex items-center justify-between gap-2 border-t pt-2">
+                    <dt className="text-muted-foreground">Disponibles</dt>
                     <dd
                       className={`numeric font-semibold ${
-                        (r.availableYear ?? 0) < 0 ? "text-danger" : "text-success"
+                        (r.availableYear ?? 0) < 0
+                          ? "text-danger-foreground"
+                          : "text-success-foreground"
                       }`}
                     >
                       {r.availableYear ?? 0} días
-                      {(r.availableYear ?? 0) < 0 ? " (DEBE)" : ""}
                     </dd>
                   </div>
                 </dl>
+                {!r.isCurrent && (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Derecho editable: escribe el número y sal del campo para guardar.
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -697,40 +687,31 @@ function EmployeeDetail() {
 
           {(vacations?.owed ?? 0) > 0 && (
             <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
-              ⚠️ Nota: debe {vacations?.owed} días de vacaciones de años con saldo negativo.
+              ⚠️ Nota: hay {vacations?.owed} días tomados por encima del derecho causado.
             </p>
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Mínimo acumulable por ley: <strong>7 días</strong>
-              {vacations?.rows.find((r) => r.year === year)
-                ? ` · ${year}: permisos ${vacations.rows.find((r) => r.year === year)?.usedLeaves ?? 0} · vacaciones ${vacations.rows.find((r) => r.year === year)?.usedPeriods ?? 0}`
-                : ""}
+            <p className="text-xs text-muted-foreground">
+              Fórmula: (días laborales × 15) ÷ 360, año por año, redondeando al alza. Se excluyen
+              domingos, festivos colombianos y los permisos con descuento de vacaciones (máximo 7
+              días por año).
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 className="gap-2"
                 disabled={recalcing}
-                title="Calcula basado en días laborales reales"
                 onClick={() => void recalcCurrentYear()}
               >
                 <RefreshCw className={`size-4 ${recalcing ? "animate-spin" : ""}`} />
-                {recalcing ? "Calculando derecho…" : "Recalcular derecho"}
+                {recalcing ? "Calculando…" : `Recalcular derecho ${currentYear}`}
               </Button>
               <Button variant="success" className="gap-2" onClick={() => setVacOpen(true)}>
                 <Plus className="size-4" /> Agregar período de vacaciones
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Fórmula: (días laborales × 15) ÷ 360, año por año. Se excluyen domingos, festivos
-            colombianos y los permisos con descuento de vacaciones. El año de ingreso se prorratea
-            desde la fecha de ingreso y el año en curso hasta hoy.
-          </p>
-
-
 
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
@@ -782,7 +763,10 @@ function EmployeeDetail() {
                 })}
                 {myVacations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin períodos de vacaciones registrados.
                     </TableCell>
                   </TableRow>
@@ -790,39 +774,7 @@ function EmployeeDetail() {
               </TableBody>
             </Table>
           </div>
-
-          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Año</TableHead>
-                  <TableHead>Días de derecho</TableHead>
-                  <TableHead>Tomados</TableHead>
-                  <TableHead>Saldo acumulado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(vacations?.rows ?? []).map((r) => (
-                  <TableRow key={r.year}>
-                    <TableCell className="numeric font-medium">{r.year}</TableCell>
-                    <TableCell>
-                      <Input
-                        className="numeric h-8 w-24"
-                        type="number"
-                        step="0.5"
-                        defaultValue={r.entitled}
-                        onBlur={(e) => void saveEntitlement(r.year, e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell className="numeric">{r.used}</TableCell>
-                    <TableCell className="numeric font-semibold">{r.balance}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
         </TabsContent>
-
 
         <TabsContent value="retiro" className="space-y-3">
           {emp.status === "activo" && (
@@ -859,12 +811,14 @@ function EmployeeDetail() {
                 ))}
                 {myTerminations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Sin registros de retiro.
                     </TableCell>
                   </TableRow>
                 )}
-
               </TableBody>
             </Table>
           </div>
