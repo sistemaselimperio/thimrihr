@@ -28,6 +28,7 @@ import {
   useEmployees,
   useIncapacities,
   useLeaves,
+  useVacations,
 } from "@/lib/data";
 import { buildAlerts } from "@/lib/filters";
 import {
@@ -35,6 +36,8 @@ import {
   fmtDate,
   periodBounds,
   periodLabelLong,
+  todayISO,
+  vacationStatus,
   INCAPACITY_LABELS,
   type Employee,
 } from "@/lib/hr";
