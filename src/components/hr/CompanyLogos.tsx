@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { ISLERO_LOGO_KEY, qk, updateRow, upsertRow, useIsleroLogo } from "@/lib/data";
 import type { Company } from "@/lib/hr";
@@ -135,6 +136,28 @@ function LogoCard({ company }: { company: Company }) {
               Este logo no está configurado. Los documentos de esta empresa se generarán sin logo.
             </p>
           )}
+          <div className="space-y-1 pt-1">
+            <label
+              htmlFor={`nit-${company.id}`}
+              className="text-[11px] font-medium text-muted-foreground uppercase"
+            >
+              NIT <span className="text-danger-foreground">*</span>
+            </label>
+            <Input
+              id={`nit-${company.id}`}
+              value={nit}
+              placeholder="890.123.456-7"
+              className="h-8 max-w-[220px] text-sm"
+              onChange={(e) => setNit(e.target.value)}
+              onBlur={() => void saveNit()}
+            />
+            {!nit.trim() && (
+              <p className="text-[11px] text-warning-foreground">
+                Sin NIT, los documentos de esta empresa saldrán con “—” en el NIT.
+              </p>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-1">
             <Button
               size="sm"
