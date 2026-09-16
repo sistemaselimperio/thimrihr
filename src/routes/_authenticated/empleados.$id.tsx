@@ -209,31 +209,17 @@ function EmployeeDetail() {
     }
   };
 
+  /** Recalcula únicamente el derecho del año en curso. */
   const recalcCurrentYear = async () => {
     setRecalcing(true);
     try {
-      const years = (vacations?.rows ?? []).map((r) => r.year);
-      const targets = years.length ? years : [currentYear];
-      let changed = 0;
-      const detail: string[] = [];
-      for (const y of targets) {
-        const result = recalcEntitlement(emp, myLeaves, y);
-        if (result.error) continue;
-        detail.push(`${y}: ${result.entitled}`);
-        const previous = myEntitlements.find((e) => e.year === y)?.entitled_days ?? null;
-        if (previous !== null && Number(previous) === result.entitled) continue;
-        await saveEntitlementSilent(y, result.entitled);
-        changed++;
-      }
-      if (!detail.length) {
-        toast.error("No se pudo recalcular: revisa la fecha de ingreso.");
+      const result = recalcEntitlement(emp, myLeaves, currentYear);
+      if (result.error) {
+        toast.error(result.error);
         return;
       }
-      if (changed === 0) {
-        toast.success(`Derecho ya era correcto (${detail.join(" · ")})`);
-        return;
-      }
-      toast.success(`Derecho recalculado — ${detail.join(" · ")} días`);
+      await saveEntitlementSilent(currentYear, result.entitled);
+      toast.success(`✓ Derecho recalculado: ${result.entitled} días (${currentYear})`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al recalcular");
     } finally {
