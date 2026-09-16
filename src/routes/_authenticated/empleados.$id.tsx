@@ -353,29 +353,6 @@ function EmployeeDetail() {
           </div>
         </div>
 
-        <div className="space-y-3 border-t pt-4">
-          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
-            Información adicional
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            <Field
-              label={`Vacaciones ${year}`}
-              value={
-                vacations
-                  ? `${vacations.rows.find((r) => r.year === year)?.entitled ?? 0} derecho | ${
-                      vacations.rows.find((r) => r.year === year)?.used ?? 0
-                    } usadas`
-                  : "—"
-              }
-            />
-            <Field
-              label="Vacaciones disponibles"
-              value={vacations ? `${vacations.available} días` : "—"}
-            />
-            <Field label="Incapacidades" value={`${myIncapacities.length} registradas`} />
-            <Field label="Permisos" value={`${myLeaves.length} registrados`} />
-          </div>
-        </div>
 
         {emp.notes && (
           <div className="border-t pt-4">
