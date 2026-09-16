@@ -308,6 +308,53 @@ function Dashboard() {
             </ul>
           </section>
 
+          <section className="panel-info rounded-xl p-4">
+            <header className="flex flex-wrap items-center gap-2">
+              <Palmtree className="size-4" />
+              <h2 className="font-display text-sm font-bold">Vacaciones hoy</h2>
+              <Badge className="ml-auto bg-brand text-brand-foreground">
+                {vacationsToday.length}
+              </Badge>
+            </header>
+            <p className="mt-1 text-xs text-muted-foreground">
+              En período de vacaciones hoy: {vacationsToday.length} · Programadas:{" "}
+              {vacationsUpcoming}
+            </p>
+            <ul className="mt-3 divide-y divide-border/60">
+              {vacationsToday.map(({ vacation, employee }) => (
+                <li key={vacation.id} className="flex flex-col gap-1 py-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      className="text-left font-medium underline-offset-4 hover:underline"
+                      onClick={() =>
+                        void navigate({
+                          to: "/empleados/$id",
+                          params: { id: employee!.id },
+                        })
+                      }
+                    >
+                      {employee!.full_name}
+                    </button>
+                    <Badge className="bg-warning/20 text-warning-foreground">
+                      {vacationStatus(vacation)}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {fmtDate(vacation.start_date)} → {fmtDate(vacation.end_date)} ·{" "}
+                    {vacation.days} días ·{" "}
+                    {companyMap.get(employee!.company_id ?? "") ?? "—"}
+                  </div>
+                </li>
+              ))}
+              {vacationsToday.length === 0 && (
+                <li className="py-2 text-sm text-muted-foreground">
+                  Nadie está en vacaciones hoy.
+                </li>
+              )}
+            </ul>
+          </section>
+
+
           <section className="panel-success rounded-xl p-4">
             <header className="flex items-center gap-2">
               <DoorOpen className="size-4" />
