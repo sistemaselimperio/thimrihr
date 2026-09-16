@@ -611,35 +611,57 @@ function EmployeeDetail() {
         </TabsContent>
 
 
-        <TabsContent value="vacaciones" className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
+        <TabsContent value="vacaciones" className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {(vacations?.rows ?? []).map((r) => (
               <div key={r.year} className="rounded-xl border bg-surface p-4 shadow-panel">
-                <p className="text-xs text-muted-foreground uppercase">
-                  Año {r.year}
-                  {r.from && r.to ? ` (${fmtDate(r.from)} — ${fmtDate(r.to)})` : ""}
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-display text-sm font-bold">Año {r.year}</p>
+                  {r.isCurrent && (
+                    <Badge className="bg-primary/15 text-primary">Año actual · automático</Badge>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {r.from && r.to ? `${fmtDate(r.from)} — ${fmtDate(r.to)}` : "Sin contrato vigente"}
                 </p>
-                <dl className="mt-2 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Derecho acumulado</dt>
-                    <dd className="numeric font-semibold">{r.entitled} días</dd>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-muted-foreground">Derecho</dt>
+                    <dd className="numeric font-semibold">
+                      {r.isCurrent ? (
+                        `${r.entitled} días`
+                      ) : (
+                        <Input
+                          className="numeric h-8 w-24 text-right"
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          defaultValue={r.entitled}
+                          onBlur={(e) => void saveEntitlement(r.year, e.target.value)}
+                        />
+                      )}
+                    </dd>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <dt className="text-muted-foreground">Tomados</dt>
                     <dd className="numeric font-semibold">{r.used} días</dd>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Disponibles {r.year}</dt>
+                  <div className="flex items-center justify-between gap-2 border-t pt-2">
+                    <dt className="text-muted-foreground">Disponibles</dt>
                     <dd
                       className={`numeric font-semibold ${
-                        (r.availableYear ?? 0) < 0 ? "text-danger" : "text-success"
+                        (r.availableYear ?? 0) < 0 ? "text-danger-foreground" : "text-success-foreground"
                       }`}
                     >
                       {r.availableYear ?? 0} días
-                      {(r.availableYear ?? 0) < 0 ? " (DEBE)" : ""}
                     </dd>
                   </div>
                 </dl>
+                {!r.isCurrent && (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Derecho editable: escribe el número y sal del campo para guardar.
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -660,40 +682,31 @@ function EmployeeDetail() {
 
           {(vacations?.owed ?? 0) > 0 && (
             <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
-              ⚠️ Nota: debe {vacations?.owed} días de vacaciones de años con saldo negativo.
+              ⚠️ Nota: hay {vacations?.owed} días tomados por encima del derecho causado.
             </p>
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Mínimo acumulable por ley: <strong>7 días</strong>
-              {vacations?.rows.find((r) => r.year === year)
-                ? ` · ${year}: permisos ${vacations.rows.find((r) => r.year === year)?.usedLeaves ?? 0} · vacaciones ${vacations.rows.find((r) => r.year === year)?.usedPeriods ?? 0}`
-                : ""}
+            <p className="text-xs text-muted-foreground">
+              Fórmula: (días laborales × 15) ÷ 360, año por año, redondeando al alza. Se excluyen
+              domingos, festivos colombianos y los permisos con descuento de vacaciones (máximo 7
+              días por año).
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 className="gap-2"
                 disabled={recalcing}
-                title="Calcula basado en días laborales reales"
                 onClick={() => void recalcCurrentYear()}
               >
                 <RefreshCw className={`size-4 ${recalcing ? "animate-spin" : ""}`} />
-                {recalcing ? "Calculando derecho…" : "Recalcular derecho"}
+                {recalcing ? "Calculando…" : `Recalcular derecho ${currentYear}`}
               </Button>
               <Button variant="success" className="gap-2" onClick={() => setVacOpen(true)}>
                 <Plus className="size-4" /> Agregar período de vacaciones
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Fórmula: (días laborales × 15) ÷ 360, año por año. Se excluyen domingos, festivos
-            colombianos y los permisos con descuento de vacaciones. El año de ingreso se prorratea
-            desde la fecha de ingreso y el año en curso hasta hoy.
-          </p>
-
-
 
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
@@ -750,37 +763,6 @@ function EmployeeDetail() {
                     </TableCell>
                   </TableRow>
                 )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Año</TableHead>
-                  <TableHead>Días de derecho</TableHead>
-                  <TableHead>Tomados</TableHead>
-                  <TableHead>Saldo acumulado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(vacations?.rows ?? []).map((r) => (
-                  <TableRow key={r.year}>
-                    <TableCell className="numeric font-medium">{r.year}</TableCell>
-                    <TableCell>
-                      <Input
-                        className="numeric h-8 w-24"
-                        type="number"
-                        step="0.5"
-                        defaultValue={r.entitled}
-                        onBlur={(e) => void saveEntitlement(r.year, e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell className="numeric">{r.used}</TableCell>
-                    <TableCell className="numeric font-semibold">{r.balance}</TableCell>
-                  </TableRow>
-                ))}
               </TableBody>
             </Table>
           </div>
