@@ -27,6 +27,11 @@ function LogoCard({ company }: { company: Company }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [preview, setPreview] = useState<string | null>(null);
+  const [nit, setNit] = useState(company.nit ?? "");
+
+  useEffect(() => {
+    setNit(company.nit ?? "");
+  }, [company.nit]);
 
   useEffect(() => {
     let alive = true;
@@ -42,6 +47,18 @@ function LogoCard({ company }: { company: Company }) {
   }, [currentPath]);
 
   const pick = () => inputRef.current?.click();
+
+  const saveNit = async () => {
+    const value = nit.trim();
+    if (value === (company.nit ?? "").trim()) return;
+    try {
+      await updateRow("companies", company.id, { nit: value || null });
+      await qc.invalidateQueries({ queryKey: qk.companies });
+      toast.success("NIT guardado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar el NIT");
+    }
+  };
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
