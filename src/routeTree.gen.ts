@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedNovedadesRouteImport } from './routes/_authenticated/novedades'
 import { Route as AuthenticatedReportesRouteImport } from './routes/_authenticated/reportes'
+import { Route as FirmarTokenRouteImport } from './routes/firmar.$token'
 import { Route as AuthenticatedEmpleadosIndexRouteImport } from './routes/_authenticated/empleados.index'
 import { Route as AuthenticatedEmpleadosIdRouteImport } from './routes/_authenticated/empleados.$id'
 
@@ -60,6 +61,11 @@ const AuthenticatedReportesRoute = AuthenticatedReportesRouteImport.update({
   path: '/reportes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const FirmarTokenRoute = FirmarTokenRouteImport.update({
+  id: '/firmar/$token',
+  path: '/firmar/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedEmpleadosIndexRoute =
   AuthenticatedEmpleadosIndexRouteImport.update({
     id: '/empleados/',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/novedades': typeof AuthenticatedNovedadesRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/firmar/$token': typeof FirmarTokenRoute
   '/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/empleados/': typeof AuthenticatedEmpleadosIndexRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/novedades': typeof AuthenticatedNovedadesRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/firmar/$token': typeof FirmarTokenRoute
   '/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/empleados': typeof AuthenticatedEmpleadosIndexRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/novedades': typeof AuthenticatedNovedadesRoute
   '/_authenticated/reportes': typeof AuthenticatedReportesRoute
+  '/firmar/$token': typeof FirmarTokenRoute
   '/_authenticated/empleados/$id': typeof AuthenticatedEmpleadosIdRoute
   '/_authenticated/empleados/': typeof AuthenticatedEmpleadosIndexRoute
 }
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/novedades'
     | '/reportes'
+    | '/firmar/$token'
     | '/empleados/$id'
     | '/empleados/'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/novedades'
     | '/reportes'
+    | '/firmar/$token'
     | '/empleados/$id'
     | '/empleados'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documentos'
     | '/_authenticated/novedades'
     | '/_authenticated/reportes'
+    | '/firmar/$token'
     | '/_authenticated/empleados/$id'
     | '/_authenticated/empleados/'
   fileRoutesById: FileRoutesById
@@ -149,6 +161,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  FirmarTokenRoute: typeof FirmarTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/firmar/$token': {
+      id: '/firmar/$token'
+      path: '/firmar/$token'
+      fullPath: '/firmar/$token'
+      preLoaderRoute: typeof FirmarTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/empleados/': {
       id: '/_authenticated/empleados/'
       path: '/empleados'
@@ -253,6 +273,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  FirmarTokenRoute: FirmarTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

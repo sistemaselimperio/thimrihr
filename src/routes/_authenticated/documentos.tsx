@@ -1,7 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileDown, FilePlus2, History, Pencil, PenTool, Printer, Trash2 } from "lucide-react";
+import {
+  Copy,
+  FileDown,
+  FilePlus2,
+  History,
+  MessageCircle,
+  Pencil,
+  PenTool,
+  Printer,
+  Share2,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/components/hr/Celebration";
 
@@ -28,6 +39,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { logoUrl } from "@/components/hr/CompanyLogos";
 import { TemplateDialog } from "@/components/hr/TemplateDialog";
@@ -39,13 +58,26 @@ import {
   useEmployees,
   useGeneratedDocuments,
   useIsleroLogo,
+  useSharedLiquidaciones,
   useTemplates,
   type DocumentTemplate,
+  type SharedLiquidacion,
 } from "@/lib/data";
 import { categoryLabel, fillTemplate, renderDocument } from "@/lib/documents";
 import { AUTENTIC_URL } from "@/lib/print-doc";
-import { downloadDocumentPdf } from "@/lib/pdf-doc";
+import { downloadDocumentPdf, downloadLiquidacionPdf } from "@/lib/pdf-doc";
+import {
+  calcLiquidacion,
+  dependenciaLogoPath,
+  isLiquidacion,
+  liquidacionDefaults,
+  liquidacionText,
+  type LiquidacionInput,
+} from "@/lib/liquidacion";
+import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
+import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
 import { fmtDate } from "@/lib/hr";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({
@@ -73,6 +105,7 @@ function DocumentsPage() {
   const { data: companies = [] } = useCompanies();
   const { data: templates = [] } = useTemplates();
   const { data: history = [] } = useGeneratedDocuments();
+  const { data: shared = [] } = useSharedLiquidaciones();
 
   const [tab, setTab] = useState("base");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -92,6 +125,19 @@ function DocumentsPage() {
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "—") : "Todas";
 
+  const isLiq = !!template && isLiquidacion(template);
+  const [liq, setLiq] = useState<LiquidacionInput | null>(null);
+  useEffect(() => {
+    setLiq(isLiq && employee ? liquidacionDefaults(employee, company, companies) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLiq, employee?.id, company?.id, template?.id]);
+  const liqCalc = useMemo(() => (liq ? calcLiquidacion(liq) : null), [liq]);
+
+  /* Enlace público para que el trabajador firme su liquidación. */
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareName, setShareName] = useState("");
+  const [sharing, setSharing] = useState(false);
+
   const { data: isleroLogo } = useIsleroLogo();
 
   const isIslero = useMemo(() => {
@@ -99,9 +145,13 @@ function DocumentsPage() {
     return hay.includes("isler");
   }, [employee?.position, employee?.work_location]);
 
-  const logoPath = isIslero
-    ? (isleroLogo?.path ?? company?.logo_path ?? null)
-    : (company?.logo_path ?? null);
+  /* En la liquidación el logo lo define la dependencia elegida. */
+  const logoPath =
+    isLiq && liq
+      ? dependenciaLogoPath(liq.dependenciaKey, companies, isleroLogo?.path)
+      : isIslero
+        ? (isleroLogo?.path ?? company?.logo_path ?? null)
+        : (company?.logo_path ?? null);
 
   const [logo, setLogo] = useState<string | null>(null);
   useEffect(() => {
@@ -194,7 +244,7 @@ function DocumentsPage() {
         employee_id: employee.id,
         employee_name: employee.full_name,
         company_name: company?.name ?? null,
-        content: text,
+        content: liq && liqCalc ? liquidacionText(liq, liqCalc) : text,
       });
       await qc.invalidateQueries({ queryKey: qk.generated });
     } catch {
@@ -210,14 +260,33 @@ function DocumentsPage() {
     return true;
   };
 
+  const downloadPdf = () =>
+    liq && liqCalc
+      ? downloadLiquidacionPdf({ input: liq, calc: liqCalc, logoUrl: logo })
+      : downloadDocumentPdf({
+          title: `${template!.name} — ${employee!.full_name}`,
+          text,
+          logoUrl: logo,
+        });
+
+  const validateLiq = () => {
+    if (!liq) return false;
+    if (!(liq.salario > 0)) {
+      toast.error("Ingresa el salario básico mensual.");
+      return false;
+    }
+    if (!liq.fechaIngreso || !liq.fechaHasta || liq.fechaHasta < liq.fechaIngreso) {
+      toast.error("Revisa las fechas de ingreso y retiro.");
+      return false;
+    }
+    return true;
+  };
+
   const generatePdf = async () => {
     if (!guard()) return;
+    if (isLiq && !validateLiq()) return;
     try {
-      await downloadDocumentPdf({
-        title: `${template!.name} — ${employee!.full_name}`,
-        text,
-        logoUrl: logo,
-      });
+      await downloadPdf();
     } catch {
       toast.error("No se pudo generar el PDF.");
       return;
@@ -234,11 +303,7 @@ function DocumentsPage() {
       actionLabel: "Ir a documentos",
       secondaryLabel: "Descargar de nuevo",
       onSecondary: () => {
-        void downloadDocumentPdf({
-          title: `${template!.name} — ${employee!.full_name}`,
-          text,
-          logoUrl: logo,
-        });
+        void downloadPdf();
       },
       duration: 3000,
       onDone: () => setTab("historial"),
@@ -249,6 +314,71 @@ function DocumentsPage() {
     if (!guard()) return;
     await generatePdf();
     window.open(AUTENTIC_URL, "_blank", "noopener");
+  };
+
+  const linkFor = (token: string) => `${window.location.origin}/firmar/${token}`;
+
+  const copyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado");
+    } catch {
+      toast.error("No se pudo copiar el link");
+    }
+  };
+
+  const share = async () => {
+    if (!guard() || !liq || !liqCalc || !employee || !validateLiq()) return;
+    setSharing(true);
+    try {
+      const { data, error } = await supabase
+        .from("shared_liquidaciones")
+        .insert({
+          employee_id: employee.id,
+          employee_name: employee.full_name,
+          data: JSON.parse(JSON.stringify({ input: liq, calc: liqCalc })),
+          logo_path: logoPath,
+        })
+        .select("token")
+        .single();
+      if (error) throw new Error(error.message);
+      await qc.invalidateQueries({ queryKey: qk.shared });
+      setShareName(employee.full_name);
+      setShareUrl(linkFor(data.token));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo crear el link");
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const whatsappHref = (url: string, name: string) =>
+    `https://wa.me/?text=${encodeURIComponent(
+      `Hola ${name}, aquí puedes revisar y firmar tu liquidación: ${url}`,
+    )}`;
+
+  const downloadShared = async (s: SharedLiquidacion) => {
+    try {
+      const url = s.logo_path && !s.logo_path.endsWith(".pdf") ? await logoUrl(s.logo_path) : null;
+      await downloadLiquidacionPdf({
+        input: s.data.input,
+        calc: s.data.calc,
+        logoUrl: url,
+        firma: s.firma,
+      });
+    } catch {
+      toast.error("No se pudo generar el PDF.");
+    }
+  };
+
+  const removeShared = async (id: string) => {
+    try {
+      await deleteRow("shared_liquidaciones", id);
+      await qc.invalidateQueries({ queryKey: qk.shared });
+      toast.success("Liquidación compartida eliminada");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo eliminar");
+    }
   };
 
   const reprint = (content: string, title: string) => {
@@ -294,6 +424,7 @@ function DocumentsPage() {
           <TabsTrigger value="base">Documentos base</TabsTrigger>
           <TabsTrigger value="generar">Generar PDF</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
+          <TabsTrigger value="compartidas">Liquidaciones compartidas</TabsTrigger>
         </TabsList>
 
         {/* ------------------------------------------------ documentos base */}
@@ -400,6 +531,11 @@ function DocumentsPage() {
                 </div>
               </div>
 
+              {isLiq && liq ? (
+                <>
+                  <LiquidacionForm value={liq} onChange={setLiq} companies={companies} />
+                </>
+              ) : (
               <div className="space-y-1.5">
                 <Label htmlFor="extra-text">Información adicional (temporal)</Label>
                 <Textarea
@@ -431,11 +567,22 @@ function DocumentsPage() {
                   se guarda en el documento base; al salir desaparece.
                 </p>
               </div>
+              )}
 
               <div className="flex flex-wrap gap-2">
                 <Button variant="success" className="gap-2" onClick={() => void generatePdf()}>
                   <FileDown className="size-4" /> Descargar PDF
                 </Button>
+                {isLiq && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={sharing}
+                    onClick={() => void share()}
+                  >
+                    <Share2 className="size-4" /> Compartir
+                  </Button>
+                )}
                 <Button variant="outline" className="gap-2" onClick={() => void toAutentic()}>
                   <PenTool className="size-4" /> Enviar a Autentic
                 </Button>
@@ -449,7 +596,7 @@ function DocumentsPage() {
               <p className="text-xs tracking-wide text-muted-foreground uppercase">
                 Previsualización
               </p>
-              {logo && (
+              {logo && !isLiq && (
                 <img
                   src={logo}
                   alt={`Logo de ${company?.name ?? "la empresa"}`}
@@ -461,9 +608,20 @@ function DocumentsPage() {
                   Esta empresa no tiene logo configurado; el documento se generará sin logo.
                 </p>
               )}
-              <pre className="mt-3 min-h-96 font-sans text-sm leading-relaxed whitespace-pre-wrap">
-                {text || "Selecciona un documento base y un empleado para ver el resultado."}
-              </pre>
+              {isLiq && liq && liqCalc ? (
+                <div className="mt-3">
+                  <LiquidacionPreview
+                    input={liq}
+                    calc={liqCalc}
+                    logo={logo}
+                    companyName={liq.dependencia || undefined}
+                  />
+                </div>
+              ) : (
+                <pre className="mt-3 min-h-96 font-sans text-sm leading-relaxed whitespace-pre-wrap">
+                  {text || "Selecciona un documento base y un empleado para ver el resultado."}
+                </pre>
+              )}
             </div>
           </div>
         </TabsContent>
@@ -512,7 +670,113 @@ function DocumentsPage() {
             </div>
           )}
         </TabsContent>
+
+        {/* ------------------------------------------ liquidaciones compartidas */}
+        <TabsContent value="compartidas" className="mt-4">
+          {shared.length === 0 ? (
+            <div className="rounded-xl border bg-surface p-8 text-center text-sm text-muted-foreground shadow-panel">
+              Aún no has compartido liquidaciones. Usa “Compartir” al generar una liquidación.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {shared.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-surface p-4 shadow-panel"
+                >
+                  <div className="space-y-0.5">
+                    <p className="flex items-center gap-2 text-sm font-medium">
+                      {s.employee_name}
+                      {s.signed_at ? (
+                        <Badge variant="secondary">
+                          Firmada · {fmtDate(s.signed_at.slice(0, 10))}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Pendiente</Badge>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Compartida: {fmtDate(s.created_at.slice(0, 10))}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => void copyLink(linkFor(s.token))}
+                    >
+                      <Copy className="size-3.5" /> Copiar link
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => void downloadShared(s)}
+                    >
+                      <FileDown className="size-3.5" /> Descargar PDF
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="gap-1.5 text-danger-foreground">
+                          <Trash2 className="size-3.5" /> Eliminar
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            ⚠️ ¿Eliminar la liquidación de {s.employee_name}?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            El link dejará de funcionar y se perderá la firma guardada.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => void removeShared(s.id)}>
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+
+      <Dialog open={!!shareUrl} onOpenChange={(o) => !o && setShareUrl(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link para firmar</DialogTitle>
+            <DialogDescription>
+              Envía este link al trabajador. Solo verá su liquidación y podrá firmarla.
+            </DialogDescription>
+          </DialogHeader>
+          <Input readOnly value={shareUrl ?? ""} onFocus={(e) => e.currentTarget.select()} />
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2"
+              onClick={() => shareUrl && void copyLink(shareUrl)}
+            >
+              <Copy className="size-4" /> Copiar link
+            </Button>
+            <Button type="button" variant="success" className="gap-2" asChild>
+              <a
+                href={shareUrl ? whatsappHref(shareUrl, shareName) : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="size-4" /> Enviar por WhatsApp
+              </a>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <TemplateDialog open={dialogOpen} onOpenChange={setDialogOpen} template={editing} />
     </div>

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { LiquidacionCalc, LiquidacionInput } from "./liquidacion";
 import { setHolidayRegistry, type Holiday } from "./holidays";
 import { syncHolidays } from "./holidays.functions";
 import type {
@@ -48,6 +49,17 @@ export interface GeneratedDocument {
   created_at: string;
 }
 
+export interface SharedLiquidacion {
+  id: string;
+  token: string;
+  employee_id: string | null;
+  employee_name: string;
+  data: { input: LiquidacionInput; calc: LiquidacionCalc };
+  logo_path: string | null;
+  firma: string | null;
+  signed_at: string | null;
+  created_at: string;
+}
 
 async function selectAll<T>(table: string, order: string, ascending = true): Promise<T[]> {
   const { data, error } = await db
@@ -73,6 +85,7 @@ export const qk = {
   overrides: ["payroll_periods"] as const,
   templates: ["document_templates"] as const,
   generated: ["generated_documents"] as const,
+  shared: ["shared_liquidaciones"] as const,
   imports: ["import_batches"] as const,
   settings: ["app_settings"] as const,
   holidays: ["holidays"] as const,
@@ -197,6 +210,13 @@ export function useGeneratedDocuments() {
   return useQuery({
     queryKey: qk.generated,
     queryFn: () => selectAll<GeneratedDocument>("generated_documents", "created_at", false),
+  });
+}
+
+export function useSharedLiquidaciones() {
+  return useQuery({
+    queryKey: qk.shared,
+    queryFn: () => selectAll<SharedLiquidacion>("shared_liquidaciones", "created_at", false),
   });
 }
 
