@@ -479,6 +479,53 @@ export type Database = {
           },
         ]
       }
+      shared_liquidaciones: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          employee_id: string | null
+          employee_name: string
+          firma: string | null
+          id: string
+          logo_path: string | null
+          signed_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          employee_id?: string | null
+          employee_name: string
+          firma?: string | null
+          id?: string
+          logo_path?: string | null
+          signed_at?: string | null
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          employee_id?: string | null
+          employee_name?: string
+          firma?: string | null
+          id?: string
+          logo_path?: string | null
+          signed_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_liquidaciones_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       terminations: {
         Row: {
           created_at: string
