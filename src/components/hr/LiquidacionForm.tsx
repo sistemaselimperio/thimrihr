@@ -30,24 +30,37 @@ function parseNum(raw: string): number {
 }
 
 export function LiquidacionForm({ value, onChange, companies }: Props) {
-  const set = <K extends keyof LiquidacionInput>(key: K, v: LiquidacionInput[K]) =>
+  const set = <K extends keyof LiquidacionInput>(key: K, v: LiquidacionInput[K]) => {
+    /* Los días de servicio se copian a los días de cada concepto (luego se pueden ajustar). */
+    if (key === "diasServicio") {
+      const dias = v as number;
+      onChange({
+        ...value,
+        diasServicio: dias,
+        diasCesantias: dias,
+        diasIntereses: dias,
+        diasPrima: dias,
+        diasVacaciones: dias,
+      });
+      return;
+    }
     onChange({ ...value, [key]: v });
+  };
 
-  /* Al cambiar fechas se recalculan los días; los de cada concepto siguen si estaban iguales. */
+  /* Al cambiar fechas se recalculan los días de servicio y se copian a cada concepto. */
   const setDates = (patch: Partial<Pick<LiquidacionInput, "fechaIngreso" | "fechaHasta">>) => {
     const next = { ...value, ...patch };
     const dias =
       next.fechaIngreso && next.fechaHasta
         ? calendarDaysInclusive(next.fechaIngreso, next.fechaHasta)
         : 0;
-    const old = value.diasServicio;
     onChange({
       ...next,
       diasServicio: dias,
-      diasCesantias: value.diasCesantias === old ? dias : value.diasCesantias,
-      diasIntereses: value.diasIntereses === old ? dias : value.diasIntereses,
-      diasPrima: value.diasPrima === old ? dias : value.diasPrima,
-      diasVacaciones: value.diasVacaciones === old ? dias : value.diasVacaciones,
+      diasCesantias: dias,
+      diasIntereses: dias,
+      diasPrima: dias,
+      diasVacaciones: dias,
     });
   };
 
