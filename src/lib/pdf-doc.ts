@@ -132,16 +132,16 @@ export async function downloadLiquidacionPdf(opts: {
   if (opts.logoUrl) {
     const img = await loadImage(opts.logoUrl);
     if (img) {
-      const h = 20;
-      const w = Math.min(60, (img.w / img.h) * h);
+      const h = 30;
+      const w = Math.min(80, (img.w / img.h) * h);
       const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
       doc.addImage(img.data, fmt, mx, y, w, h);
     }
   }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("LIQUIDACIÓN", pageW / 2, y + 12, { align: "center" });
-  y += 26;
+  doc.text("LIQUIDACIÓN", pageW / 2, y + 17, { align: "center" });
+  y += 36;
 
   /* Cuadrícula del encabezado: 4 columnas */
   const cols = [44, 50, 44, innerW - 138];
@@ -223,7 +223,21 @@ export async function downloadLiquidacionPdf(opts: {
   y += 3;
   doc.line(mx, y, right, y);
   doc.setLineWidth(0.2);
-  y += 14;
+  y += 9;
+
+  /* Observaciones */
+  const obs = i.observaciones?.trim();
+  if (obs) {
+    doc.setFontSize(9);
+    doc.text("OBSERVACIONES", mx, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(obs, innerW) as string[];
+    doc.text(lines, mx, y);
+    y += lines.length * 4.5 + 4;
+    doc.setFont("helvetica", "bold");
+  }
+  y += 5;
 
   /* Constancia */
   doc.setFontSize(9);
@@ -237,7 +251,11 @@ export async function downloadLiquidacionPdf(opts: {
   doc.text(cons, mx, y);
   y += cons.length * 4.5 + 22;
 
-  /* Firmas */
+  /* Firmas: si no caben en la página, pasan a una nueva. */
+  if (y + 40 > doc.internal.pageSize.getHeight() - 10) {
+    doc.addPage();
+    y = 40;
+  }
   const sigW = 90;
   doc.setFont("helvetica", "bold");
   if (opts.firma) {
@@ -246,13 +264,12 @@ export async function downloadLiquidacionPdf(opts: {
   }
   doc.line(mx, y, mx + sigW, y);
   doc.text("FIRMA DEL TRABAJADOR", mx, y + 4.5);
+  doc.text("No. CÉDULA: ______________________", mx, y + 10);
   doc.rect(right - 28, y - 22, 28, 28);
-  doc.text("HUELLA", right - 14, y + 11, { align: "center" });
-  y += 20;
+  doc.text(["HUELLA DEL", "TRABAJADOR"], right - 14, y + 11, { align: "center" });
+  y += 30;
   doc.line(mx, y, mx + sigW, y);
   doc.text("FIRMA DEL EMPLEADOR", mx, y + 4.5);
-  y += 14;
-  doc.text("No. CÉDULA: ______________________", mx, y);
 
   doc.save(opts.fileName ?? pdfFileName(`Liquidacion ${i.nombre}`));
   return true;

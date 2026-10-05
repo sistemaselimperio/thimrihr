@@ -82,6 +82,8 @@ export interface LiquidacionInput {
   tasaIntereses: number;
   /** Valor de cesantías para los intereses; null = usa el calculado. */
   valorCesantias: number | null;
+  /** Observación libre de quien genera la liquidación (opcional). */
+  observaciones?: string;
 }
 
 export interface LiquidacionCalc {
@@ -176,6 +178,7 @@ export function liquidacionDefaults(
     divVacaciones: 720,
     tasaIntereses: 0.12,
     valorCesantias: null,
+    observaciones: "",
   };
 }
 
@@ -227,6 +230,7 @@ export function liquidacionText(i: LiquidacionInput, c: LiquidacionCalc): string
     "",
     `TOTAL LIQUIDACIÓN: ${fmtCOP(c.total)}`,
     "",
+    ...(i.observaciones?.trim() ? [`OBSERVACIONES: ${i.observaciones.trim()}`, ""] : []),
     "HAGO CONSTAR",
     pazYSalvoLine(i),
     constanciaLine(i),

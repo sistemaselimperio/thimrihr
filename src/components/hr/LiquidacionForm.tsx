@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -236,6 +237,19 @@ export function LiquidacionForm({ value, onChange, companies }: Props) {
             onChange={(e) => set("tasaIntereses", Number(e.target.value) || 0)}
           />
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="liq-obs" className="text-xs">
+          Observaciones
+        </Label>
+        <Textarea
+          id="liq-obs"
+          rows={3}
+          value={value.observaciones ?? ""}
+          placeholder="Opcional. Aparece debajo del total de la liquidación."
+          onChange={(e) => set("observaciones", e.target.value)}
+        />
       </div>
     </div>
   );

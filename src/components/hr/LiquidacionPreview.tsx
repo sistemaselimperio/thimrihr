@@ -42,7 +42,7 @@ export function LiquidacionPreview({ input: i, calc: c, logo, companyName, firma
             <img
               src={logo}
               alt={`Logo de ${companyName ?? i.dependencia ?? "la empresa"}`}
-              className="h-16 object-contain"
+              className="h-24 max-w-[16rem] object-contain"
             />
           )}
           <h2 className="flex-1 text-center text-lg font-bold tracking-wide">LIQUIDACIÓN</h2>
@@ -135,12 +135,19 @@ export function LiquidacionPreview({ input: i, calc: c, logo, companyName, firma
           <span>{fmtCOP(c.total)}</span>
         </div>
 
+        {i.observaciones?.trim() && (
+          <div className="mt-3">
+            <p className="font-bold">OBSERVACIONES</p>
+            <p className="mt-1 whitespace-pre-line">{i.observaciones.trim()}</p>
+          </div>
+        )}
+
         <p className="mt-6 font-bold">HAGO CONSTAR</p>
         <p className="mt-2">{pazYSalvoLine(i)}</p>
         <p className="mt-4">{constanciaLine(i)}</p>
 
-        <div className="mt-20 grid grid-cols-[1fr_6rem] gap-8">
-          <div className="space-y-10">
+        <div className="mt-20 grid grid-cols-[1fr_6rem] items-start gap-8">
+          <div className="pt-16">
             <div className="relative border-t border-black pt-1 font-bold">
               {firma && (
                 <img
@@ -150,14 +157,17 @@ export function LiquidacionPreview({ input: i, calc: c, logo, companyName, firma
                 />
               )}
               FIRMA DEL TRABAJADOR
+              <div className="mt-2">No. CÉDULA: ____________________</div>
             </div>
-            <div className="border-t border-black pt-1 font-bold">FIRMA DEL EMPLEADOR</div>
-            <div className="font-bold">No. CÉDULA: ____________________</div>
           </div>
           <div className="flex flex-col">
             <div className="h-24 border border-black" />
-            <p className="pt-1 text-center font-bold">HUELLA</p>
+            <p className="pt-1 text-center font-bold">HUELLA DEL TRABAJADOR</p>
           </div>
+        </div>
+
+        <div className="mt-16 grid grid-cols-[1fr_6rem] gap-8">
+          <div className="border-t border-black pt-1 font-bold">FIRMA DEL EMPLEADOR</div>
         </div>
       </div>
     </div>
