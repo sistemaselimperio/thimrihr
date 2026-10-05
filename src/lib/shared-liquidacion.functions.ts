@@ -24,7 +24,7 @@ export interface SharedLiquidacionView {
 export const getSharedLiquidacion = createServerFn({ method: "POST" })
   .inputValidator((input: { token: string }) => ({ token: parseToken(input) }))
   .handler(async ({ data }): Promise<SharedLiquidacionView | null> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { appDbAdmin: supabaseAdmin } = await import("@/integrations/supabase/app.server");
     const { data: row, error } = await supabaseAdmin
       .from("shared_liquidaciones")
       .select("employee_name, data, logo_path, firma, signed_at")
@@ -65,7 +65,7 @@ export const signSharedLiquidacion = createServerFn({ method: "POST" })
     return { token, firma };
   })
   .handler(async ({ data }): Promise<{ ok: boolean; reason?: "already_signed" | "not_found" }> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { appDbAdmin: supabaseAdmin } = await import("@/integrations/supabase/app.server");
     const { data: updated, error } = await supabaseAdmin
       .from("shared_liquidaciones")
       .update({ firma: data.firma, signed_at: new Date().toISOString() })
