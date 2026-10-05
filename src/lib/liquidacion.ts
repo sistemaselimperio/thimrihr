@@ -230,7 +230,7 @@ export function liquidacionText(i: LiquidacionInput, c: LiquidacionCalc): string
     "",
     `TOTAL LIQUIDACIÓN: ${fmtCOP(c.total)}`,
     "",
-    ...(i.observaciones?.trim() ? [`OBSERVACIONES: ${i.observaciones.trim()}`, ""] : []),
+    ...(i.observaciones?.trim() ? [`NOTA: ${i.observaciones.trim()}`, ""] : []),
     "HAGO CONSTAR",
     pazYSalvoLine(i),
     constanciaLine(i),

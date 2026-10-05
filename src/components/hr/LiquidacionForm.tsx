@@ -241,7 +241,7 @@ export function LiquidacionForm({ value, onChange, companies }: Props) {
 
       <div className="space-y-1">
         <Label htmlFor="liq-obs" className="text-xs">
-          Observaciones
+          Nota
         </Label>
         <Textarea
           id="liq-obs"

@@ -171,7 +171,7 @@ export async function downloadLiquidacionPdf(opts: {
   row(["FECHA DE INGRESO", fmtFechaLarga(i.fechaIngreso), "HASTA", fmtFechaLarga(i.fechaHasta)]);
   row(["NÚMERO DÍAS SERVICIO", String(i.diasServicio), "SALARIO BÁSICO MENSUAL $", fmtCOP(i.salario)]);
   row(["", "", "AUXILIO DE TRANSPORTE $", fmtCOP(i.auxilio)]);
-  y += 8;
+  y += 6;
 
   /* Conceptos */
   doc.setFontSize(9);
@@ -184,7 +184,7 @@ export async function downloadLiquidacionPdf(opts: {
     doc.text(formula, mx, y);
     y += 3;
     doc.line(mx, y, right, y);
-    y += 6;
+    y += 4.5;
   };
   concept(
     1,
@@ -223,53 +223,65 @@ export async function downloadLiquidacionPdf(opts: {
   y += 3;
   doc.line(mx, y, right, y);
   doc.setLineWidth(0.2);
-  y += 9;
+  y += 7;
 
-  /* Observaciones */
+  /* Firmas fijas al pie para que todo quepa en una sola hoja. */
+  const sigY = doc.internal.pageSize.getHeight() - 30;
+  const sigTop = sigY - 25;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  const lineH = 4.5;
+  const paz = doc.splitTextToSize(pazYSalvoLine(i), innerW) as string[];
+  const cons = doc.splitTextToSize(constanciaLine(i), innerW) as string[];
+  const constanciaH = 6 + paz.length * lineH + 4 + cons.length * lineH;
+
+  /* Nota: se recorta si no caben en el espacio libre. */
   const obs = i.observaciones?.trim();
   if (obs) {
-    doc.setFontSize(9);
-    doc.text("OBSERVACIONES", mx, y);
+    let lines = doc.splitTextToSize(obs, innerW) as string[];
+    const maxLines = Math.max(1, Math.floor((sigTop - y - constanciaH - 14) / lineH));
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      lines[maxLines - 1] = `${lines[maxLines - 1]!.replace(/\s*\S*$/, "")}…`;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.text("NOTA", mx, y);
     y += 5;
     doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(obs, innerW) as string[];
     doc.text(lines, mx, y);
-    y += lines.length * 4.5 + 4;
-    doc.setFont("helvetica", "bold");
+    y += lines.length * lineH + 4;
   }
   y += 5;
 
   /* Constancia */
-  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
   doc.text("HAGO CONSTAR", mx, y);
   y += 6;
   doc.setFont("helvetica", "normal");
-  const paz = doc.splitTextToSize(pazYSalvoLine(i), innerW) as string[];
   doc.text(paz, mx, y);
-  y += paz.length * 4.5 + 4;
-  const cons = doc.splitTextToSize(constanciaLine(i), innerW) as string[];
+  y += paz.length * lineH + 4;
   doc.text(cons, mx, y);
-  y += cons.length * 4.5 + 22;
 
-  /* Firmas: si no caben en la página, pasan a una nueva. */
-  if (y + 40 > doc.internal.pageSize.getHeight() - 10) {
-    doc.addPage();
-    y = 40;
-  }
-  const sigW = 90;
+  /* Misma línea: [firma + huella del trabajador] a la izquierda, firma del empleador a la derecha. */
+  y = sigY;
+  const huellaW = 28;
+  const sigW = 60;
+  const xHuella = mx + sigW + 4;
+  const xEmp = right - sigW;
   doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
   if (opts.firma) {
     const h = 18;
-    doc.addImage(opts.firma, "PNG", mx, y - h - 1, (h * 600) / 220, h);
+    doc.addImage(opts.firma, "PNG", mx, y - h - 1, Math.min(sigW, (h * 600) / 220), h);
   }
   doc.line(mx, y, mx + sigW, y);
   doc.text("FIRMA DEL TRABAJADOR", mx, y + 4.5);
-  doc.text("No. CÉDULA: ______________________", mx, y + 10);
-  doc.rect(right - 28, y - 22, 28, 28);
-  doc.text(["HUELLA DEL", "TRABAJADOR"], right - 14, y + 11, { align: "center" });
-  y += 30;
-  doc.line(mx, y, mx + sigW, y);
-  doc.text("FIRMA DEL EMPLEADOR", mx, y + 4.5);
+  doc.text(`No. CÉDULA: ${i.cedula || "____________________"}`, mx, y + 10);
+  doc.line(xEmp, y, xEmp + sigW, y);
+  doc.text("FIRMA DEL EMPLEADOR", xEmp, y + 4.5);
+  doc.rect(xHuella, y - 22, huellaW, 28);
+  doc.text(["HUELLA DEL", "TRABAJADOR"], xHuella + huellaW / 2, y + 10, { align: "center" });
 
   doc.save(opts.fileName ?? pdfFileName(`Liquidacion ${i.nombre}`));
   return true;
