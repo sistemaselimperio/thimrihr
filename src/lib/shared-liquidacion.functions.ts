@@ -30,6 +30,8 @@ export const getSharedLiquidacion = createServerFn({ method: "POST" })
       .select("employee_name, data, logo_path, firma, signed_at")
       .eq("token", data.token)
       .maybeSingle();
+    if (error) console.error("[getSharedLiquidacion] query failed:", error.code, error.message);
+    else if (!row) console.error("[getSharedLiquidacion] no row for token");
     if (error || !row) return null;
 
     let logoUrl: string | null = null;
