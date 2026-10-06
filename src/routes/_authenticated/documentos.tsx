@@ -65,7 +65,7 @@ import {
 } from "@/lib/data";
 import { categoryLabel, fillTemplate, renderDocument } from "@/lib/documents";
 import { AUTENTIC_URL } from "@/lib/print-doc";
-import { downloadDocumentPdf, downloadLiquidacionPdf } from "@/lib/pdf-doc";
+import { downloadDocumentPdf, downloadLiquidacionPdf, downloadNominaPdf } from "@/lib/pdf-doc";
 import {
   calcLiquidacion,
   dependenciaLogoPath,
@@ -76,6 +76,10 @@ import {
 } from "@/lib/liquidacion";
 import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
 import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
+import { calcNomina, isNomina, nominaDefaults, nominaText, type NominaInput } from "@/lib/nomina";
+import { NominaForm } from "@/components/hr/NominaForm";
+import { NominaPreview } from "@/components/hr/NominaPreview";
+import { DocumentText } from "@/components/hr/DocumentText";
 import { fmtDate } from "@/lib/hr";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -132,6 +136,14 @@ function DocumentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLiq, employee?.id, company?.id, template?.id]);
   const liqCalc = useMemo(() => (liq ? calcLiquidacion(liq) : null), [liq]);
+
+  const isNom = !!template && !isLiq && isNomina(template);
+  const [nom, setNom] = useState<NominaInput | null>(null);
+  useEffect(() => {
+    setNom(isNom && employee ? nominaDefaults(employee) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNom, employee?.id, template?.id]);
+  const nomCalc = useMemo(() => (nom ? calcNomina(nom) : null), [nom]);
 
   /* Enlace público para que el trabajador firme su liquidación. */
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -244,7 +256,12 @@ function DocumentsPage() {
         employee_id: employee.id,
         employee_name: employee.full_name,
         company_name: company?.name ?? null,
-        content: liq && liqCalc ? liquidacionText(liq, liqCalc) : text,
+        content:
+          liq && liqCalc
+            ? liquidacionText(liq, liqCalc)
+            : nom && nomCalc
+              ? nominaText(nom, nomCalc)
+              : text,
       });
       await qc.invalidateQueries({ queryKey: qk.generated });
     } catch {
@@ -263,7 +280,9 @@ function DocumentsPage() {
   const downloadPdf = () =>
     liq && liqCalc
       ? downloadLiquidacionPdf({ input: liq, calc: liqCalc, logoUrl: logo })
-      : downloadDocumentPdf({
+      : nom && nomCalc
+        ? downloadNominaPdf({ input: nom, calc: nomCalc, logoUrl: logo })
+        : downloadDocumentPdf({
           title: `${template!.name} — ${employee!.full_name}`,
           text,
           logoUrl: logo,
@@ -282,9 +301,19 @@ function DocumentsPage() {
     return true;
   };
 
+  const validateNom = () => {
+    if (!nom) return false;
+    if (!(nom.salario > 0) || !(nom.dias > 0)) {
+      toast.error("Ingresa el salario y el número de días.");
+      return false;
+    }
+    return true;
+  };
+
   const generatePdf = async () => {
     if (!guard()) return;
     if (isLiq && !validateLiq()) return;
+    if (isNom && !validateNom()) return;
     try {
       await downloadPdf();
     } catch {
@@ -535,6 +564,8 @@ function DocumentsPage() {
                 <>
                   <LiquidacionForm value={liq} onChange={setLiq} companies={companies} />
                 </>
+              ) : isNom && nom ? (
+                <NominaForm value={nom} onChange={setNom} />
               ) : (
               <div className="space-y-1.5">
                 <Label htmlFor="extra-text">Información adicional (temporal)</Label>
@@ -596,7 +627,7 @@ function DocumentsPage() {
               <p className="text-xs tracking-wide text-muted-foreground uppercase">
                 Previsualización
               </p>
-              {logo && !isLiq && (
+              {logo && !isLiq && !isNom && (
                 <img
                   src={logo}
                   alt={`Logo de ${company?.name ?? "la empresa"}`}
@@ -617,10 +648,20 @@ function DocumentsPage() {
                     companyName={liq.dependencia || undefined}
                   />
                 </div>
+              ) : isNom && nom && nomCalc ? (
+                <div className="mt-3">
+                  <NominaPreview input={nom} calc={nomCalc} logo={logo} />
+                </div>
               ) : (
-                <pre className="mt-3 min-h-96 font-sans text-sm leading-relaxed whitespace-pre-wrap">
-                  {text || "Selecciona un documento base y un empleado para ver el resultado."}
-                </pre>
+                <div className="mt-3 min-h-96">
+                  {text ? (
+                    <DocumentText text={text} />
+                  ) : (
+                    <p className="text-sm">
+                      Selecciona un documento base y un empleado para ver el resultado.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

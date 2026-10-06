@@ -89,6 +89,7 @@ export const DOC_CATEGORIES = [
   { value: "memorando", label: "Memorando" },
   { value: "permiso", label: "Permiso" },
   { value: "liquidacion", label: "Liquidación" },
+  { value: "nomina", label: "Nómina" },
   { value: "paz_y_salvo", label: "Paz y salvo" },
   { value: "certificado", label: "Certificado laboral" },
   { value: "descargos", label: "Descargos" },
@@ -105,9 +106,7 @@ const LEGACY_CATEGORY_LABELS: Record<string, string> = {
 
 export function categoryLabel(value: string): string {
   return (
-    DOC_CATEGORIES.find((c) => c.value === value)?.label ??
-    LEGACY_CATEGORY_LABELS[value] ??
-    value
+    DOC_CATEGORIES.find((c) => c.value === value)?.label ?? LEGACY_CATEGORY_LABELS[value] ?? value
   );
 }
 
@@ -118,10 +117,8 @@ export function docValues(
 ): Record<string, string> {
   const today = new Date();
   const dash = "—";
-  const first =
-    employee.first_name?.trim() || employee.full_name.split(" ").slice(0, 1).join(" ");
-  const last =
-    employee.last_name?.trim() || employee.full_name.split(" ").slice(1).join(" ");
+  const first = employee.first_name?.trim() || employee.full_name.split(" ").slice(0, 1).join(" ");
+  const last = employee.last_name?.trim() || employee.full_name.split(" ").slice(1).join(" ");
   return {
     NOMBRE: first || employee.full_name,
     APELLIDOS: last || "",
@@ -161,4 +158,48 @@ export function fillTemplate(
     )
     .replace(/\n{4,}/g, "\n\n\n")
     .trim();
+}
+
+/* ------------------------------------------------------ tablas en el texto */
+
+export type DocBlock = { type: "text"; text: string } | { type: "table"; rows: string[][] };
+
+/** Renglón de tabla: empieza con "|", p. ej. "| Empleador | {EMPRESA} |". */
+function tableCells(line: string): string[] | null {
+  const t = line.trim();
+  if (!t.startsWith("|")) return null;
+  return t
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((c) => c.trim());
+}
+
+/** Separa el documento en bloques de texto y tablas (renglones seguidos que empiezan con "|"). */
+export function docBlocks(text: string): DocBlock[] {
+  const blocks: DocBlock[] = [];
+  let buf: string[] = [];
+  const flush = () => {
+    if (buf.length) blocks.push({ type: "text", text: buf.join("\n") });
+    buf = [];
+  };
+  for (const line of text.split("\n")) {
+    const cells = tableCells(line);
+    if (!cells) {
+      buf.push(line);
+      continue;
+    }
+    flush();
+    const last = blocks[blocks.length - 1];
+    if (last?.type === "table") last.rows.push(cells);
+    else blocks.push({ type: "table", rows: [cells] });
+  }
+  flush();
+  return blocks;
+}
+
+/** Anchos relativos de columna: las etiquetas (columnas pares) más angostas que los valores. */
+export function tableColumnWeights(rows: string[][]): number[] {
+  const cols = Math.max(...rows.map((r) => r.length));
+  return Array.from({ length: cols }, (_, k) => (k % 2 === 0 ? 0.8 : 1.2));
 }

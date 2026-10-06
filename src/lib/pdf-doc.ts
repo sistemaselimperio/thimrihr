@@ -10,6 +10,14 @@ import {
   type LiquidacionCalc,
   type LiquidacionInput,
 } from "./liquidacion";
+import { docBlocks, tableColumnWeights } from "./documents";
+import {
+  fmtIngreso,
+  fmtNum,
+  mesNombre,
+  type NominaCalc,
+  type NominaInput,
+} from "./nomina";
 
 function slug(text: string): string {
   return (
@@ -89,16 +97,60 @@ export async function downloadDocumentPdf(opts: {
   doc.setFontSize(12);
   const lineH = 6.2;
 
-  for (const para of opts.text.split("\n")) {
-    const lines = para.length ? doc.splitTextToSize(para, maxW) : [""];
-    for (const line of lines) {
-      if (y > pageH - marginBottom) {
+  const writeText = (text: string) => {
+    for (const para of text.split("\n")) {
+      const lines = para.length ? doc.splitTextToSize(para, maxW) : [""];
+      for (const line of lines) {
+        if (y > pageH - marginBottom) {
+          doc.addPage();
+          y = marginTop;
+        }
+        doc.text(line, marginX, y);
+        y += lineH;
+      }
+    }
+  };
+
+  /* Tabla: etiquetas (columnas pares) en negrilla; la última celda de cada fila ocupa el resto. */
+  const writeTable = (rows: string[][]) => {
+    const weights = tableColumnWeights(rows);
+    const total = weights.reduce((a, w) => a + w, 0);
+    const widths = weights.map((w) => (w / total) * maxW);
+    const pad = 1.8;
+    const cellLineH = 4.8;
+    doc.setFontSize(10.5);
+    doc.setLineWidth(0.2);
+    y -= 4;
+    for (const row of rows) {
+      const cells = row.map((txt, k) => {
+        const w =
+          k === row.length - 1 ? widths.slice(k).reduce((a, b) => a + b, 0) : widths[k]!;
+        doc.setFont("times", k % 2 === 0 ? "bold" : "normal");
+        const lines = doc.splitTextToSize(txt, w - pad * 2) as string[];
+        return { lines, w, bold: k % 2 === 0 };
+      });
+      const h = Math.max(...cells.map((c) => c.lines.length)) * cellLineH + pad * 2;
+      if (y + h > pageH - marginBottom) {
         doc.addPage();
         y = marginTop;
       }
-      doc.text(line, marginX, y);
-      y += lineH;
+      let x = marginX;
+      for (const c of cells) {
+        doc.rect(x, y, c.w, h);
+        doc.setFont("times", c.bold ? "bold" : "normal");
+        doc.text(c.lines, x + pad, y + pad + 3.4);
+        x += c.w;
+      }
+      y += h;
     }
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+    y += lineH;
+  };
+
+  for (const block of docBlocks(opts.text)) {
+    if (block.type === "table") writeTable(block.rows);
+    else writeText(block.text);
   }
 
   doc.save(opts.fileName ?? pdfFileName(opts.title));
@@ -284,5 +336,127 @@ export async function downloadLiquidacionPdf(opts: {
   doc.text(["HUELLA DEL", "TRABAJADOR"], xHuella + huellaW / 2, y + 10, { align: "center" });
 
   doc.save(opts.fileName ?? pdfFileName(`Liquidacion ${i.nombre}`));
+  return true;
+}
+
+/** Recibo de pago mensual de nómina con el formato del Excel de referencia (hoja horizontal). */
+export async function downloadNominaPdf(opts: {
+  input: NominaInput;
+  calc: NominaCalc;
+  logoUrl?: string | null;
+  fileName?: string;
+}): Promise<boolean> {
+  const { input: i, calc: c } = opts;
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "letter", orientation: "landscape" });
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const mx = 12;
+  let y = 14;
+  const mes = mesNombre(i.mes);
+
+  doc.setDrawColor(0);
+  doc.setTextColor(0);
+  doc.setLineWidth(0.2);
+
+  if (opts.logoUrl) {
+    const img = await loadImage(opts.logoUrl);
+    if (img) {
+      const h = 24;
+      const w = Math.min(90, (img.w / img.h) * h);
+      const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(img.data, fmt, mx, y, w, h);
+    }
+  }
+  y += 34;
+
+  /* Encabezado: nombre, mes y año a la izquierda; cédula e ingreso a la derecha. */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  const valX = mx + 26;
+  const rightX = mx + 130;
+  const value = (txt: string, x: number, top: number) => {
+    doc.setFont("helvetica", "normal");
+    doc.text(txt, x, top);
+    doc.setFont("helvetica", "bold");
+  };
+  doc.text("NOMINA:", mx, y);
+  value(i.nombre.toUpperCase(), valX, y);
+  doc.text(`C.C. ${i.cedula} DE ${i.expedicion.toUpperCase()}`, rightX, y);
+  y += 6;
+  doc.text("MES:", mx, y);
+  value(mes, valX, y);
+  doc.text(`INGRESO: ${fmtIngreso(i.fechaIngreso)}`, rightX, y);
+  y += 6;
+  doc.text("AÑO:", mx, y);
+  value(String(i.anio), valX, y);
+  y += 9;
+
+  doc.setFontSize(12);
+  doc.text("RECIBO DE PAGO MENSUAL DE NOMINA", pageW / 2, y, { align: "center" });
+  y += 6;
+  doc.text(`MES DE ${mes} DE ${i.anio}`, pageW / 2, y, { align: "center" });
+  y += 6;
+
+  /* Tabla */
+  const widths = [22, 34, 21, 13, 21, 19, 21, 18, 18, 18, 20, 0];
+  widths[11] = pageW - mx * 2 - widths.reduce((a, b) => a + b, 0);
+  const xs = widths.map((_, k) => mx + widths.slice(0, k).reduce((a, b) => a + b, 0));
+  const span = (from: number, to: number) => ({
+    x: xs[from]!,
+    w: widths.slice(from, to + 1).reduce((a, b) => a + b, 0),
+  });
+  const box = (x: number, w: number, top: number, h: number, txt: string, size: number, bold = true) => {
+    doc.rect(x, top, w, h);
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    const fit = (doc.splitTextToSize(txt, w - 1.5) as string[])[0] ?? "";
+    doc.text(fit, x + w / 2, top + h / 2 + size * 0.13, { align: "center" });
+  };
+
+  const h1 = 7;
+  const dev = span(4, 6);
+  const ded = span(7, 10);
+  box(dev.x, dev.w, y, h1, "DEVENGADO", 10);
+  box(ded.x, ded.w, y, h1, "DEDUCCIONES", 10);
+  y += h1;
+
+  const headers = [
+    "CÉDULA", "NOMBRE", "SALARIO", "N° DÍAS", "DEVENGADO", "AUX.TRASP", "TOTAL DEV",
+    "SALUD", "PENSIÓN", "O. DEDUC", "TOTAL DED", "NETO PAGO",
+  ];
+  const h2 = 7;
+  headers.forEach((t, k) => box(xs[k]!, widths[k]!, y, h2, t, 7.5));
+  y += h2;
+
+  const h3 = 14;
+  const values: [string, number, boolean][] = [
+    [i.cedula, 6.5, false],
+    [i.nombre, 6.5, false],
+    [fmtNum(i.salario), 9, false],
+    [String(i.dias), 9, false],
+    [fmtNum(c.devengado), 9, false],
+    [fmtNum(c.auxTransporte), 9, false],
+    [fmtNum(c.totalDevengado), 9, false],
+    [fmtNum(c.salud), 9, false],
+    [fmtNum(c.pension), 9, false],
+    [fmtNum(i.otrasDeducciones), 9, false],
+    [fmtNum(c.totalDeducciones), 9, false],
+    [fmtNum(c.neto), 10, true],
+  ];
+  values.forEach(([t, size, bold], k) => box(xs[k]!, widths[k]!, y, h3, t, size, bold));
+  y += h3;
+
+  /* Firma del trabajador debajo de la tabla. */
+  y += 28;
+  const sigW = 70;
+  doc.setLineWidth(0.2);
+  doc.line(mx, y, mx + sigW, y);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("FIRMA", mx, y + 4.5);
+  doc.text(`C.C. ${i.cedula}`, mx, y + 10);
+
+  doc.save(opts.fileName ?? pdfFileName(`Nomina ${i.nombre} ${mes} ${i.anio}`));
   return true;
 }
