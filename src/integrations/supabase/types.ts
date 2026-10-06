@@ -127,6 +127,22 @@ export type Database = {
           hire_date: string | null
           id: string
           landline: string | null
+          id_issue_place: string | null
+          address: string | null
+          contact1_name: string | null
+          contact1_relationship: string | null
+          contact1_phone: string | null
+          contact2_name: string | null
+          contact2_relationship: string | null
+          contact2_phone: string | null
+          bank_name: string | null
+          bank_account_type: string | null
+          bank_account_number: string | null
+          eps: string | null
+          pension_fund: string | null
+          severance_fund: string | null
+          arl: string | null
+          compensation_fund: string | null
           last_name: string | null
           municipality: string | null
           notes: string | null
@@ -151,6 +167,22 @@ export type Database = {
           hire_date?: string | null
           id?: string
           landline?: string | null
+          id_issue_place?: string | null
+          address?: string | null
+          contact1_name?: string | null
+          contact1_relationship?: string | null
+          contact1_phone?: string | null
+          contact2_name?: string | null
+          contact2_relationship?: string | null
+          contact2_phone?: string | null
+          bank_name?: string | null
+          bank_account_type?: string | null
+          bank_account_number?: string | null
+          eps?: string | null
+          pension_fund?: string | null
+          severance_fund?: string | null
+          arl?: string | null
+          compensation_fund?: string | null
           last_name?: string | null
           municipality?: string | null
           notes?: string | null
@@ -175,6 +207,22 @@ export type Database = {
           hire_date?: string | null
           id?: string
           landline?: string | null
+          id_issue_place?: string | null
+          address?: string | null
+          contact1_name?: string | null
+          contact1_relationship?: string | null
+          contact1_phone?: string | null
+          contact2_name?: string | null
+          contact2_relationship?: string | null
+          contact2_phone?: string | null
+          bank_name?: string | null
+          bank_account_type?: string | null
+          bank_account_number?: string | null
+          eps?: string | null
+          pension_fund?: string | null
+          severance_fund?: string | null
+          arl?: string | null
+          compensation_fund?: string | null
           last_name?: string | null
           municipality?: string | null
           notes?: string | null

@@ -36,6 +36,22 @@ type Form = {
   email: string;
   phone: string;
   landline: string;
+  id_issue_place: string;
+  address: string;
+  contact1_name: string;
+  contact1_relationship: string;
+  contact1_phone: string;
+  contact2_name: string;
+  contact2_relationship: string;
+  contact2_phone: string;
+  bank_name: string;
+  bank_account_type: string;
+  bank_account_number: string;
+  eps: string;
+  pension_fund: string;
+  severance_fund: string;
+  arl: string;
+  compensation_fund: string;
   company_id: string;
   position: string;
   work_location: string;
@@ -57,6 +73,22 @@ const blank: Form = {
   email: "",
   phone: "",
   landline: "",
+  id_issue_place: "",
+  address: "",
+  contact1_name: "",
+  contact1_relationship: "",
+  contact1_phone: "",
+  contact2_name: "",
+  contact2_relationship: "",
+  contact2_phone: "",
+  bank_name: "",
+  bank_account_type: "",
+  bank_account_number: "",
+  eps: "",
+  pension_fund: "",
+  severance_fund: "",
+  arl: "",
+  compensation_fund: "",
   company_id: "",
   position: "",
   work_location: "",
@@ -119,6 +151,22 @@ export function EmployeeDialog({
       email: employee.email ?? "",
       phone: employee.phone ?? "",
       landline: employee.landline ?? "",
+      id_issue_place: employee.id_issue_place ?? "",
+      address: employee.address ?? "",
+      contact1_name: employee.contact1_name ?? "",
+      contact1_relationship: employee.contact1_relationship ?? "",
+      contact1_phone: employee.contact1_phone ?? "",
+      contact2_name: employee.contact2_name ?? "",
+      contact2_relationship: employee.contact2_relationship ?? "",
+      contact2_phone: employee.contact2_phone ?? "",
+      bank_name: employee.bank_name ?? "",
+      bank_account_type: employee.bank_account_type ?? "",
+      bank_account_number: employee.bank_account_number ?? "",
+      eps: employee.eps ?? "",
+      pension_fund: employee.pension_fund ?? "",
+      severance_fund: employee.severance_fund ?? "",
+      arl: employee.arl ?? "",
+      compensation_fund: employee.compensation_fund ?? "",
       company_id: employee.company_id ?? "",
       position: employee.position ?? "",
       work_location: employee.work_location ?? "",
@@ -168,6 +216,12 @@ export function EmployeeDialog({
       e.phone = "Solo números (puede incluir +57)";
     if (form.landline.trim() && !PHONE_RE.test(form.landline.replace(/[\s-]/g, "")))
       e.landline = "Solo números";
+    for (const field of ["contact1_phone", "contact2_phone"] as const) {
+      if (form[field].trim() && !PHONE_RE.test(form[field].replace(/[\s-]/g, "")))
+        e[field] = "Solo números (puede incluir +57)";
+    }
+    if (form.bank_account_number.trim() && !/^[\d\s-]{4,30}$/.test(form.bank_account_number.trim()))
+      e.bank_account_number = "Solo números (puede incluir guiones)";
 
     if (!form.company_id) e.company_id = "Selecciona la empresa";
     if (!form.position.trim()) e.position = "El cargo es obligatorio";
@@ -211,6 +265,22 @@ export function EmployeeDialog({
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         landline: form.landline.trim() || null,
+        id_issue_place: form.id_issue_place.trim() || null,
+        address: form.address.trim() || null,
+        contact1_name: form.contact1_name.trim() || null,
+        contact1_relationship: form.contact1_relationship.trim() || null,
+        contact1_phone: form.contact1_phone.trim() || null,
+        contact2_name: form.contact2_name.trim() || null,
+        contact2_relationship: form.contact2_relationship.trim() || null,
+        contact2_phone: form.contact2_phone.trim() || null,
+        bank_name: form.bank_name.trim() || null,
+        bank_account_type: form.bank_account_type || null,
+        bank_account_number: form.bank_account_number.trim() || null,
+        eps: form.eps.trim() || null,
+        pension_fund: form.pension_fund.trim() || null,
+        severance_fund: form.severance_fund.trim() || null,
+        arl: form.arl.trim() || null,
+        compensation_fund: form.compensation_fund.trim() || null,
         company_id: form.company_id,
         position: form.position.trim(),
         work_location: form.work_location.trim() || null,
@@ -271,6 +341,26 @@ export function EmployeeDialog({
 
   const cls = (field: keyof Form) => (errors[field] ? "border-destructive" : undefined);
 
+  const textField = (field: keyof Form, label: string, placeholder?: string, wide = false) => (
+    <div className={wide ? "space-y-1.5 sm:col-span-2" : "space-y-1.5"}>
+      <Label htmlFor={field}>{label}</Label>
+      <Input
+        id={field}
+        className={cls(field)}
+        placeholder={placeholder}
+        value={form[field]}
+        onChange={(e) => set({ [field]: e.target.value })}
+      />
+      {err(field)}
+    </div>
+  );
+
+  const sectionTitle = (title: string) => (
+    <h3 className="mt-2 border-t pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:col-span-2">
+      {title}
+    </h3>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -326,6 +416,8 @@ export function EmployeeDialog({
               err("cedula")
             )}
           </div>
+
+          {textField("id_issue_place", "Lugar de expedición", "Chiquinquirá, Boyacá")}
 
           <div className="space-y-1.5">
             <Label htmlFor="first_name">
@@ -391,9 +483,45 @@ export function EmployeeDialog({
             {err("landline")}
           </div>
 
-          <h3 className="mt-2 border-t pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:col-span-2">
-            Información laboral
-          </h3>
+          {textField("address", "Dirección de residencia", "Calle 10 # 5-20, barrio Centro", true)}
+
+          {sectionTitle("Contactos de emergencia")}
+          {textField("contact1_name", "Contacto 1 · Nombre")}
+          {textField("contact1_relationship", "Contacto 1 · Parentesco", "Madre, esposo(a)…")}
+          {textField("contact1_phone", "Contacto 1 · Teléfono", "3144051618")}
+          <div className="hidden sm:block" />
+          {textField("contact2_name", "Contacto 2 · Nombre")}
+          {textField("contact2_relationship", "Contacto 2 · Parentesco", "Hermano(a), hijo(a)…")}
+          {textField("contact2_phone", "Contacto 2 · Teléfono", "3144051618")}
+          <div className="hidden sm:block" />
+
+          {sectionTitle("Cuenta de nómina")}
+          {textField("bank_name", "Banco", "Bancolombia")}
+          <div className="space-y-1.5">
+            <Label>Tipo de cuenta</Label>
+            <Select
+              value={form.bank_account_type}
+              onValueChange={(v) => set({ bank_account_type: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ahorros">Ahorros</SelectItem>
+                <SelectItem value="corriente">Corriente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {textField("bank_account_number", "Número de cuenta de nómina", "Ej: 123-456789-01")}
+
+          {sectionTitle("Seguridad social")}
+          {textField("eps", "EPS", "Nueva EPS, Sanitas…")}
+          {textField("pension_fund", "Fondo de pensiones (AFP)", "Porvenir, Colpensiones…")}
+          {textField("severance_fund", "Fondo de cesantías", "Protección, FNA…")}
+          {textField("arl", "ARL", "Positiva, Sura…")}
+          {textField("compensation_fund", "Caja de compensación", "Comfaboy…")}
+
+          {sectionTitle("Información laboral")}
 
           <div className="space-y-1.5">
             <Label>

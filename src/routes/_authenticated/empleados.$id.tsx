@@ -88,6 +88,12 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function accountTypeLabel(type: string | null | undefined) {
+  if (type === "ahorros") return "Ahorros";
+  if (type === "corriente") return "Corriente";
+  return "—";
+}
+
 function EmployeeDetail() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
@@ -229,6 +235,28 @@ function EmployeeDetail() {
         header: ["Campo", "Valor"],
         rows: [
           ["Cédula", emp.cedula],
+          ["Lugar de expedición", emp.id_issue_place ?? ""],
+          ["Dirección de residencia", emp.address ?? ""],
+          [
+            "Contacto 1",
+            [emp.contact1_name, emp.contact1_relationship, emp.contact1_phone]
+              .filter(Boolean)
+              .join(" · "),
+          ],
+          [
+            "Contacto 2",
+            [emp.contact2_name, emp.contact2_relationship, emp.contact2_phone]
+              .filter(Boolean)
+              .join(" · "),
+          ],
+          ["Banco", emp.bank_name ?? ""],
+          ["Tipo de cuenta", emp.bank_account_type ? accountTypeLabel(emp.bank_account_type) : ""],
+          ["Cuenta de nómina", emp.bank_account_number ?? ""],
+          ["EPS", emp.eps ?? ""],
+          ["Fondo de pensiones", emp.pension_fund ?? ""],
+          ["Fondo de cesantías", emp.severance_fund ?? ""],
+          ["ARL", emp.arl ?? ""],
+          ["Caja de compensación", emp.compensation_fund ?? ""],
           ["Cargo", emp.position],
           ["Ingreso", fmtDate(emp.hire_date)],
           [
@@ -301,12 +329,53 @@ function EmployeeDetail() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
             <Field label="Cédula" value={emp.cedula} />
+            <Field label="Lugar de expedición" value={emp.id_issue_place ?? "—"} />
             <Field label="Nombres" value={emp.first_name ?? "—"} />
             <Field label="Apellidos" value={emp.last_name ?? "—"} />
             <Field label="Email" value={emp.email ?? "—"} />
             <Field label="Celular" value={emp.phone ?? "—"} />
             <Field label="Teléfono" value={emp.landline ?? "—"} />
             <Field label="N° Carpeta" value={emp.folder_number ?? "—"} />
+            <Field label="Dirección de residencia" value={emp.address ?? "—"} />
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Contactos de emergencia
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <Field label="Contacto 1" value={emp.contact1_name ?? "—"} />
+            <Field label="Parentesco" value={emp.contact1_relationship ?? "—"} />
+            <Field label="Teléfono" value={emp.contact1_phone ?? "—"} />
+            <div className="hidden lg:block" />
+            <Field label="Contacto 2" value={emp.contact2_name ?? "—"} />
+            <Field label="Parentesco" value={emp.contact2_relationship ?? "—"} />
+            <Field label="Teléfono" value={emp.contact2_phone ?? "—"} />
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Cuenta de nómina
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <Field label="Banco" value={emp.bank_name ?? "—"} />
+            <Field label="Tipo de cuenta" value={accountTypeLabel(emp.bank_account_type)} />
+            <Field label="Número de cuenta" value={emp.bank_account_number ?? "—"} />
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Seguridad social
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <Field label="EPS" value={emp.eps ?? "—"} />
+            <Field label="Fondo de pensiones" value={emp.pension_fund ?? "—"} />
+            <Field label="Fondo de cesantías" value={emp.severance_fund ?? "—"} />
+            <Field label="ARL" value={emp.arl ?? "—"} />
+            <Field label="Caja de compensación" value={emp.compensation_fund ?? "—"} />
           </div>
         </div>
 
