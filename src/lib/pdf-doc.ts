@@ -52,13 +52,23 @@ async function loadImage(url: string): Promise<{ data: string; w: number; h: num
       fr.onerror = () => reject(new Error("read error"));
       fr.readAsDataURL(blob);
     });
-    const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => reject(new Error("image error"));
-      img.src = data;
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("image error"));
+      el.src = data;
     });
-    return { data, ...dims };
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    if (data.startsWith("data:image/png") || data.startsWith("data:image/jpeg")) {
+      return { data, w, h };
+    }
+    /* jsPDF solo entiende PNG/JPEG: otros formatos (webp, svg…) se pasan a PNG sin recortar. */
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+    return { data: canvas.toDataURL("image/png"), w, h };
   } catch {
     return null;
   }
@@ -85,8 +95,9 @@ export async function downloadDocumentPdf(opts: {
   if (opts.logoUrl) {
     const img = await loadImage(opts.logoUrl);
     if (img) {
-      const h = 24;
-      const w = Math.min(maxW, (img.w / img.h) * h);
+      const scale = Math.min(maxW / img.w, 24 / img.h);
+      const w = img.w * scale;
+      const h = img.h * scale;
       const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
       doc.addImage(img.data, fmt, marginX, y, w, h);
       y += h + 10;
@@ -185,10 +196,12 @@ export async function downloadLiquidacionPdf(opts: {
   if (opts.logoUrl) {
     const img = await loadImage(opts.logoUrl);
     if (img) {
-      const h = 30;
-      const w = Math.min(80, (img.w / img.h) * h);
+      /* Se respeta la proporción original: cabe completo en una caja de 80 x 30 mm. */
+      const scale = Math.min(80 / img.w, 30 / img.h);
+      const w = img.w * scale;
+      const h = img.h * scale;
       const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
-      doc.addImage(img.data, fmt, mx, y, w, h);
+      doc.addImage(img.data, fmt, mx, y + (30 - h) / 2, w, h);
       logoRight = mx + w + 6;
     }
   }
@@ -398,8 +411,9 @@ export async function downloadNominaPdf(opts: {
   if (opts.logoUrl) {
     const img = await loadImage(opts.logoUrl);
     if (img) {
-      const h = 24;
-      const w = Math.min(90, (img.w / img.h) * h);
+      const scale = Math.min(90 / img.w, 24 / img.h);
+      const w = img.w * scale;
+      const h = img.h * scale;
       const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
       doc.addImage(img.data, fmt, mx, y, w, h);
     }
