@@ -79,6 +79,7 @@ import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
 import { calcNomina, isNomina, nominaDefaults, nominaText, type NominaInput } from "@/lib/nomina";
 import { NominaForm } from "@/components/hr/NominaForm";
 import { NominaPreview } from "@/components/hr/NominaPreview";
+import { SharedLiquidacionEditor } from "@/components/hr/SharedLiquidacionEditor";
 import { DocumentText } from "@/components/hr/DocumentText";
 import { fmtDate } from "@/lib/hr";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +111,7 @@ function DocumentsPage() {
   const { data: templates = [] } = useTemplates();
   const { data: history = [] } = useGeneratedDocuments();
   const { data: shared = [] } = useSharedLiquidaciones();
+  const [editingShared, setEditingShared] = useState<SharedLiquidacion | null>(null);
 
   const [tab, setTab] = useState("base");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -757,6 +759,16 @@ function DocumentsPage() {
                     >
                       <FileDown className="size-3.5" /> Descargar PDF
                     </Button>
+                    {!s.signed_at && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => setEditingShared(s)}
+                      >
+                        <Pencil className="size-3.5" /> Editar
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button size="sm" variant="ghost" className="gap-1.5 text-danger-foreground">
@@ -787,6 +799,11 @@ function DocumentsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <SharedLiquidacionEditor
+        shared={editingShared}
+        onOpenChange={(o) => !o && setEditingShared(null)}
+      />
 
       <Dialog open={!!shareUrl} onOpenChange={(o) => !o && setShareUrl(null)}>
         <DialogContent>
