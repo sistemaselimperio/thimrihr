@@ -180,7 +180,8 @@ export async function downloadLiquidacionPdf(opts: {
   doc.setTextColor(0);
   doc.setLineWidth(0.2);
 
-  /* Logo + título */
+  /* Logo + título: el título se centra en el espacio libre a la derecha del logo. */
+  let logoRight = mx;
   if (opts.logoUrl) {
     const img = await loadImage(opts.logoUrl);
     if (img) {
@@ -188,11 +189,13 @@ export async function downloadLiquidacionPdf(opts: {
       const w = Math.min(80, (img.w / img.h) * h);
       const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
       doc.addImage(img.data, fmt, mx, y, w, h);
+      logoRight = mx + w + 6;
     }
   }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("LIQUIDACIÓN", pageW / 2, y + 17, { align: "center" });
+  const titleX = logoRight > mx ? (logoRight + right) / 2 : pageW / 2;
+  doc.text("LIQUIDACIÓN", titleX, y + 17, { align: "center" });
   y += 36;
 
   /* Cuadrícula del encabezado: 4 columnas */
@@ -277,9 +280,13 @@ export async function downloadLiquidacionPdf(opts: {
   doc.setLineWidth(0.2);
   y += 7;
 
-  /* Firmas fijas al pie para que todo quepa en una sola hoja. */
-  const sigY = doc.internal.pageSize.getHeight() - 30;
+  /* Firmas fijas al pie. Si la nota no cabe con letra normal, se achica (hasta 6.5 pt)
+     para que todo quede en una hoja; si aun así no cabe, la nota sale completa y la
+     constancia con las firmas pasa a la hoja siguiente. */
+  const pageH = doc.internal.pageSize.getHeight();
+  let sigY = pageH - 20;
   const sigTop = sigY - 25;
+  const bottom = pageH - 18;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -288,21 +295,50 @@ export async function downloadLiquidacionPdf(opts: {
   const cons = doc.splitTextToSize(constanciaLine(i), innerW) as string[];
   const constanciaH = 6 + paz.length * lineH + 4 + cons.length * lineH;
 
-  /* Nota: se recorta si no caben en el espacio libre. */
   const obs = i.observaciones?.trim();
-  if (obs) {
-    let lines = doc.splitTextToSize(obs, innerW) as string[];
-    const maxLines = Math.max(1, Math.floor((sigTop - y - constanciaH - 14) / lineH));
-    if (lines.length > maxLines) {
-      lines = lines.slice(0, maxLines);
-      lines[maxLines - 1] = `${lines[maxLines - 1]!.replace(/\s*\S*$/, "")}…`;
-    }
+  const noteLayout = (size: number) => {
+    doc.setFontSize(size);
+    const lines = obs ? (doc.splitTextToSize(obs, innerW) as string[]) : [];
+    const lh = size * 0.5;
+    return { size, lines, lh, h: lines.length ? 5 + lines.length * lh + 4 : 0 };
+  };
+  const space = sigTop - y - 5 - constanciaH;
+  let note = noteLayout(9);
+  for (const size of [8.5, 8, 7.5, 7, 6.5]) {
+    if (note.h <= space) break;
+    note = noteLayout(size);
+  }
+  const fitsOnePage = note.h <= space;
+  if (!fitsOnePage) note = noteLayout(9);
+  doc.setFontSize(9);
+
+  if (note.lines.length) {
     doc.setFont("helvetica", "bold");
     doc.text("NOTA", mx, y);
     y += 5;
     doc.setFont("helvetica", "normal");
-    doc.text(lines, mx, y);
-    y += lines.length * lineH + 4;
+    doc.setFontSize(note.size);
+    for (const line of note.lines) {
+      if (y > bottom) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(line, mx, y);
+      y += note.lh;
+    }
+    doc.setFontSize(9);
+    y += 4;
+  }
+
+  if (!fitsOnePage) {
+    /* Bloque de constancia + firmas: si no cabe en la hoja actual (o seguimos en la
+       primera), va a una hoja nueva. */
+    const onFirstPage = doc.getNumberOfPages() === 1;
+    if (onFirstPage || y + 5 + constanciaH + 50 > bottom) {
+      doc.addPage();
+      y = 20;
+    }
+    sigY = y + 5 + constanciaH + 40;
   }
   y += 5;
 
