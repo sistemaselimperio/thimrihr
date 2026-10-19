@@ -54,6 +54,7 @@ import {
   fmtDate,
   incapacityStatus,
   CONTRACT_TYPE_LABELS,
+  ID_TYPE_LABELS,
   isFixedTerm,
   licenseStatus,
   recalcEntitlement,
@@ -234,7 +235,8 @@ function EmployeeDetail() {
         title: `HOJA LABORAL — ${emp.full_name.toUpperCase()}`,
         header: ["Campo", "Valor"],
         rows: [
-          ["Cédula", emp.cedula],
+          ["Tipo de documento", ID_TYPE_LABELS[emp.id_type ?? "cc"] ?? ""],
+          ["N° de documento", emp.cedula],
           ["Lugar de expedición", emp.id_issue_place ?? ""],
           ["Dirección de residencia", emp.address ?? ""],
           [
@@ -257,6 +259,8 @@ function EmployeeDetail() {
           ["Fondo de cesantías", emp.severance_fund ?? ""],
           ["ARL", emp.arl ?? ""],
           ["Caja de compensación", emp.compensation_fund ?? ""],
+          ["Exámenes médicos", emp.has_medical_exam ? "Sí" : "No"],
+          ["Fecha examen médico", emp.medical_exam_date ? fmtDate(emp.medical_exam_date) : ""],
           ["Cargo", emp.position],
           ["Ingreso", fmtDate(emp.hire_date)],
           [
@@ -328,7 +332,8 @@ function EmployeeDetail() {
             Datos personales
           </h2>
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            <Field label="Cédula" value={emp.cedula} />
+            <Field label="Tipo de documento" value={ID_TYPE_LABELS[emp.id_type ?? "cc"] ?? "—"} />
+            <Field label="N° de documento" value={emp.cedula} />
             <Field label="Lugar de expedición" value={emp.id_issue_place ?? "—"} />
             <Field label="Nombres" value={emp.first_name ?? "—"} />
             <Field label="Apellidos" value={emp.last_name ?? "—"} />
@@ -376,6 +381,19 @@ function EmployeeDetail() {
             <Field label="Fondo de cesantías" value={emp.severance_fund ?? "—"} />
             <Field label="ARL" value={emp.arl ?? "—"} />
             <Field label="Caja de compensación" value={emp.compensation_fund ?? "—"} />
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="font-display text-xs font-bold tracking-wide uppercase">
+            Exámenes médicos
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <Field label="¿Tiene exámenes médicos?" value={emp.has_medical_exam ? "Sí" : "No"} />
+            <Field
+              label="Fecha del examen"
+              value={emp.medical_exam_date ? fmtDate(emp.medical_exam_date) : "—"}
+            />
           </div>
         </div>
 

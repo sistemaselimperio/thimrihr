@@ -32,6 +32,7 @@ export interface Employee {
   exit_date: string | null;
   phone: string | null;
   landline?: string | null;
+  id_type?: string | null;
   id_issue_place?: string | null;
   address?: string | null;
   contact1_name?: string | null;
@@ -48,6 +49,8 @@ export interface Employee {
   severance_fund?: string | null;
   arl?: string | null;
   compensation_fund?: string | null;
+  has_medical_exam?: boolean | null;
+  medical_exam_date?: string | null;
   email?: string | null;
   folder_number?: string | null;
   municipality?: string | null;
@@ -207,6 +210,11 @@ export const TERMINATION_LABELS: Record<string, string> = {
   vencimiento: "Vencimiento de término",
   renuncia: "Renuncia",
   justa_causa: "Justa causa",
+};
+
+export const ID_TYPE_LABELS: Record<string, string> = {
+  cc: "Cédula de ciudadanía",
+  ppt: "Permiso por Protección Temporal (PPT)",
 };
 
 export const CONTRACT_TYPE_LABELS: Record<string, string> = {

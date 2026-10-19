@@ -1,4 +1,4 @@
-import { fmtDate, monthLong, todayISO, type Company, type Employee } from "./hr";
+import { ID_TYPE_LABELS, fmtDate, monthLong, todayISO, type Company, type Employee } from "./hr";
 
 export interface DocContext {
   employee: Employee;
@@ -64,6 +64,7 @@ export const DOC_VARIABLES: DocVariable[] = [
   { key: "APELLIDOS", label: "Apellidos", group: "Datos personales" },
   { key: "NOMBRE_COMPLETO", label: "Nombre completo", group: "Datos personales" },
   { key: "CEDULA", label: "Cédula", group: "Datos personales" },
+  { key: "TIPO_DOCUMENTO", label: "Tipo de documento", group: "Datos personales" },
   { key: "CELULAR", label: "Celular", group: "Datos personales" },
   { key: "TELEFONO", label: "Teléfono fijo", group: "Datos personales" },
   { key: "EMAIL", label: "Correo", group: "Datos personales" },
@@ -124,6 +125,7 @@ export function docValues(
     APELLIDOS: last || "",
     NOMBRE_COMPLETO: employee.full_name,
     CEDULA: employee.cedula,
+    TIPO_DOCUMENTO: ID_TYPE_LABELS[employee.id_type ?? "cc"] ?? dash,
     CELULAR: employee.phone ?? dash,
     TELEFONO: employee.landline ?? dash,
     EMAIL: employee.email ?? dash,

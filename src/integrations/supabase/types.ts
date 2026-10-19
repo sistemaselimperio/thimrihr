@@ -127,6 +127,7 @@ export type Database = {
           hire_date: string | null
           id: string
           landline: string | null
+          id_type: string
           id_issue_place: string | null
           address: string | null
           contact1_name: string | null
@@ -143,6 +144,8 @@ export type Database = {
           severance_fund: string | null
           arl: string | null
           compensation_fund: string | null
+          has_medical_exam: boolean
+          medical_exam_date: string | null
           last_name: string | null
           municipality: string | null
           notes: string | null
@@ -167,6 +170,7 @@ export type Database = {
           hire_date?: string | null
           id?: string
           landline?: string | null
+          id_type?: string
           id_issue_place?: string | null
           address?: string | null
           contact1_name?: string | null
@@ -183,6 +187,8 @@ export type Database = {
           severance_fund?: string | null
           arl?: string | null
           compensation_fund?: string | null
+          has_medical_exam?: boolean
+          medical_exam_date?: string | null
           last_name?: string | null
           municipality?: string | null
           notes?: string | null
@@ -207,6 +213,7 @@ export type Database = {
           hire_date?: string | null
           id?: string
           landline?: string | null
+          id_type?: string
           id_issue_place?: string | null
           address?: string | null
           contact1_name?: string | null
@@ -223,6 +230,8 @@ export type Database = {
           severance_fund?: string | null
           arl?: string | null
           compensation_fund?: string | null
+          has_medical_exam?: boolean
+          medical_exam_date?: string | null
           last_name?: string | null
           municipality?: string | null
           notes?: string | null

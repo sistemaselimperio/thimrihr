@@ -26,11 +26,12 @@ import { qk, updateRow, useCompanies, useEmployees } from "@/lib/data";
 import { supabase } from "@/integrations/supabase/client";
 import { useCelebration } from "@/components/hr/Celebration";
 import { useNavigate } from "@tanstack/react-router";
-import type { Employee } from "@/lib/hr";
+import { ID_TYPE_LABELS, type Employee } from "@/lib/hr";
 
 type Form = {
   folder_number: string;
   cedula: string;
+  id_type: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -52,6 +53,8 @@ type Form = {
   severance_fund: string;
   arl: string;
   compensation_fund: string;
+  has_medical_exam: string;
+  medical_exam_date: string;
   company_id: string;
   position: string;
   work_location: string;
@@ -68,6 +71,7 @@ type Form = {
 const blank: Form = {
   folder_number: "",
   cedula: "",
+  id_type: "cc",
   first_name: "",
   last_name: "",
   email: "",
@@ -89,6 +93,8 @@ const blank: Form = {
   severance_fund: "",
   arl: "",
   compensation_fund: "",
+  has_medical_exam: "no",
+  medical_exam_date: "",
   company_id: "",
   position: "",
   work_location: "",
@@ -146,6 +152,7 @@ export function EmployeeDialog({
     setForm({
       folder_number: employee.folder_number ?? "",
       cedula: employee.cedula,
+      id_type: employee.id_type ?? "cc",
       first_name: employee.first_name ?? fallback.first,
       last_name: employee.last_name ?? fallback.last,
       email: employee.email ?? "",
@@ -167,6 +174,8 @@ export function EmployeeDialog({
       severance_fund: employee.severance_fund ?? "",
       arl: employee.arl ?? "",
       compensation_fund: employee.compensation_fund ?? "",
+      has_medical_exam: employee.has_medical_exam ? "si" : "no",
+      medical_exam_date: employee.medical_exam_date ?? "",
       company_id: employee.company_id ?? "",
       position: employee.position ?? "",
       work_location: employee.work_location ?? "",
@@ -202,9 +211,9 @@ export function EmployeeDialog({
   const validate = (): Errors => {
     const e: Errors = {};
     const cedula = form.cedula.trim();
-    if (!cedula) e.cedula = "La cédula es obligatoria";
+    if (!cedula) e.cedula = "El número de documento es obligatorio";
     else if (!/^\d{5,15}$/.test(cedula)) e.cedula = "Solo números, sin guiones ni espacios";
-    else if (!employee && cedulasUsadas.has(cedula)) e.cedula = "Ya existe un empleado con esta cédula";
+    else if (!employee && cedulasUsadas.has(cedula)) e.cedula = "Ya existe un empleado con este número de documento";
 
     if (!NAME_RE.test(form.first_name.trim()))
       e.first_name = "Mínimo 2 caracteres, solo letras";
@@ -222,6 +231,8 @@ export function EmployeeDialog({
     }
     if (form.bank_account_number.trim() && !/^[\d\s-]{4,30}$/.test(form.bank_account_number.trim()))
       e.bank_account_number = "Solo números (puede incluir guiones)";
+    if (form.has_medical_exam === "si" && !form.medical_exam_date)
+      e.medical_exam_date = "Ingresa la fecha del examen médico";
 
     if (!form.company_id) e.company_id = "Selecciona la empresa";
     if (!form.position.trim()) e.position = "El cargo es obligatorio";
@@ -259,6 +270,7 @@ export function EmployeeDialog({
       const row = {
         folder_number: form.folder_number.trim() || null,
         cedula: form.cedula.trim(),
+        id_type: form.id_type,
         first_name: first,
         last_name: last,
         full_name,
@@ -281,6 +293,9 @@ export function EmployeeDialog({
         severance_fund: form.severance_fund.trim() || null,
         arl: form.arl.trim() || null,
         compensation_fund: form.compensation_fund.trim() || null,
+        has_medical_exam: form.has_medical_exam === "si",
+        medical_exam_date:
+          form.has_medical_exam === "si" ? form.medical_exam_date || null : null,
         company_id: form.company_id,
         position: form.position.trim(),
         work_location: form.work_location.trim() || null,
@@ -316,7 +331,7 @@ export function EmployeeDialog({
           : "¡Empleado creado exitosamente!",
         details: [
           { label: "Empleado", value: full_name },
-          { label: "Cédula", value: row.cedula },
+          { label: ID_TYPE_LABELS[row.id_type] ?? "Documento", value: row.cedula },
           { label: "Cargo", value: row.position || "Sin cargo" },
           { label: "Empresa", value: companyName },
         ],
@@ -397,8 +412,26 @@ export function EmployeeDialog({
           </div>
 
           <div className="space-y-1.5">
+            <Label>
+              Tipo de documento <span className="text-destructive">*</span>
+            </Label>
+            <Select value={form.id_type} onValueChange={(v) => set({ id_type: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ID_TYPE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="cedula">
-              Cédula <span className="text-destructive">*</span>
+              N° de documento <span className="text-destructive">*</span>
             </Label>
             <Input
               id="cedula"
@@ -410,7 +443,7 @@ export function EmployeeDialog({
             />
             {employee ? (
               <p className="text-[11px] text-muted-foreground">
-                La cédula es el identificador único y no se puede modificar.
+                El número de documento es el identificador único y no se puede modificar.
               </p>
             ) : (
               err("cedula")
@@ -520,6 +553,43 @@ export function EmployeeDialog({
           {textField("severance_fund", "Fondo de cesantías", "Protección, FNA…")}
           {textField("arl", "ARL", "Positiva, Sura…")}
           {textField("compensation_fund", "Caja de compensación", "Comfaboy…")}
+
+          {sectionTitle("Exámenes médicos")}
+          <div className="space-y-1.5">
+            <Label>¿Tiene exámenes médicos?</Label>
+            <Select
+              value={form.has_medical_exam}
+              onValueChange={(v) =>
+                set({
+                  has_medical_exam: v,
+                  medical_exam_date: v === "no" ? "" : form.medical_exam_date,
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="si">Sí</SelectItem>
+                <SelectItem value="no">No</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="medical_exam_date">
+              Fecha del examen
+              {form.has_medical_exam === "si" && <span className="text-destructive"> *</span>}
+            </Label>
+            <Input
+              id="medical_exam_date"
+              type="date"
+              disabled={form.has_medical_exam === "no"}
+              className={cls("medical_exam_date")}
+              value={form.medical_exam_date}
+              onChange={(e) => set({ medical_exam_date: e.target.value })}
+            />
+            {err("medical_exam_date")}
+          </div>
 
           {sectionTitle("Información laboral")}
 
