@@ -1,14 +1,25 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DOTACION_SECCIONES, dotacionFilas, type DotacionInput } from "@/lib/dotacion";
+import type { Company } from "@/lib/hr";
+
+const SIN_LOGO = "none";
 
 interface Props {
   value: DotacionInput;
   onChange: (next: DotacionInput) => void;
+  companies: readonly Company[];
 }
 
-export function DotacionForm({ value, onChange }: Props) {
+export function DotacionForm({ value, onChange, companies }: Props) {
   const set = <K extends keyof DotacionInput>(key: K, v: DotacionInput[K]) =>
     onChange({ ...value, [key]: v });
 
@@ -29,6 +40,28 @@ export function DotacionForm({ value, onChange }: Props) {
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Datos del funcionario
       </p>
+      <div className="space-y-1">
+        <Label htmlFor="dot-empresa" className="text-xs">
+          Logo (empresa)
+        </Label>
+        <Select
+          value={value.empresaId ?? SIN_LOGO}
+          onValueChange={(v) => set("empresaId", v === SIN_LOGO ? null : v)}
+        >
+          <SelectTrigger id="dot-empresa">
+            <SelectValue placeholder="Elige la empresa" />
+          </SelectTrigger>
+          <SelectContent>
+            {companies.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+                {!c.logo_path && " (sin logo)"}
+              </SelectItem>
+            ))}
+            <SelectItem value={SIN_LOGO}>Sin logo</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="space-y-1">
         <Label htmlFor="dot-fecha" className="text-xs">
           Fecha de entrega

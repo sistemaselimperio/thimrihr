@@ -13,6 +13,7 @@ import {
 } from "@/components/hr/SpecialDocPreviews";
 import {
   dotacionDefaults,
+  dotacionLogoPath,
   dotacionText,
   isDotacion,
   validateDotacion,
@@ -93,6 +94,8 @@ export const dotacionDoc: SpecialDoc<DotacionInput> = {
   downloadPdf: (i, logoUrl) => downloadDotacionPdf({ input: i, logoUrl }),
   Form: DotacionForm,
   Preview: DotacionPreview,
+  /* El logo es el de la empresa elegida en el formulario. */
+  logoPath: (i, { companies }) => dotacionLogoPath(i.empresaId, companies),
   share: {
     pack: (i) => ({ input: i }),
     Preview: DotSharedPreview,

@@ -5,6 +5,7 @@ import {
   DOTACION_ITEMS,
   dotacionDefaults,
   dotacionFechaPartes,
+  dotacionLogoPath,
   dotacionText,
   isDotacion,
   validateDotacion,
@@ -15,6 +16,7 @@ const employee = {
   full_name: "Luis Fernando Pineda Moreno",
   cedula: "1053348102",
   position: "MOSTRADOR",
+  company_id: "empresa-1",
 } as Employee;
 
 const keyOf = (seccion: string, label: string) =>
@@ -58,6 +60,7 @@ describe("dotacionDefaults", () => {
     assert.equal(d.cargo, employee.position);
     assert.equal(d.proceso, "");
     assert.deepEqual(d.entregados, []);
+    assert.equal(d.empresaId, "empresa-1");
     assert.match(d.fecha, /^\d{4}-\d{2}-\d{2}$/);
   });
 });
@@ -70,6 +73,23 @@ describe("validateDotacion", () => {
       validateDotacion({ ...d, entregados: [keyOf("dotacion", "Camisa oxford")] }),
       null,
     );
+  });
+});
+
+describe("dotacionLogoPath", () => {
+  const companies = [
+    { id: "empresa-1", logo_path: "a/logo1.png" },
+    { id: "empresa-2", logo_path: null },
+  ];
+
+  it("uses the logo of the selected company", () => {
+    assert.equal(dotacionLogoPath("empresa-1", companies), "a/logo1.png");
+  });
+
+  it("returns null without company, without logo or for unknown ids", () => {
+    assert.equal(dotacionLogoPath(null, companies), null);
+    assert.equal(dotacionLogoPath("empresa-2", companies), null);
+    assert.equal(dotacionLogoPath("otra", companies), null);
   });
 });
 

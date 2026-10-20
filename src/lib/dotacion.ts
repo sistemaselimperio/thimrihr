@@ -93,6 +93,8 @@ export interface DotacionInput {
   cedula: string;
   cargo: string;
   proceso: string;
+  /** Empresa cuyo logo lleva el formato; por defecto la del empleado. */
+  empresaId: string | null;
   /** Claves de DOTACION_ITEMS entregadas. */
   entregados: string[];
 }
@@ -114,8 +116,17 @@ export function dotacionDefaults(employee: Employee): DotacionInput {
     cedula: employee.cedula,
     cargo: employee.position,
     proceso: "",
+    empresaId: employee.company_id,
     entregados: [],
   };
+}
+
+/** Ruta del logo de la empresa elegida, o null si no tiene. */
+export function dotacionLogoPath(
+  empresaId: string | null | undefined,
+  companies: readonly { id: string; logo_path?: string | null }[],
+): string | null {
+  return companies.find((c) => c.id === empresaId)?.logo_path ?? null;
 }
 
 export function validateDotacion(i: DotacionInput): string | null {
