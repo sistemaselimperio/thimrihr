@@ -42,6 +42,9 @@ import type { AnySpecialDoc, SpecialDoc } from "@/lib/special-doc";
 
 /* ----------------------------------------------------------- liquidación */
 
+/** Validación contra la calculadora del MinTrabajo: oculta hasta que esté bien configurada. */
+const MINTRABAJO_ENABLED = false;
+
 export const liquidacionDoc: SpecialDoc<
   LiquidacionInput,
   { input: LiquidacionInput; calc: LiquidacionCalc }
@@ -56,7 +59,7 @@ export const liquidacionDoc: SpecialDoc<
     downloadLiquidacionPdf({ input: i, calc: calcLiquidacion(i), logoUrl }),
   Form: LiquidacionForm,
   Preview: LiqPreview,
-  Aside: LiqAside,
+  ...(MINTRABAJO_ENABLED ? { Aside: LiqAside } : {}),
   /* En la liquidación el logo lo define la dependencia elegida. */
   logoPath: (i, { companies, isleroLogoPath }) =>
     dependenciaLogoPath(i.dependenciaKey, companies, isleroLogoPath),
