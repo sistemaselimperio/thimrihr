@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
+import { MinTrabajoValidation } from "@/components/hr/MinTrabajoValidation";
 import { NominaPreview } from "@/components/hr/NominaPreview";
 import { DotacionPreview } from "@/components/hr/DotacionPreview";
 import type { DotacionInput } from "@/lib/dotacion";
@@ -18,6 +19,11 @@ export function LiqPreview({ input, logo }: { input: LiquidacionInput; logo: str
       companyName={input.dependencia || undefined}
     />
   );
+}
+
+export function LiqAside({ input }: { input: LiquidacionInput }) {
+  const calc = useMemo(() => calcLiquidacion(input), [input]);
+  return <MinTrabajoValidation input={input} calc={calc} />;
 }
 
 export function NomPreview({ input, logo }: { input: NominaInput; logo: string | null }) {

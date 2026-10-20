@@ -6,6 +6,7 @@ import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
 import { NominaForm } from "@/components/hr/NominaForm";
 import {
   DotSharedPreview,
+  LiqAside,
   LiqPreview,
   LiqSharedPreview,
   NomPreview,
@@ -54,6 +55,7 @@ export const liquidacionDoc: SpecialDoc<
     downloadLiquidacionPdf({ input: i, calc: calcLiquidacion(i), logoUrl }),
   Form: LiquidacionForm,
   Preview: LiqPreview,
+  Aside: LiqAside,
   /* En la liquidación el logo lo define la dependencia elegida. */
   logoPath: (i, { companies, isleroLogoPath }) =>
     dependenciaLogoPath(i.dependenciaKey, companies, isleroLogoPath),
