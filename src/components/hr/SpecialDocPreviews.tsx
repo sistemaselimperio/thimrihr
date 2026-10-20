@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
 import { NominaPreview } from "@/components/hr/NominaPreview";
-import { calcLiquidacion, type LiquidacionInput } from "@/lib/liquidacion";
+import { DotacionPreview } from "@/components/hr/DotacionPreview";
+import type { DotacionInput } from "@/lib/dotacion";
+import { calcLiquidacion, type LiquidacionCalc, type LiquidacionInput } from "@/lib/liquidacion";
 import { calcNomina, type NominaInput } from "@/lib/nomina";
 
 export function LiqPreview({ input, logo }: { input: LiquidacionInput; logo: string | null }) {
@@ -21,4 +23,33 @@ export function LiqPreview({ input, logo }: { input: LiquidacionInput; logo: str
 export function NomPreview({ input, logo }: { input: NominaInput; logo: string | null }) {
   const calc = useMemo(() => calcNomina(input), [input]);
   return <NominaPreview input={input} calc={calc} logo={logo} />;
+}
+
+/* ------------------------------------------- vistas de los links de firma */
+
+interface SharedViewProps<S> {
+  data: S;
+  logo: string | null;
+  firma: string | null;
+}
+
+/** La liquidación compartida conserva el cálculo con el que se envió. */
+export function LiqSharedPreview({
+  data,
+  logo,
+  firma,
+}: SharedViewProps<{ input: LiquidacionInput; calc: LiquidacionCalc }>) {
+  return (
+    <LiquidacionPreview
+      input={data.input}
+      calc={data.calc}
+      logo={logo}
+      companyName={data.input.dependencia || undefined}
+      firma={firma}
+    />
+  );
+}
+
+export function DotSharedPreview({ data, logo, firma }: SharedViewProps<{ input: DotacionInput }>) {
+  return <DotacionPreview input={data.input} logo={logo} firma={firma} />;
 }

@@ -14,8 +14,19 @@ export interface SpecialDocContext {
   companies: readonly Company[];
 }
 
-export interface SpecialDoc<I> {
+/** Envío del documento por link para que el trabajador lo firme. */
+export interface SpecialDocShare<I, S> {
+  /** Datos que se guardan en el link; la página de firma los recibe tal cual. */
+  pack: (input: I) => S;
+  Preview: ComponentType<{ data: S; logo: string | null; firma: string | null }>;
+  downloadPdf: (data: S, logoUrl: string | null, firma: string | null) => Promise<boolean>;
+}
+
+export interface SpecialDoc<I, S = { input: I }> {
+  /** También es el `kind` guardado en los links de firma: no cambiarlo. */
   key: string;
+  /** Nombre en minúsculas para textos: "liquidación", "entrega de dotación". */
+  label: string;
   matches: (t: TemplateLike) => boolean;
   defaults: (ctx: SpecialDocContext) => I;
   /** Mensaje de error para el usuario, o null si es válido. */
@@ -36,12 +47,14 @@ export interface SpecialDoc<I> {
     input: I,
     ctx: { companies: readonly Company[]; isleroLogoPath: string | null | undefined },
   ) => string | null;
+  /** Si existe, el documento se puede compartir para firmar. */
+  share?: SpecialDocShare<I, S>;
 }
 
 /* La página maneja tipos de documento distintos en un mismo estado: cada entrada del
    registro solo recibe el input que produjo su propio `defaults`. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AnySpecialDoc = SpecialDoc<any>;
+export type AnySpecialDoc = SpecialDoc<any, any>;
 
 /** El primero registrado gana cuando varias plantillas coinciden. */
 export function findSpecialDoc<D extends { matches: (t: TemplateLike) => boolean }>(
@@ -49,4 +62,12 @@ export function findSpecialDoc<D extends { matches: (t: TemplateLike) => boolean
   template: TemplateLike,
 ): D | undefined {
   return docs.find((d) => d.matches(template));
+}
+
+/** Documento firmable que corresponde al `kind` guardado en un link de firma. */
+export function findSignableDoc<D extends { key: string; share?: unknown }>(
+  docs: readonly D[],
+  kind: string,
+): D | undefined {
+  return docs.find((d) => d.key === kind && d.share);
 }

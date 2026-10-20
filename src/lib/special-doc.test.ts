@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { findSpecialDoc } from "./special-doc.ts";
+import { findSignableDoc, findSpecialDoc } from "./special-doc.ts";
 
 const doc = (key: string, re: RegExp) => ({
   key,
@@ -23,5 +23,25 @@ describe("findSpecialDoc", () => {
   it("first registered type wins when several match", () => {
     const t = { category: "otros", name: "Liquidación de nómina" };
     assert.equal(findSpecialDoc(docs, t)?.key, "liquidacion");
+  });
+});
+
+describe("findSignableDoc", () => {
+  const signable = [
+    { key: "liquidacion", share: {} },
+    { key: "nomina" },
+    { key: "dotacion", share: {} },
+  ];
+
+  it("finds a signable document by its stored kind", () => {
+    assert.equal(findSignableDoc(signable, "dotacion")?.key, "dotacion");
+  });
+
+  it("ignores documents that cannot be signed", () => {
+    assert.equal(findSignableDoc(signable, "nomina"), undefined);
+  });
+
+  it("returns undefined for unknown kinds", () => {
+    assert.equal(findSignableDoc(signable, "contrato"), undefined);
   });
 });

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import type { LiquidacionCalc, LiquidacionInput } from "./liquidacion";
+import type { Json } from "@/integrations/supabase/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PNG_PREFIX = "data:image/png;base64,";
@@ -13,21 +13,24 @@ function parseToken(input: unknown): string {
 }
 
 export interface SharedLiquidacionView {
+  /** Tipo de documento (clave del registro de documentos especiales). */
+  kind: string;
   employeeName: string;
-  data: { input: LiquidacionInput; calc: LiquidacionCalc };
+  /** Lo que guardó `share.pack` del documento; lo interpreta su propia vista. */
+  data: Json;
   firma: string | null;
   signedAt: string | null;
   logoUrl: string | null;
 }
 
-/** Lectura pública (sin sesión) de una liquidación compartida, por token. */
+/** Lectura pública (sin sesión) de un documento compartido para firmar, por token. */
 export const getSharedLiquidacion = createServerFn({ method: "POST" })
   .inputValidator((input: { token: string }) => ({ token: parseToken(input) }))
   .handler(async ({ data }): Promise<SharedLiquidacionView | null> => {
     const { appDbAdmin: supabaseAdmin } = await import("@/integrations/supabase/app.server");
     const { data: row, error } = await supabaseAdmin
       .from("shared_liquidaciones")
-      .select("employee_name, data, logo_path, firma, signed_at")
+      .select("kind, employee_name, data, logo_path, firma, signed_at")
       .eq("token", data.token)
       .maybeSingle();
     if (error) console.error("[getSharedLiquidacion] query failed:", error.code, error.message);
@@ -43,15 +46,16 @@ export const getSharedLiquidacion = createServerFn({ method: "POST" })
     }
 
     return {
+      kind: row.kind,
       employeeName: row.employee_name,
-      data: row.data as unknown as SharedLiquidacionView["data"],
+      data: row.data,
       firma: row.firma,
       signedAt: row.signed_at,
       logoUrl,
     };
   });
 
-/** Guarda la firma del trabajador (una sola vez) en una liquidación compartida. */
+/** Guarda la firma del trabajador (una sola vez) en un documento compartido. */
 export const signSharedLiquidacion = createServerFn({ method: "POST" })
   .inputValidator((input: { token: string; firma: string }) => {
     const token = parseToken(input);

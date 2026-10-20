@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DOTACION_ITEMS, type DotacionInput } from "@/lib/dotacion";
+import { DOTACION_SECCIONES, dotacionFilas, type DotacionInput } from "@/lib/dotacion";
 
 interface Props {
   value: DotacionInput;
@@ -47,26 +47,36 @@ export function DotacionForm({ value, onChange }: Props) {
       </div>
       {text("dot-proceso", "Proceso", "proceso")}
 
-      <p className="pt-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        Dotación entregada <span className="text-danger-foreground">*</span>
+      <p className="text-[11px] text-muted-foreground">
+        Marca al menos un elemento en cualquiera de las dos secciones.
       </p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {DOTACION_ITEMS.map((it) => {
-          const id = `dot-${it.key}`;
-          return (
-            <div key={it.key} className="flex items-center gap-2">
-              <Checkbox
-                id={id}
-                checked={value.entregados.includes(it.key)}
-                onCheckedChange={(c) => toggle(it.key, c === true)}
-              />
-              <Label htmlFor={id} className="text-xs font-normal">
-                {it.label}
-              </Label>
-            </div>
-          );
-        })}
-      </div>
+      {DOTACION_SECCIONES.map((s) => (
+        <div key={s.key} className="space-y-2">
+          <p className="pt-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {s.titulo}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {dotacionFilas(s.key)
+              .flat()
+              .map((it) => {
+                if (!it) return null;
+                const id = `dot-${it.key.replace(":", "-")}`;
+                return (
+                  <div key={it.key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={id}
+                      checked={value.entregados.includes(it.key)}
+                      onCheckedChange={(c) => toggle(it.key, c === true)}
+                    />
+                    <Label htmlFor={id} className="text-xs font-normal">
+                      {it.label}
+                    </Label>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

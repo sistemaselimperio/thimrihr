@@ -2,25 +2,26 @@ import {
   DOTACION_CODIGO,
   DOTACION_COMPROMISO,
   DOTACION_FECHA_FORMATO,
-  DOTACION_ITEMS,
+  DOTACION_SECCIONES,
   DOTACION_TITULO,
   DOTACION_VERSION,
   dotacionFechaPartes,
+  dotacionFilas,
   type DotacionInput,
 } from "@/lib/dotacion";
 
 interface Props {
   input: DotacionInput;
   logo: string | null;
+  /** Firma de quien recibe (PNG data URL). */
+  firma?: string | null;
 }
 
 const cell = "border border-black px-1.5 py-0.5";
 const band = "border border-black py-0.5 text-center font-bold";
 
-export function DotacionPreview({ input: i, logo }: Props) {
+export function DotacionPreview({ input: i, logo, firma }: Props) {
   const f = dotacionFechaPartes(i.fecha);
-  const col = (c: 0 | 1) => DOTACION_ITEMS.filter((it) => it.col === c);
-  const rows = col(0).map((l, k) => [l, col(1)[k]] as const);
   const mark = (key: string | undefined) => (key && i.entregados.includes(key) ? "X" : "");
 
   return (
@@ -83,19 +84,24 @@ export function DotacionPreview({ input: i, logo }: Props) {
           <span className="border-b border-black text-center">{i.proceso}</span>
         </div>
 
-        <div className={band}>DOTACION ENTREGADA</div>
-        <div className="grid grid-cols-[1fr_4rem_1fr_4rem] gap-x-3 px-6 py-1">
-          {rows.map(([l, r]) => (
-            <div key={l.key} className="contents">
-              <span>{l.label}</span>
-              <span className="border-b border-black text-center">{mark(l.key)}</span>
-              <span>{r?.label}</span>
-              <span className="border-b border-black text-center">{mark(r?.key)}</span>
+        {DOTACION_SECCIONES.map((s) => (
+          <div key={s.key}>
+            <div className={band}>{s.titulo}</div>
+            <div className="grid grid-cols-[1fr_4rem_1fr_4rem] gap-x-3 px-6 py-1">
+              {dotacionFilas(s.key).map(([l, r], k) => (
+                <div key={k} className="contents">
+                  <span>{l?.label}</span>
+                  <span className="border-b border-black text-center">{mark(l?.key)}</span>
+                  <span>{r?.label}</span>
+                  <span className="border-b border-black text-center">{mark(r?.key)}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
 
-        <div className="space-y-1 border-t border-black pt-1 text-justify">
+        <div className={band}>COMPROMISO</div>
+        <div className="space-y-1 pt-1 text-justify">
           {DOTACION_COMPROMISO.map((p) => (
             <p key={p.slice(0, 20)}>{p}</p>
           ))}
@@ -104,7 +110,14 @@ export function DotacionPreview({ input: i, logo }: Props) {
         <div className={`${band} mt-2 py-3`}>FIRMAS</div>
         <div className="grid grid-cols-2 gap-8 px-6 pt-14 pb-2">
           <div className="border-t border-black pt-1 text-center">QUIEN ENTREGA</div>
-          <div className="border-t border-black pt-1">
+          <div className="relative border-t border-black pt-1">
+            {firma && (
+              <img
+                src={firma}
+                alt="Firma de quien recibe"
+                className="absolute bottom-full left-0 mb-1 h-14 object-contain"
+              />
+            )}
             FIRMA DE QUIEN RECIBE EL ELEMENTO Y LEE EL COMPROMISO
             <br />
             C.C. No {i.cedula}

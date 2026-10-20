@@ -5,15 +5,15 @@ import { CheckCircle2, FileDown, Loader2, PenTool } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
 import { SignatureDialog } from "@/components/hr/SignatureDialog";
-import { downloadLiquidacionPdf } from "@/lib/pdf-doc";
+import { SPECIAL_DOCS } from "@/components/hr/special-docs";
 import { getSharedLiquidacion, signSharedLiquidacion } from "@/lib/shared-liquidacion.functions";
+import { findSignableDoc } from "@/lib/special-doc";
 
 export const Route = createFileRoute("/firmar/$token")({
   head: () => ({
     meta: [
-      { title: "Firmar liquidación · imperiorrhco" },
+      { title: "Firmar documento · imperiorrhco" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -32,7 +32,10 @@ function FirmarPage() {
   const [sending, setSending] = useState(false);
   const [justSigned, setJustSigned] = useState(false);
 
-  if (!loaded) {
+  const doc = loaded ? findSignableDoc(SPECIAL_DOCS, loaded.kind) : undefined;
+  const share = doc?.share;
+
+  if (!loaded || !doc || !share) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="max-w-md text-center">
@@ -59,7 +62,7 @@ function FirmarPage() {
         setDraft(null);
         setJustSigned(true);
       } else if (res.reason === "already_signed") {
-        toast.error("Esta liquidación ya fue firmada.");
+        toast.error("Este documento ya fue firmado.");
         window.location.reload();
       } else {
         toast.error("El enlace ya no está disponible.");
@@ -73,7 +76,7 @@ function FirmarPage() {
 
   const download = async () => {
     try {
-      await downloadLiquidacionPdf({ input: data.input, calc: data.calc, logoUrl, firma });
+      await share.downloadPdf(data, logoUrl, firma);
     } catch {
       toast.error("No se pudo generar el PDF.");
     }
@@ -83,7 +86,9 @@ function FirmarPage() {
     <main className="min-h-screen bg-background px-3 py-6 sm:px-6">
       <div className="mx-auto max-w-3xl space-y-5">
         <header className="space-y-1 text-center">
-          <h1 className="font-display text-2xl font-bold">Liquidación de {employeeName}</h1>
+          <h1 className="font-display text-2xl font-bold first-letter:uppercase">
+            {doc.label} de {employeeName}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {signed
               ? "Este documento ya fue firmado."
@@ -92,13 +97,7 @@ function FirmarPage() {
         </header>
 
         <div className="overflow-x-auto rounded-xl border bg-surface p-2 shadow-panel sm:p-4">
-          <LiquidacionPreview
-            input={data.input}
-            calc={data.calc}
-            logo={logoUrl}
-            companyName={data.input.dependencia || undefined}
-            firma={preview}
-          />
+          <share.Preview data={data} logo={logoUrl} firma={preview} />
         </div>
 
         <div className="flex flex-col items-stretch gap-3 sm:items-center">
@@ -148,7 +147,7 @@ function FirmarPage() {
         open={open}
         onOpenChange={setOpen}
         onSave={setDraft}
-        title={`Firma de ${data.input.nombre || employeeName}`}
+        title={`Firma de ${employeeName}`}
       />
     </main>
   );

@@ -44,7 +44,7 @@ export function SharedLiquidacionEditor({ shared, onOpenChange }: Props) {
             tasaIntereses: 0.12,
             valorCesantias: null,
             observaciones: "",
-            ...(shared.data.input as Partial<LiquidacionInput>),
+            ...((shared.data as { input?: Partial<LiquidacionInput> }).input ?? {}),
           } as LiquidacionInput)
         : null,
     );

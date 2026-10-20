@@ -9,43 +9,76 @@ export const DOTACION_VERSION = "002";
 export const DOTACION_TITULO =
   "FORMATO ENTREGA DE ELEMENTOS DE PROTECCIÓN PERSONAL Y DOTACIÓN DE TRABAJO";
 
+export type DotacionSeccion = "dotacion";
+
+export const DOTACION_SECCIONES: { key: DotacionSeccion; titulo: string }[] = [
+  { key: "dotacion", titulo: "DOTACION ENTREGADA" },
+];
+
 export interface DotacionItem {
+  /** Única entre secciones: "seccion:etiqueta_normalizada". */
   key: string;
   label: string;
+  seccion: DotacionSeccion;
   /** Columna del formato: 0 = izquierda, 1 = derecha. */
   col: 0 | 1;
 }
 
-const left = [
-  ["overol", "Overol"],
-  ["pantalon", "Pantalon"],
-  ["antifluido", "Antifluido"],
-  ["bota_impermeable_sin_puntera", "Bota Impermeables sin Puntera"],
-  ["guantes_hilo_pvc", "Guantes Hilo y PVC"],
-  ["guantes_dielectricos", "Guantes Dieléctricos"],
-  ["camisa_reflectiva", "Camisa reflectiva"],
-  ["chaqueta", "Chaqueta"],
-  ["camisa_oxford", "Camisa oxford"],
-  ["delantal_carnaza", "Delantal de Carnaza"],
-] as const;
+/* Etiquetas tal cual aparecen en el formato, en orden: [columna izquierda, columna derecha]. */
+const CATALOGO: Record<DotacionSeccion, [string[], string[]]> = {
+  dotacion: [
+    [
+      "Camiseta Tipo Polo",
+      "Overol",
+      "Antifluido",
+      "Bota Impermeables sin Puntera",
+      "Guantes Hilo y PVC",
+      "Guantes Dieléctricos",
+      "Camisa reflectiva",
+      "Tapabocas Prehormado",
+      "Camisa oxford",
+      "Delantal de Carnaza",
+    ],
+    [
+      "Protector Auditivo Tipo Orejera",
+      "Bota de Cuero con Puntera Dieléctrica",
+      "Botas Impermeables con Puntera Acero",
+      "Gafas de Seguridad",
+      "Guantes en Carnaza",
+      "Guantes para Soldador",
+      "Careta para Soldar",
+      "Respirador Contra Gases y Vapores",
+      "Barbuquejo",
+      "Poncho en PVC con Capucha",
+    ],
+  ],
+};
 
-const right = [
-  ["protector_auditivo", "Protector Auditivo Tipo Orejera"],
-  ["bota_cuero_dielectrica", "Bota de Cuero con Puntera Dieléctrica"],
-  ["botas_impermeables_puntera_acero", "Botas Impermeables con Puntera Acero"],
-  ["gafas_seguridad", "Gafas de Seguridad"],
-  ["guantes_carnaza", "Guantes en Carnaza"],
-  ["guantes_soldador", "Guantes para Soldador"],
-  ["careta_soldar", "Careta para Soldar"],
-  ["respirador", "Respirador Contra Gases y Vapores"],
-  ["gorra", "Gorra"],
-  ["poncho_pvc", "Poncho en PVC con Capucha"],
-] as const;
+function itemKey(seccion: DotacionSeccion, label: string): string {
+  const slug = label
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return `${seccion}:${slug}`;
+}
 
-export const DOTACION_ITEMS: DotacionItem[] = [
-  ...left.map(([key, label]) => ({ key, label, col: 0 as const })),
-  ...right.map(([key, label]) => ({ key, label, col: 1 as const })),
-];
+export const DOTACION_ITEMS: DotacionItem[] = DOTACION_SECCIONES.flatMap(({ key: seccion }) =>
+  CATALOGO[seccion].flatMap((labels, col) =>
+    labels.map((label) => ({ key: itemKey(seccion, label), label, seccion, col: col as 0 | 1 })),
+  ),
+);
+
+/** Filas de una sección: pares [izquierda, derecha] en el orden del formato. */
+export function dotacionFilas(
+  seccion: DotacionSeccion,
+): [DotacionItem | undefined, DotacionItem | undefined][] {
+  const of = (col: 0 | 1) =>
+    DOTACION_ITEMS.filter((it) => it.seccion === seccion && it.col === col);
+  const [l, r] = [of(0), of(1)];
+  return Array.from({ length: Math.max(l.length, r.length) }, (_, k) => [l[k], r[k]]);
+}
 
 export const DOTACION_COMPROMISO = [
   "Me comprometo a utilizar adecuadamente durante la jornada laboral los elementos de proteccion personal recibidos y mantenerlos en buen estado, dando cumplimiento a las normas del SG-SST contribuyen a mi bienestar físico, psicológico y social. Declaro que he recibido información sobre el uso adecuado de los mismos.",
@@ -86,7 +119,7 @@ export function dotacionDefaults(employee: Employee): DotacionInput {
 }
 
 export function validateDotacion(i: DotacionInput): string | null {
-  return i.entregados.length ? null : "Marca al menos un elemento de dotación entregado.";
+  return i.entregados.length ? null : "Marca al menos un elemento entregado.";
 }
 
 /** "2026-04-30" →{ dd: "30", mm: "4", aaaa: "2026" } */
@@ -98,9 +131,12 @@ export function dotacionFechaPartes(iso: string): { dd: string; mm: string; aaaa
 
 export function dotacionText(i: DotacionInput): string {
   const f = dotacionFechaPartes(i.fecha);
-  const items = DOTACION_ITEMS.filter((it) => i.entregados.includes(it.key)).map(
-    (it) => `- ${it.label}`,
-  );
+  const secciones = DOTACION_SECCIONES.flatMap(({ key, titulo }) => {
+    const items = DOTACION_ITEMS.filter(
+      (it) => it.seccion === key && i.entregados.includes(it.key),
+    );
+    return items.length ? ["", `${titulo}:`, ...items.map((it) => `- ${it.label}`)] : [];
+  });
   return [
     DOTACION_TITULO,
     `FECHA: ${f.dd}/${f.mm}/${f.aaaa}`,
@@ -109,8 +145,6 @@ export function dotacionText(i: DotacionInput): string {
     `C.C. ${i.cedula}`,
     `CARGO: ${i.cargo}`,
     `PROCESO: ${i.proceso}`,
-    "",
-    "DOTACIÓN ENTREGADA:",
-    ...(items.length ? items : ["(ninguna)"]),
+    ...(secciones.length ? secciones : ["", "(sin elementos entregados)"]),
   ].join("\n");
 }

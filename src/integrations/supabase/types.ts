@@ -545,6 +545,7 @@ export type Database = {
           employee_name: string
           firma: string | null
           id: string
+          kind: string
           logo_path: string | null
           signed_at: string | null
           token: string
@@ -557,6 +558,7 @@ export type Database = {
           employee_name: string
           firma?: string | null
           id?: string
+          kind?: string
           logo_path?: string | null
           signed_at?: string | null
           token?: string
@@ -569,6 +571,7 @@ export type Database = {
           employee_name?: string
           firma?: string | null
           id?: string
+          kind?: string
           logo_path?: string | null
           signed_at?: string | null
           token?: string

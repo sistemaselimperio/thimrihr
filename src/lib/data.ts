@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { LiquidacionCalc, LiquidacionInput } from "./liquidacion";
+import type { Json } from "@/integrations/supabase/types";
 import { setHolidayRegistry, type Holiday } from "./holidays";
 import { syncHolidays } from "./holidays.functions";
 import type {
@@ -50,11 +50,14 @@ export interface GeneratedDocument {
 }
 
 export interface SharedLiquidacion {
+  /** Tipo de documento: clave del registro de documentos especiales. */
+  kind: string;
   id: string;
   token: string;
   employee_id: string | null;
   employee_name: string;
-  data: { input: LiquidacionInput; calc: LiquidacionCalc };
+  /** Lo que guardó `share.pack` del documento (ver `kind`). */
+  data: Json;
   logo_path: string | null;
   firma: string | null;
   signed_at: string | null;

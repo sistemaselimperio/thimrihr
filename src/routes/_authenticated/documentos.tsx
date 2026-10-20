@@ -65,11 +65,10 @@ import {
 } from "@/lib/data";
 import { categoryLabel, fillTemplate, renderDocument } from "@/lib/documents";
 import { AUTENTIC_URL } from "@/lib/print-doc";
-import { downloadDocumentPdf, downloadLiquidacionPdf } from "@/lib/pdf-doc";
-import { calcLiquidacion, type LiquidacionInput } from "@/lib/liquidacion";
+import { downloadDocumentPdf } from "@/lib/pdf-doc";
 import { SharedLiquidacionEditor } from "@/components/hr/SharedLiquidacionEditor";
 import { SPECIAL_DOCS, liquidacionDoc } from "@/components/hr/special-docs";
-import { findSpecialDoc } from "@/lib/special-doc";
+import { findSignableDoc, findSpecialDoc } from "@/lib/special-doc";
 import { DocumentText } from "@/components/hr/DocumentText";
 import { fmtDate } from "@/lib/hr";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,12 +136,10 @@ function DocumentsPage() {
   const setInput = (next: unknown) => kind && setSpecial({ key: kind.key, input: next });
   const active = kind && input ? kind : undefined;
 
-  const liq = active === liquidacionDoc ? (input as LiquidacionInput) : null;
-  const liqCalc = useMemo(() => (liq ? calcLiquidacion(liq) : null), [liq]);
-
   /* Enlace público para que el trabajador firme su liquidación. */
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareName, setShareName] = useState("");
+  /* Nombre del trabajador y del documento para el mensaje de WhatsApp. */
+  const [shareFor, setShareFor] = useState({ name: "", label: "" });
   const [sharing, setSharing] = useState(false);
 
   const { data: isleroLogo } = useIsleroLogo();
@@ -329,22 +326,23 @@ function DocumentsPage() {
   };
 
   const share = async () => {
-    if (!guard() || !liq || !liqCalc || !employee || !validateSpecial()) return;
+    if (!guard() || !active?.share || !employee || !validateSpecial()) return;
     setSharing(true);
     try {
       const { data, error } = await supabase
         .from("shared_liquidaciones")
         .insert({
+          kind: active.key,
           employee_id: employee.id,
           employee_name: employee.full_name,
-          data: JSON.parse(JSON.stringify({ input: liq, calc: liqCalc })),
+          data: JSON.parse(JSON.stringify(active.share.pack(input))),
           logo_path: logoPath,
         })
         .select("token")
         .single();
       if (error) throw new Error(error.message);
       await qc.invalidateQueries({ queryKey: qk.shared });
-      setShareName(employee.full_name);
+      setShareFor({ name: employee.full_name, label: active.label });
       setShareUrl(linkFor(data.token));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo crear el link");
@@ -353,20 +351,19 @@ function DocumentsPage() {
     }
   };
 
-  const whatsappHref = (url: string, name: string) =>
+  const whatsappHref = (url: string, name: string, label: string) =>
     `https://wa.me/?text=${encodeURIComponent(
-      `Hola ${name}, aquí puedes revisar y firmar tu liquidación: ${url}`,
+      `Hola ${name}, aquí puedes revisar y firmar tu ${label}: ${url}`,
     )}`;
+
+  const sharedDoc = (s: SharedLiquidacion) => findSignableDoc(SPECIAL_DOCS, s.kind);
 
   const downloadShared = async (s: SharedLiquidacion) => {
     try {
       const url = s.logo_path && !s.logo_path.endsWith(".pdf") ? await logoUrl(s.logo_path) : null;
-      await downloadLiquidacionPdf({
-        input: s.data.input,
-        calc: s.data.calc,
-        logoUrl: url,
-        firma: s.firma,
-      });
+      const share = sharedDoc(s)?.share;
+      if (!share) throw new Error(`Tipo de documento desconocido: ${s.kind}`);
+      await share.downloadPdf(s.data, url, s.firma);
     } catch {
       toast.error("No se pudo generar el PDF.");
     }
@@ -376,7 +373,7 @@ function DocumentsPage() {
     try {
       await deleteRow("shared_liquidaciones", id);
       await qc.invalidateQueries({ queryKey: qk.shared });
-      toast.success("Liquidación compartida eliminada");
+      toast.success("Documento compartido eliminado");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo eliminar");
     }
@@ -424,7 +421,7 @@ function DocumentsPage() {
           <TabsTrigger value="base">Documentos base</TabsTrigger>
           <TabsTrigger value="generar">Generar PDF</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
-          <TabsTrigger value="compartidas">Liquidaciones compartidas</TabsTrigger>
+          <TabsTrigger value="compartidas">Para firmar</TabsTrigger>
         </TabsList>
 
         {/* ------------------------------------------------ documentos base */}
@@ -449,21 +446,19 @@ function DocumentsPage() {
                     <p className="text-[11px] text-muted-foreground">
                       Creado: {t.created_at ? fmtDate(t.created_at.slice(0, 10)) : "—"}
                     </p>
-                    {!t.body?.trim() && (
-                      <p className="text-[11px] text-warning-foreground">
-                        Plantilla del sistema: edítala para usar tu propio texto.
-                      </p>
-                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => openEdit(t)}
-                    >
-                      <Pencil className="size-3.5" /> Editar
-                    </Button>
+                    {/* Los documentos especiales no usan el texto de la plantilla: no se editan. */}
+                    {!findSpecialDoc(SPECIAL_DOCS, t) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => openEdit(t)}
+                      >
+                        <Pencil className="size-3.5" /> Editar
+                      </Button>
+                    )}
                     <Button size="sm" variant="success" className="gap-1.5" onClick={() => use(t)}>
                       <FileDown className="size-3.5" /> Usar
                     </Button>
@@ -580,7 +575,7 @@ function DocumentsPage() {
                 <Button variant="success" className="gap-2" onClick={() => void generatePdf()}>
                   <FileDown className="size-4" /> Descargar PDF
                 </Button>
-                {liq && (
+                {active?.share && (
                   <Button
                     variant="outline"
                     className="gap-2"
@@ -683,11 +678,12 @@ function DocumentsPage() {
           )}
         </TabsContent>
 
-        {/* ------------------------------------------ liquidaciones compartidas */}
+        {/* --------------------------------------- documentos compartidos para firmar */}
         <TabsContent value="compartidas" className="mt-4">
           {shared.length === 0 ? (
             <div className="rounded-xl border bg-surface p-8 text-center text-sm text-muted-foreground shadow-panel">
-              Aún no has compartido liquidaciones. Usa “Compartir” al generar una liquidación.
+              Aún no has compartido documentos. Usa “Compartir” al generar una liquidación o una
+              entrega de dotación.
             </div>
           ) : (
             <div className="space-y-2">
@@ -697,8 +693,11 @@ function DocumentsPage() {
                   className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-surface p-4 shadow-panel"
                 >
                   <div className="space-y-0.5">
-                    <p className="flex items-center gap-2 text-sm font-medium">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
                       {s.employee_name}
+                      <Badge variant="outline" className="first-letter:uppercase">
+                        {sharedDoc(s)?.label ?? s.kind}
+                      </Badge>
                       {s.signed_at ? (
                         <Badge variant="secondary">
                           Firmada · {fmtDate(s.signed_at.slice(0, 10))}
@@ -728,7 +727,7 @@ function DocumentsPage() {
                     >
                       <FileDown className="size-3.5" /> Descargar PDF
                     </Button>
-                    {!s.signed_at && (
+                    {!s.signed_at && s.kind === liquidacionDoc.key && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -751,7 +750,7 @@ function DocumentsPage() {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>
-                            ⚠️ ¿Eliminar la liquidación de {s.employee_name}?
+                            ⚠️ ¿Eliminar el documento de {s.employee_name}?
                           </AlertDialogTitle>
                           <AlertDialogDescription>
                             El link dejará de funcionar y se perderá la firma guardada.
@@ -783,7 +782,7 @@ function DocumentsPage() {
           <DialogHeader>
             <DialogTitle>Link para firmar</DialogTitle>
             <DialogDescription>
-              Envía este link al trabajador. Solo verá su liquidación y podrá firmarla.
+              Envía este link al trabajador. Solo verá su {shareFor.label} y podrá firmarla.
             </DialogDescription>
           </DialogHeader>
           <Input readOnly value={shareUrl ?? ""} onFocus={(e) => e.currentTarget.select()} />
@@ -798,7 +797,7 @@ function DocumentsPage() {
             </Button>
             <Button type="button" variant="success" className="gap-2" asChild>
               <a
-                href={shareUrl ? whatsappHref(shareUrl, shareName) : "#"}
+                href={shareUrl ? whatsappHref(shareUrl, shareFor.name, shareFor.label) : "#"}
                 target="_blank"
                 rel="noopener noreferrer"
               >

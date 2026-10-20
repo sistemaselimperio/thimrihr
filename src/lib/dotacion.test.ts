@@ -12,10 +12,13 @@ import {
 import type { Employee } from "./hr";
 
 const employee = {
-  full_name: "Marlon Estiven Saavedra Sarmiento",
-  cedula: "1002623209",
-  position: "Auxiliar de Bodega",
+  full_name: "Luis Fernando Pineda Moreno",
+  cedula: "1053348102",
+  position: "MOSTRADOR",
 } as Employee;
+
+const keyOf = (seccion: string, label: string) =>
+  DOTACION_ITEMS.find((i) => i.seccion === seccion && i.label === label)!.key;
 
 describe("isDotacion", () => {
   it("detects by category or by name", () => {
@@ -23,6 +26,27 @@ describe("isDotacion", () => {
     assert.equal(isDotacion({ category: "otros", name: "Entrega de dotación" }), true);
     assert.equal(isDotacion({ category: "otros", name: "Entrega de dotacion" }), true);
     assert.equal(isDotacion({ category: "nomina", name: "Nómina" }), false);
+  });
+});
+
+describe("DOTACION_ITEMS", () => {
+  it("has a single section with 20 items split evenly in two columns", () => {
+    assert.ok(DOTACION_ITEMS.every((i) => i.seccion === "dotacion"));
+    assert.equal(DOTACION_ITEMS.length, 20);
+    assert.equal(DOTACION_ITEMS.filter((i) => i.col === 0).length, 10);
+  });
+
+  it("has unique keys", () => {
+    const keys = DOTACION_ITEMS.map((i) => i.key);
+    assert.equal(new Set(keys).size, keys.length);
+  });
+
+  it("uses the current format labels", () => {
+    const labels = DOTACION_ITEMS.map((i) => i.label);
+    assert.equal(labels[0], "Camiseta Tipo Polo");
+    assert.ok(labels.includes("Barbuquejo"));
+    assert.equal(labels.includes("BATA"), false);
+    assert.equal(labels.includes("Casco"), false);
   });
 });
 
@@ -42,7 +66,10 @@ describe("validateDotacion", () => {
   it("requires at least one delivered item", () => {
     const d = dotacionDefaults(employee);
     assert.equal(typeof validateDotacion(d), "string");
-    assert.equal(validateDotacion({ ...d, entregados: ["gorra"] }), null);
+    assert.equal(
+      validateDotacion({ ...d, entregados: [keyOf("dotacion", "Camisa oxford")] }),
+      null,
+    );
   });
 });
 
@@ -58,12 +85,12 @@ describe("dotacionText", () => {
     const d = {
       ...dotacionDefaults(employee),
       fecha: "2026-04-30",
-      entregados: ["gorra", "overol", "bota_cuero_dielectrica"],
+      entregados: [keyOf("dotacion", "Barbuquejo"), keyOf("dotacion", "Camiseta Tipo Polo")],
     };
     const text = dotacionText(d);
     assert.match(text, /30\/4\/2026/);
-    assert.match(text, /MARLON ESTIVEN SAAVEDRA SARMIENTO/);
-    const order = ["Overol", "Bota de Cuero con Puntera Dieléctrica", "Gorra"].map((l) =>
+    assert.match(text, /LUIS FERNANDO PINEDA MORENO/);
+    const order = ["DOTACION ENTREGADA:", "Camiseta Tipo Polo", "Barbuquejo"].map((l) =>
       text.indexOf(l),
     );
     assert.ok(order.every((i) => i >= 0));
@@ -71,11 +98,6 @@ describe("dotacionText", () => {
       [...order].sort((a, b) => a - b),
       order,
     );
-    assert.equal(text.includes("Pantalon"), false);
-  });
-
-  it("has unique item keys", () => {
-    const keys = DOTACION_ITEMS.map((i) => i.key);
-    assert.equal(new Set(keys).size, keys.length);
+    assert.equal(text.includes("Antifluido"), false);
   });
 });

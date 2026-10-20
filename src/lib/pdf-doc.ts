@@ -22,10 +22,11 @@ import {
   DOTACION_CODIGO,
   DOTACION_COMPROMISO,
   DOTACION_FECHA_FORMATO,
-  DOTACION_ITEMS,
+  DOTACION_SECCIONES,
   DOTACION_TITULO,
   DOTACION_VERSION,
   dotacionFechaPartes,
+  dotacionFilas,
   type DotacionInput,
   type DotacionItem,
 } from "./dotacion";
@@ -526,6 +527,8 @@ export async function downloadNominaPdf(opts: {
 export async function downloadDotacionPdf(opts: {
   input: DotacionInput;
   logoUrl?: string | null;
+  /** Firma de quien recibe (PNG data URL). */
+  firma?: string | null;
   fileName?: string;
 }): Promise<boolean> {
   const { input: i } = opts;
@@ -622,12 +625,9 @@ export async function downloadDotacionPdf(opts: {
   field("Proceso:", i.proceso, col2, col2 + 14, right - 1);
   y += 4;
 
-  band("DOTACION ENTREGADA");
-  y += 5;
-  const lefts = DOTACION_ITEMS.filter((it) => it.col === 0);
-  const rights = DOTACION_ITEMS.filter((it) => it.col === 1);
   const half = innerW / 2;
   const markW = 18;
+  const rowH = 5.4;
   const itemRow = (it: DotacionItem | undefined, x: number) => {
     if (!it) return;
     doc.setFont("helvetica", "normal");
@@ -639,15 +639,21 @@ export async function downloadDotacionPdf(opts: {
       doc.text("X", mX + markW / 2, y, { align: "center" });
     }
   };
-  for (let k = 0; k < Math.max(lefts.length, rights.length); k++) {
-    itemRow(lefts[k], mx + 6);
-    itemRow(rights[k], mx + half + 2);
-    y += 5.6;
+  for (const s of DOTACION_SECCIONES) {
+    band(s.titulo);
+    y += 4.5;
+    doc.setFontSize(9);
+    for (const [l, r] of dotacionFilas(s.key)) {
+      itemRow(l, mx + 6);
+      itemRow(r, mx + half + 2);
+      y += rowH;
+    }
+    y += 0.5;
   }
-  doc.line(mx, y - 2, right, y - 2);
-  y += 2;
 
   /* Compromiso */
+  band("COMPROMISO");
+  y += 3.5;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   for (const para of DOTACION_COMPROMISO) {
@@ -655,7 +661,7 @@ export async function downloadDotacionPdf(opts: {
     doc.text(lines, mx, y);
     y += lines.length * 3.8 + 1.5;
   }
-  y += 2;
+  y += 1;
 
   /* Firmas */
   band("FIRMAS", 9);
@@ -666,6 +672,10 @@ export async function downloadDotacionPdf(opts: {
   doc.line(mx + 8, y, mx + 8 + sigW, y);
   doc.text("QUIEN ENTREGA", mx + 8 + sigW / 2, y + 4.5, { align: "center" });
   const xRec = right - sigW - 8;
+  if (opts.firma) {
+    const h = 14;
+    doc.addImage(opts.firma, "PNG", xRec, y - h - 1, Math.min(sigW, (h * 600) / 220), h);
+  }
   doc.line(xRec, y, xRec + sigW, y);
   doc.text(["FIRMA DE QUIEN RECIBE EL ELEMENTO Y LEE EL", "COMPROMISO"], xRec, y + 4.5);
   doc.text(`C.C. No ${i.cedula}`, xRec + 24, y + 8.3);
