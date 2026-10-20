@@ -7,4 +7,10 @@
 >
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
+
+## Project skills
+
+| Skill | Trigger | Path |
+|---|---|---|
+| nuevo-formato | New HR document/format from a reference image | `.claude/skills/nuevo-formato/SKILL.md` |
 <!-- LOVABLE:END -->
