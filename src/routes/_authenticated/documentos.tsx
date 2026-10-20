@@ -65,21 +65,11 @@ import {
 } from "@/lib/data";
 import { categoryLabel, fillTemplate, renderDocument } from "@/lib/documents";
 import { AUTENTIC_URL } from "@/lib/print-doc";
-import { downloadDocumentPdf, downloadLiquidacionPdf, downloadNominaPdf } from "@/lib/pdf-doc";
-import {
-  calcLiquidacion,
-  dependenciaLogoPath,
-  isLiquidacion,
-  liquidacionDefaults,
-  liquidacionText,
-  type LiquidacionInput,
-} from "@/lib/liquidacion";
-import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
-import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
-import { calcNomina, isNomina, nominaDefaults, nominaText, type NominaInput } from "@/lib/nomina";
-import { NominaForm } from "@/components/hr/NominaForm";
-import { NominaPreview } from "@/components/hr/NominaPreview";
+import { downloadDocumentPdf, downloadLiquidacionPdf } from "@/lib/pdf-doc";
+import { calcLiquidacion, type LiquidacionInput } from "@/lib/liquidacion";
 import { SharedLiquidacionEditor } from "@/components/hr/SharedLiquidacionEditor";
+import { SPECIAL_DOCS, liquidacionDoc } from "@/components/hr/special-docs";
+import { findSpecialDoc } from "@/lib/special-doc";
 import { DocumentText } from "@/components/hr/DocumentText";
 import { fmtDate } from "@/lib/hr";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,21 +121,24 @@ function DocumentsPage() {
   const companyName = (id: string | null) =>
     id ? (companies.find((c) => c.id === id)?.name ?? "—") : "Todas";
 
-  const isLiq = !!template && isLiquidacion(template);
-  const [liq, setLiq] = useState<LiquidacionInput | null>(null);
+  /* Documento especial (formulario + PDF propios) o plantilla de texto si no hay ninguno. */
+  const kind = template ? findSpecialDoc(SPECIAL_DOCS, template) : undefined;
+  const [special, setSpecial] = useState<{ key: string; input: unknown } | null>(null);
   useEffect(() => {
-    setLiq(isLiq && employee ? liquidacionDefaults(employee, company, companies) : null);
+    setSpecial(
+      kind && employee
+        ? { key: kind.key, input: kind.defaults({ employee, company, companies }) }
+        : null,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLiq, employee?.id, company?.id, template?.id]);
-  const liqCalc = useMemo(() => (liq ? calcLiquidacion(liq) : null), [liq]);
+  }, [kind?.key, employee?.id, company?.id, template?.id]);
+  /* Solo se usa el input si lo produjo el tipo actual (evita un render con datos de otro tipo). */
+  const input = kind && special?.key === kind.key ? special.input : null;
+  const setInput = (next: unknown) => kind && setSpecial({ key: kind.key, input: next });
+  const active = kind && input ? kind : undefined;
 
-  const isNom = !!template && !isLiq && isNomina(template);
-  const [nom, setNom] = useState<NominaInput | null>(null);
-  useEffect(() => {
-    setNom(isNom && employee ? nominaDefaults(employee) : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNom, employee?.id, template?.id]);
-  const nomCalc = useMemo(() => (nom ? calcNomina(nom) : null), [nom]);
+  const liq = active === liquidacionDoc ? (input as LiquidacionInput) : null;
+  const liqCalc = useMemo(() => (liq ? calcLiquidacion(liq) : null), [liq]);
 
   /* Enlace público para que el trabajador firme su liquidación. */
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -159,13 +152,11 @@ function DocumentsPage() {
     return hay.includes("isler");
   }, [employee?.position, employee?.work_location]);
 
-  /* En la liquidación el logo lo define la dependencia elegida. */
-  const logoPath =
-    isLiq && liq
-      ? dependenciaLogoPath(liq.dependenciaKey, companies, isleroLogo?.path)
-      : isIslero
-        ? (isleroLogo?.path ?? company?.logo_path ?? null)
-        : (company?.logo_path ?? null);
+  const logoPath = active?.logoPath
+    ? active.logoPath(input, { companies, isleroLogoPath: isleroLogo?.path })
+    : isIslero
+      ? (isleroLogo?.path ?? company?.logo_path ?? null)
+      : (company?.logo_path ?? null);
 
   const [logo, setLogo] = useState<string | null>(null);
   useEffect(() => {
@@ -202,7 +193,11 @@ function DocumentsPage() {
   }, [employee, template, company]);
 
   const lines = useMemo(
-    () => baseText.split(/\n/).map((l) => l.trim()).filter((l) => l.length > 0),
+    () =>
+      baseText
+        .split(/\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0),
     [baseText],
   );
 
@@ -258,12 +253,7 @@ function DocumentsPage() {
         employee_id: employee.id,
         employee_name: employee.full_name,
         company_name: company?.name ?? null,
-        content:
-          liq && liqCalc
-            ? liquidacionText(liq, liqCalc)
-            : nom && nomCalc
-              ? nominaText(nom, nomCalc)
-              : text,
+        content: active ? active.toText(input) : text,
       });
       await qc.invalidateQueries({ queryKey: qk.generated });
     } catch {
@@ -280,42 +270,26 @@ function DocumentsPage() {
   };
 
   const downloadPdf = () =>
-    liq && liqCalc
-      ? downloadLiquidacionPdf({ input: liq, calc: liqCalc, logoUrl: logo })
-      : nom && nomCalc
-        ? downloadNominaPdf({ input: nom, calc: nomCalc, logoUrl: logo })
-        : downloadDocumentPdf({
+    active
+      ? active.downloadPdf(input, logo)
+      : downloadDocumentPdf({
           title: `${template!.name} — ${employee!.full_name}`,
           text,
           logoUrl: logo,
         });
 
-  const validateLiq = () => {
-    if (!liq) return false;
-    if (!(liq.salario > 0)) {
-      toast.error("Ingresa el salario básico mensual.");
-      return false;
-    }
-    if (!liq.fechaIngreso || !liq.fechaHasta || liq.fechaHasta < liq.fechaIngreso) {
-      toast.error("Revisa las fechas de ingreso y retiro.");
-      return false;
-    }
-    return true;
-  };
-
-  const validateNom = () => {
-    if (!nom) return false;
-    if (!(nom.salario > 0) || !(nom.dias > 0)) {
-      toast.error("Ingresa el salario y el número de días.");
-      return false;
-    }
-    return true;
+  /* Valida el documento especial; muestra el error y devuelve false si no es válido. */
+  const validateSpecial = () => {
+    if (!kind) return true;
+    if (!active) return false;
+    const error = active.validate(input);
+    if (error) toast.error(error);
+    return !error;
   };
 
   const generatePdf = async () => {
     if (!guard()) return;
-    if (isLiq && !validateLiq()) return;
-    if (isNom && !validateNom()) return;
+    if (!validateSpecial()) return;
     try {
       await downloadPdf();
     } catch {
@@ -326,11 +300,7 @@ function DocumentsPage() {
     celebrate({
       variant: "goodjob",
       title: "¡Buen trabajo!",
-      lines: [
-        "PDF generado exitosamente",
-        employee!.full_name,
-        template!.name,
-      ],
+      lines: ["PDF generado exitosamente", employee!.full_name, template!.name],
       actionLabel: "Ir a documentos",
       secondaryLabel: "Descargar de nuevo",
       onSecondary: () => {
@@ -359,7 +329,7 @@ function DocumentsPage() {
   };
 
   const share = async () => {
-    if (!guard() || !liq || !liqCalc || !employee || !validateLiq()) return;
+    if (!guard() || !liq || !liqCalc || !employee || !validateSpecial()) return;
     setSharing(true);
     try {
       const { data, error } = await supabase
@@ -432,8 +402,7 @@ function DocumentsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Documentos</h1>
           <p className="text-sm text-muted-foreground">
-            Crea documentos base en texto con variables y genera PDF con logo y datos del
-            empleado.
+            Crea documentos base en texto con variables y genera PDF con logo y datos del empleado.
           </p>
         </div>
         <Button variant="success" className="gap-2" onClick={openCreate}>
@@ -487,7 +456,12 @@ function DocumentsPage() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openEdit(t)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => openEdit(t)}
+                    >
                       <Pencil className="size-3.5" /> Editar
                     </Button>
                     <Button size="sm" variant="success" className="gap-1.5" onClick={() => use(t)}>
@@ -495,7 +469,11 @@ function DocumentsPage() {
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="gap-1.5 text-danger-foreground">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1.5 text-danger-foreground"
+                        >
                           <Trash2 className="size-3.5" /> Eliminar
                         </Button>
                       </AlertDialogTrigger>
@@ -562,51 +540,47 @@ function DocumentsPage() {
                 </div>
               </div>
 
-              {isLiq && liq ? (
-                <>
-                  <LiquidacionForm value={liq} onChange={setLiq} companies={companies} />
-                </>
-              ) : isNom && nom ? (
-                <NominaForm value={nom} onChange={setNom} />
+              {active ? (
+                <active.Form value={input} onChange={setInput} companies={companies} />
               ) : (
-              <div className="space-y-1.5">
-                <Label htmlFor="extra-text">Información adicional (temporal)</Label>
-                <Textarea
-                  id="extra-text"
-                  rows={4}
-                  placeholder="Escribe texto extra que se agregará solo a este documento…"
-                  value={extra}
-                  onChange={(e) => setExtra(e.target.value)}
-                />
-                <Label htmlFor="extra-pos" className="pt-1">
-                  ¿Dónde se agrega?
-                </Label>
-                <Select value={extraPos} onValueChange={setExtraPos}>
-                  <SelectTrigger id="extra-pos">
-                    <SelectValue placeholder="Elige la posición" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="start">Al inicio del documento</SelectItem>
-                    {lines.map((l, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        Después del renglón {i + 1}: {l.slice(0, 45)}…
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="end">Al final del documento</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  Este texto se agrega en la posición elegida del documento que vas a generar y no
-                  se guarda en el documento base; al salir desaparece.
-                </p>
-              </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="extra-text">Información adicional (temporal)</Label>
+                  <Textarea
+                    id="extra-text"
+                    rows={4}
+                    placeholder="Escribe texto extra que se agregará solo a este documento…"
+                    value={extra}
+                    onChange={(e) => setExtra(e.target.value)}
+                  />
+                  <Label htmlFor="extra-pos" className="pt-1">
+                    ¿Dónde se agrega?
+                  </Label>
+                  <Select value={extraPos} onValueChange={setExtraPos}>
+                    <SelectTrigger id="extra-pos">
+                      <SelectValue placeholder="Elige la posición" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="start">Al inicio del documento</SelectItem>
+                      {lines.map((l, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          Después del renglón {i + 1}: {l.slice(0, 45)}…
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="end">Al final del documento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    Este texto se agrega en la posición elegida del documento que vas a generar y no
+                    se guarda en el documento base; al salir desaparece.
+                  </p>
+                </div>
               )}
 
               <div className="flex flex-wrap gap-2">
                 <Button variant="success" className="gap-2" onClick={() => void generatePdf()}>
                   <FileDown className="size-4" /> Descargar PDF
                 </Button>
-                {isLiq && (
+                {liq && (
                   <Button
                     variant="outline"
                     className="gap-2"
@@ -625,46 +599,41 @@ function DocumentsPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border bg-surface p-6 shadow-panel">
-              <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                Previsualización
-              </p>
-              {logo && !isLiq && !isNom && (
-                <img
-                  src={logo}
-                  alt={`Logo de ${company?.name ?? "la empresa"}`}
-                  className="mt-3 h-20 object-contain"
-                />
-              )}
-              {text && !logo && company && (
-                <p className="mt-3 text-[11px] text-warning-foreground">
-                  Esta empresa no tiene logo configurado; el documento se generará sin logo.
+            <div className="min-w-0 space-y-6">
+              <div className="rounded-xl border bg-surface p-6 shadow-panel">
+                <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                  Previsualización
                 </p>
-              )}
-              {isLiq && liq && liqCalc ? (
-                <div className="mt-3">
-                  <LiquidacionPreview
-                    input={liq}
-                    calc={liqCalc}
-                    logo={logo}
-                    companyName={liq.dependencia || undefined}
+                {logo && !kind && (
+                  <img
+                    src={logo}
+                    alt={`Logo de ${company?.name ?? "la empresa"}`}
+                    className="mt-3 h-20 object-contain"
                   />
-                </div>
-              ) : isNom && nom && nomCalc ? (
-                <div className="mt-3">
-                  <NominaPreview input={nom} calc={nomCalc} logo={logo} />
-                </div>
-              ) : (
-                <div className="mt-3 min-h-96">
-                  {text ? (
-                    <DocumentText text={text} />
-                  ) : (
-                    <p className="text-sm">
-                      Selecciona un documento base y un empleado para ver el resultado.
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+                {text && !logo && company && (
+                  <p className="mt-3 text-[11px] text-warning-foreground">
+                    Esta empresa no tiene logo configurado; el documento se generará sin logo.
+                  </p>
+                )}
+                {active ? (
+                  <div className="mt-3">
+                    <active.Preview input={input} logo={logo} />
+                  </div>
+                ) : (
+                  <div className="mt-3 min-h-96">
+                    {text ? (
+                      <DocumentText text={text} />
+                    ) : (
+                      <p className="text-sm">
+                        Selecciona un documento base y un empleado para ver el resultado.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {active?.Aside && <active.Aside input={input} />}
             </div>
           </div>
         </TabsContent>
@@ -771,7 +740,11 @@ function DocumentsPage() {
                     )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="gap-1.5 text-danger-foreground">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1.5 text-danger-foreground"
+                        >
                           <Trash2 className="size-3.5" /> Eliminar
                         </Button>
                       </AlertDialogTrigger>

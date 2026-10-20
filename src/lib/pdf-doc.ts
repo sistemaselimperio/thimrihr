@@ -18,6 +18,17 @@ import {
   type NominaCalc,
   type NominaInput,
 } from "./nomina";
+import {
+  DOTACION_CODIGO,
+  DOTACION_COMPROMISO,
+  DOTACION_FECHA_FORMATO,
+  DOTACION_ITEMS,
+  DOTACION_TITULO,
+  DOTACION_VERSION,
+  dotacionFechaPartes,
+  type DotacionInput,
+  type DotacionItem,
+} from "./dotacion";
 
 function slug(text: string): string {
   return (
@@ -508,5 +519,157 @@ export async function downloadNominaPdf(opts: {
   doc.text(`C.C. ${i.cedula}`, mx, y + 10);
 
   doc.save(opts.fileName ?? pdfFileName(`Nomina ${i.nombre} ${mes} ${i.anio}`));
+  return true;
+}
+
+/** Formato SG-SST de entrega de elementos de protección personal y dotación. */
+export async function downloadDotacionPdf(opts: {
+  input: DotacionInput;
+  logoUrl?: string | null;
+  fileName?: string;
+}): Promise<boolean> {
+  const { input: i } = opts;
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "letter" });
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const mx = 14;
+  const right = pageW - mx;
+  const innerW = right - mx;
+  let y = 14;
+
+  doc.setDrawColor(0);
+  doc.setTextColor(0);
+  doc.setLineWidth(0.2);
+
+  /* Encabezado: logo | sistema + título | código, fecha, versión. */
+  const logoW = 42;
+  const metaW = 42;
+  const midX = mx + logoW;
+  const midW = innerW - logoW - metaW;
+  const metaX = right - metaW;
+  const hRow = 11;
+  doc.rect(mx, y, innerW, hRow * 2);
+  doc.line(midX, y, midX, y + hRow * 2);
+  doc.line(metaX, y, metaX, y + hRow * 2);
+  doc.line(midX, y + hRow, right, y + hRow);
+  if (opts.logoUrl) {
+    const img = await loadImage(opts.logoUrl);
+    if (img) {
+      const scale = Math.min((logoW - 4) / img.w, (hRow * 2 - 4) / img.h);
+      const w = img.w * scale;
+      const h = img.h * scale;
+      const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(img.data, fmt, mx + (logoW - w) / 2, y + (hRow * 2 - h) / 2, w, h);
+    }
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("SISTEMA GESTIÓN DE SEGURIDAD Y SALUD EN EL TRABAJO", midX + midW / 2, y + 6.5, {
+    align: "center",
+  });
+  doc.setFontSize(8);
+  const title = doc.splitTextToSize(DOTACION_TITULO, midW - 4) as string[];
+  doc.text(title, midX + midW / 2, y + hRow + 4.5, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.text(`Código: ${DOTACION_CODIGO}`, metaX + 1.5, y + 4.2);
+  doc.text(`Fecha: ${DOTACION_FECHA_FORMATO}`, metaX + 1.5, y + 8.8);
+  doc.text(`Versión: ${DOTACION_VERSION}`, metaX + 1.5, y + hRow + 4.2);
+  doc.text("Página 1 de 1", metaX + metaW / 2, y + hRow + 8.8, { align: "center" });
+  y += hRow * 2 + 5;
+
+  /* Fecha de entrega */
+  const f = dotacionFechaPartes(i.fecha);
+  const dW = 20;
+  const dH = 5.5;
+  doc.setFontSize(9);
+  (["dd", "mm", "aaaa"] as const).forEach((k, n) => {
+    const x = mx + n * dW;
+    doc.rect(x, y, dW, dH);
+    doc.rect(x, y + dH, dW, dH);
+    doc.setFont("helvetica", "bold");
+    doc.text(k, x + dW / 2, y + 4, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.text(f[k], x + dW / 2, y + dH + 4, { align: "center" });
+  });
+  y += dH * 2 + 4;
+
+  const band = (txt: string, h = 5.5) => {
+    doc.rect(mx, y, innerW, h);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(txt, pageW / 2, y + h / 2 + 1.3, { align: "center" });
+    y += h;
+  };
+  /* Etiqueta + valor centrado sobre una línea. */
+  const field = (label: string, value: string, x: number, lineX: number, lineEnd: number) => {
+    doc.setFont("helvetica", "normal");
+    doc.text(label, x, y);
+    doc.line(lineX, y + 1, lineEnd, y + 1);
+    const fit = (doc.splitTextToSize(value, lineEnd - lineX - 2) as string[])[0] ?? "";
+    doc.text(fit, (lineX + lineEnd) / 2, y, { align: "center" });
+  };
+
+  band("DATOS DEL FUNCIONARIO");
+  y += 7;
+  doc.setFontSize(9);
+  const col2 = mx + 118;
+  field("Nombre:", i.nombre, mx + 1, mx + 24, col2 - 6);
+  field("C.C.", i.cedula, col2, col2 + 14, right - 1);
+  y += 8;
+  field("Cargo:", i.cargo, mx + 1, mx + 24, col2 - 6);
+  field("Proceso:", i.proceso, col2, col2 + 14, right - 1);
+  y += 4;
+
+  band("DOTACION ENTREGADA");
+  y += 5;
+  const lefts = DOTACION_ITEMS.filter((it) => it.col === 0);
+  const rights = DOTACION_ITEMS.filter((it) => it.col === 1);
+  const half = innerW / 2;
+  const markW = 18;
+  const itemRow = (it: DotacionItem | undefined, x: number) => {
+    if (!it) return;
+    doc.setFont("helvetica", "normal");
+    doc.text(it.label, x, y);
+    const mX = x + half - markW - 8;
+    doc.line(mX, y + 1, mX + markW, y + 1);
+    if (i.entregados.includes(it.key)) {
+      doc.setFont("helvetica", "bold");
+      doc.text("X", mX + markW / 2, y, { align: "center" });
+    }
+  };
+  for (let k = 0; k < Math.max(lefts.length, rights.length); k++) {
+    itemRow(lefts[k], mx + 6);
+    itemRow(rights[k], mx + half + 2);
+    y += 5.6;
+  }
+  doc.line(mx, y - 2, right, y - 2);
+  y += 2;
+
+  /* Compromiso */
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  for (const para of DOTACION_COMPROMISO) {
+    const lines = doc.splitTextToSize(para, innerW) as string[];
+    doc.text(lines, mx, y);
+    y += lines.length * 3.8 + 1.5;
+  }
+  y += 2;
+
+  /* Firmas */
+  band("FIRMAS", 9);
+  y += 26;
+  const sigW = 72;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.line(mx + 8, y, mx + 8 + sigW, y);
+  doc.text("QUIEN ENTREGA", mx + 8 + sigW / 2, y + 4.5, { align: "center" });
+  const xRec = right - sigW - 8;
+  doc.line(xRec, y, xRec + sigW, y);
+  doc.text(["FIRMA DE QUIEN RECIBE EL ELEMENTO Y LEE EL", "COMPROMISO"], xRec, y + 4.5);
+  doc.text(`C.C. No ${i.cedula}`, xRec + 24, y + 8.3);
+
+  doc.save(opts.fileName ?? pdfFileName(`Entrega dotacion ${i.nombre}`));
   return true;
 }

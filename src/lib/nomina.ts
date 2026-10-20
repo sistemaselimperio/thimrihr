@@ -73,6 +73,10 @@ export function nominaDefaults(employee: Employee): NominaInput {
   };
 }
 
+export function validateNomina(i: NominaInput): string | null {
+  return i.salario > 0 && i.dias > 0 ? null : "Ingresa el salario y el número de días.";
+}
+
 export function mesNombre(mes: number): string {
   return MONTHS_LONG[mes]?.toUpperCase() ?? "";
 }

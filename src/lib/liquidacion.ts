@@ -139,6 +139,14 @@ export function isLiquidacion(t: { category?: string | null; name?: string | nul
   return t.category === "liquidacion" || /liquidaci[oó]n/i.test(t.name ?? "");
 }
 
+export function validateLiquidacion(i: LiquidacionInput): string | null {
+  if (!(i.salario > 0)) return "Ingresa el salario básico mensual.";
+  if (!i.fechaIngreso || !i.fechaHasta || i.fechaHasta < i.fechaIngreso) {
+    return "Revisa las fechas de ingreso y retiro.";
+  }
+  return null;
+}
+
 export function liquidacionDefaults(
   employee: Employee,
   company: Company | undefined | null,
