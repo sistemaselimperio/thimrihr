@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -22,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { qk, updateRow } from "@/lib/data";
-import { fmtDate, type Employee } from "@/lib/hr";
+import { contractRenewalLabel, contractRenewalStatus, fmtDate, type Employee } from "@/lib/hr";
 
 /** Renovación de contrato: permite mantener término fijo con nueva fecha o pasar a indefinido. */
 export function RenewContractDialog({
@@ -37,12 +38,21 @@ export function RenewContractDialog({
   const qc = useQueryClient();
   const [type, setType] = useState("fijo");
   const [endDate, setEndDate] = useState("");
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const renewal = contractRenewalStatus(employee);
 
   useEffect(() => {
     if (open) {
-      setType(employee.contract_type ?? (employee.contract_end_date ? "fijo" : "indefinido"));
-      setEndDate("");
+      const status = contractRenewalStatus(employee);
+      if (status?.kind === "indefinido") {
+        setType("indefinido");
+        setEndDate("");
+      } else {
+        setType(employee.contract_type ?? (employee.contract_end_date ? "fijo" : "indefinido"));
+        setEndDate(status?.nextEnd ?? "");
+      }
+      setNote(employee.contract_note ?? "");
     }
   }, [open, employee]);
 
@@ -57,6 +67,7 @@ export function RenewContractDialog({
       await updateRow("employees", employee.id, {
         contract_type: type,
         contract_end_date: type === "indefinido" ? null : endDate,
+        contract_note: note.trim() || null,
       });
       await qc.invalidateQueries({ queryKey: qk.employees });
       onOpenChange(false);
@@ -76,6 +87,7 @@ export function RenewContractDialog({
           <DialogDescription>
             {employee.full_name} · contrato actual vence el{" "}
             {employee.contract_end_date ? fmtDate(employee.contract_end_date) : "—"}
+            {renewal && ` · ${contractRenewalLabel(renewal)}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -112,6 +124,18 @@ export function RenewContractDialog({
                 ? "— Sin fecha límite: la alerta de vencimiento desaparece."
                 : "La alerta volverá a aparecer 40 días antes de esta fecha."}
             </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="renew_note">Nota de contrato</Label>
+            <Textarea
+              id="renew_note"
+              rows={2}
+              maxLength={300}
+              placeholder="Ej: pasa a indefinido, renovar 3 meses, no renovar..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
           </div>
 
           <DialogFooter>

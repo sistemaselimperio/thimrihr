@@ -26,6 +26,8 @@ import {
 import { useCompanies, useEmployees, useIncapacities, useLeaves, useVacations } from "@/lib/data";
 import { buildAlerts } from "@/lib/filters";
 import {
+  contractRenewalLabel,
+  contractRenewalStatus,
   currentPeriodKey,
   fmtDate,
   periodBounds,
@@ -182,29 +184,50 @@ function Dashboard() {
               </Badge>
             </header>
             <ul className="mt-3 divide-y divide-border/60">
-              {alerts.expiring.map(({ employee, days }) => (
-                <li key={employee.id} className="flex items-center gap-3 py-2 text-sm">
-                  <button
-                    className="font-medium underline-offset-4 hover:underline"
-                    onClick={() =>
-                      void navigate({
-                        to: "/empleados/$id",
-                        params: { id: employee.id },
-                      })
-                    }
-                  >
-                    {employee.full_name}
-                  </button>
-                  <span className="text-muted-foreground">{employee.position}</span>
-                  <span className="numeric ml-auto">{fmtDate(employee.contract_end_date)}</span>
-                  <Badge variant="outline" className="numeric">
-                    {days} d
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={() => setRenew(employee)}>
-                    Renovar
-                  </Button>
-                </li>
-              ))}
+              {alerts.expiring.map(({ employee, days }) => {
+                const renewal = contractRenewalStatus(employee);
+                return (
+                  <li key={employee.id} className="flex flex-col gap-1 py-2 text-sm">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <button
+                        className="font-medium underline-offset-4 hover:underline"
+                        onClick={() =>
+                          void navigate({
+                            to: "/empleados/$id",
+                            params: { id: employee.id },
+                          })
+                        }
+                      >
+                        {employee.full_name}
+                      </button>
+                      <span className="text-muted-foreground">{employee.position}</span>
+                      {renewal && (
+                        <Badge
+                          className={
+                            renewal.kind === "indefinido"
+                              ? "bg-success/15 text-success-foreground shadow-none hover:bg-success/15"
+                              : "bg-brand-light/20 text-brand shadow-none hover:bg-brand-light/20"
+                          }
+                        >
+                          {contractRenewalLabel(renewal)}
+                        </Badge>
+                      )}
+                      <span className="numeric ml-auto">{fmtDate(employee.contract_end_date)}</span>
+                      <Badge variant="outline" className="numeric">
+                        {days} d
+                      </Badge>
+                      <Button size="sm" variant="outline" onClick={() => setRenew(employee)}>
+                        Renovar
+                      </Button>
+                    </div>
+                    {employee.contract_note && (
+                      <p className="line-clamp-2 whitespace-pre-line text-xs text-muted-foreground">
+                        {employee.contract_note}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
               {alerts.expiring.length === 0 && (
                 <li className="py-2 text-sm text-muted-foreground">
                   Sin contratos por vencer en la ventana de alerta.

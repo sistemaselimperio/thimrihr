@@ -63,6 +63,7 @@ type Form = {
   hire_date: string;
   contract_type: string;
   contract_end_date: string;
+  contract_note: string;
   exit_date: string;
   status: string;
   notes: string;
@@ -103,6 +104,7 @@ const blank: Form = {
   hire_date: "",
   contract_type: "fijo",
   contract_end_date: "",
+  contract_note: "",
   exit_date: "",
   status: "activo",
   notes: "",
@@ -182,9 +184,9 @@ export function EmployeeDialog({
       municipality: employee.municipality ?? "",
       work_schedule: employee.work_schedule ?? "",
       hire_date: employee.hire_date ?? "",
-      contract_type:
-        employee.contract_type ?? (employee.contract_end_date ? "fijo" : "indefinido"),
+      contract_type: employee.contract_type ?? (employee.contract_end_date ? "fijo" : "indefinido"),
       contract_end_date: employee.contract_end_date ?? "",
+      contract_note: employee.contract_note ?? "",
       exit_date: employee.exit_date ?? "",
       status: employee.status,
       notes: employee.notes ?? "",
@@ -201,10 +203,7 @@ export function EmployeeDialog({
   };
 
   const cedulasUsadas = useMemo(
-    () =>
-      new Set(
-        employees.filter((e) => e.id !== employee?.id).map((e) => e.cedula.trim()),
-      ),
+    () => new Set(employees.filter((e) => e.id !== employee?.id).map((e) => e.cedula.trim())),
     [employees, employee?.id],
   );
 
@@ -213,10 +212,10 @@ export function EmployeeDialog({
     const cedula = form.cedula.trim();
     if (!cedula) e.cedula = "El número de documento es obligatorio";
     else if (!/^\d{5,15}$/.test(cedula)) e.cedula = "Solo números, sin guiones ni espacios";
-    else if (!employee && cedulasUsadas.has(cedula)) e.cedula = "Ya existe un empleado con este número de documento";
+    else if (!employee && cedulasUsadas.has(cedula))
+      e.cedula = "Ya existe un empleado con este número de documento";
 
-    if (!NAME_RE.test(form.first_name.trim()))
-      e.first_name = "Mínimo 2 caracteres, solo letras";
+    if (!NAME_RE.test(form.first_name.trim())) e.first_name = "Mínimo 2 caracteres, solo letras";
     if (!NAME_RE.test(form.last_name.trim())) e.last_name = "Mínimo 2 caracteres, solo letras";
     if (form.email.trim() && !EMAIL_RE.test(form.email.trim()))
       e.email = "Correo no válido (ej: usuario@dominio.com)";
@@ -248,7 +247,10 @@ export function EmployeeDialog({
     if (form.status === "retirado" && !form.exit_date)
       e.exit_date = "Ingresa la fecha de salida para marcar como retirado";
 
-    if (form.work_schedule.trim() && !/\d\s*(:\d{2})?\s*(am|pm)?\s*[-–a]\s*\d/i.test(form.work_schedule.trim()))
+    if (
+      form.work_schedule.trim() &&
+      !/\d\s*(:\d{2})?\s*(am|pm)?\s*[-–a]\s*\d/i.test(form.work_schedule.trim())
+    )
       e.work_schedule = "Formato: 6:00am - 4:00pm";
 
     return e;
@@ -294,8 +296,7 @@ export function EmployeeDialog({
         arl: form.arl.trim() || null,
         compensation_fund: form.compensation_fund.trim() || null,
         has_medical_exam: form.has_medical_exam === "si",
-        medical_exam_date:
-          form.has_medical_exam === "si" ? form.medical_exam_date || null : null,
+        medical_exam_date: form.has_medical_exam === "si" ? form.medical_exam_date || null : null,
         company_id: form.company_id,
         position: form.position.trim(),
         work_location: form.work_location.trim() || null,
@@ -305,12 +306,12 @@ export function EmployeeDialog({
         contract_type: form.contract_type,
         contract_end_date:
           form.contract_type === "indefinido" ? null : form.contract_end_date || null,
+        contract_note: form.contract_note.trim() || null,
         exit_date: form.exit_date || null,
         status: form.exit_date ? "retirado" : form.status,
         notes: form.notes.trim() || null,
       };
-      const companyName =
-        companies.find((c) => c.id === form.company_id)?.name ?? "Sin empresa";
+      const companyName = companies.find((c) => c.id === form.company_id)?.name ?? "Sin empresa";
       let newId: string | null = null;
       if (employee) {
         await updateRow("employees", employee.id, row);
@@ -326,9 +327,7 @@ export function EmployeeDialog({
       await qc.invalidateQueries({ queryKey: qk.employees });
       onOpenChange(false);
       celebrate({
-        title: employee
-          ? "¡Cambios guardados exitosamente!"
-          : "¡Empleado creado exitosamente!",
+        title: employee ? "¡Cambios guardados exitosamente!" : "¡Empleado creado exitosamente!",
         details: [
           { label: "Empleado", value: full_name },
           { label: ID_TYPE_LABELS[row.id_type] ?? "Documento", value: row.cedula },
@@ -717,6 +716,18 @@ export function EmployeeDialog({
             )}
           </div>
 
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="contract_note">Nota de contrato</Label>
+            <Textarea
+              id="contract_note"
+              rows={2}
+              maxLength={300}
+              placeholder="Ej: pasa a indefinido, renovar 3 meses, no renovar..."
+              value={form.contract_note}
+              onChange={(e) => set({ contract_note: e.target.value })}
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="exit_date">Fecha de salida</Label>
             <Input
@@ -772,9 +783,7 @@ export function EmployeeDialog({
               value={form.notes}
               onChange={(e) => set({ notes: e.target.value })}
             />
-            <p className="text-[11px] text-muted-foreground">
-              {form.notes.length}/500 caracteres
-            </p>
+            <p className="text-[11px] text-muted-foreground">{form.notes.length}/500 caracteres</p>
           </div>
 
           <DialogFooter className="sm:col-span-2">

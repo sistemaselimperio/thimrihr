@@ -50,6 +50,8 @@ import {
   TERMINATION_LABELS,
   buildQuincenas,
   buildVacationSummary,
+  contractRenewalLabel,
+  contractRenewalStatus,
   daysInclusive,
   fmtDate,
   incapacityStatus,
@@ -160,6 +162,7 @@ function EmployeeDetail() {
     );
 
   const emp = employee;
+  const renewal = contractRenewalStatus(emp);
 
   const saveOverride = async (periodKey: string, baseDays: string) => {
     const existing = myOverrides.find((o) => o.period_key === periodKey);
@@ -425,10 +428,23 @@ function EmployeeDetail() {
               label="Fin de contrato"
               value={isFixedTerm(emp) ? fmtDate(emp.contract_end_date) : "— (sin fecha límite)"}
             />
+            <Field
+              label="Estado del contrato"
+              value={renewal ? contractRenewalLabel(renewal) : "—"}
+            />
             <Field label="Fecha de salida" value={emp.exit_date ? fmtDate(emp.exit_date) : "—"} />
             <Field label="Estado" value={emp.status === "activo" ? "Activo" : "Retirado"} />
           </div>
         </div>
+
+        {emp.contract_note && (
+          <div className="border-t pt-4">
+            <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+              Nota de contrato
+            </p>
+            <p className="mt-0.5 text-sm whitespace-pre-line">{emp.contract_note}</p>
+          </div>
+        )}
 
         {emp.notes && (
           <div className="border-t pt-4">

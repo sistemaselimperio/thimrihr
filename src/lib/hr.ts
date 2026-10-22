@@ -28,6 +28,7 @@ export interface Employee {
   position: string;
   hire_date: string;
   contract_end_date: string | null;
+  contract_note?: string | null;
   contract_type?: string | null;
   exit_date: string | null;
   phone: string | null;
@@ -231,6 +232,10 @@ export function isFixedTerm(e: Pick<Employee, "contract_type" | "contract_end_da
 export const MAX_VACATION_LEAVE_DAYS = 7;
 export const VACATION_MIN_RESERVE = 7;
 export const CONTRACT_ALERT_DAYS = 40;
+
+/** Política: término fijo de 3 meses, prórroga de 3 meses más, hasta 9 meses; luego indefinido. */
+export const CONTRACT_PERIOD_MONTHS = 3;
+export const CONTRACT_MAX_FIXED_MONTHS = 9;
 export const EXIT_ALERT_DAYS = 30;
 
 /* ------------------------------------------------------------------ fechas */
@@ -295,6 +300,46 @@ export function addDays(iso: string, n: number): string {
   const d = parseDate(iso);
   d.setDate(d.getDate() + n);
   return toISO(d);
+}
+
+/** Suma meses a una fecha ISO, ajustando al fin de mes (31 ene + 1 mes = 28/29 feb). */
+export function addMonthsISO(iso: string, n: number): string {
+  const d = parseDate(iso);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, last));
+  return toISO(d);
+}
+
+export type ContractRenewalStatus =
+  { kind: "prorroga"; number: number; nextEnd: string } | { kind: "indefinido" };
+
+/** Estado automático de un término fijo según los meses ya cubiertos desde el ingreso. */
+export function contractRenewalStatus(
+  e: Pick<Employee, "hire_date" | "contract_type" | "contract_end_date">,
+): ContractRenewalStatus | null {
+  if (!isFixedTerm(e) || !e.hire_date || !e.contract_end_date) return null;
+  const covered = daysUntil(addDays(e.contract_end_date, 1), e.hire_date) / 30.44;
+  const monthsCovered = Math.round(covered);
+  if (monthsCovered >= CONTRACT_MAX_FIXED_MONTHS) return { kind: "indefinido" };
+  // La prórroga arranca el día siguiente al vencimiento: así conserva el fin de mes.
+  const nextEnd = addDays(
+    addMonthsISO(addDays(e.contract_end_date, 1), CONTRACT_PERIOD_MONTHS),
+    -1,
+  );
+  return {
+    kind: "prorroga",
+    number: Math.max(1, Math.round(monthsCovered / CONTRACT_PERIOD_MONTHS)),
+    nextEnd,
+  };
+}
+
+export function contractRenewalLabel(s: ContractRenewalStatus): string {
+  return s.kind === "indefinido"
+    ? "Pasa a indefinido"
+    : `Prórroga ${s.number} · ${CONTRACT_PERIOD_MONTHS} meses`;
 }
 
 /* --------------------------------------------------------------- quincenas */
