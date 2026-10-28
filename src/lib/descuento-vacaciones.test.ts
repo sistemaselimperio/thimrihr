@@ -5,6 +5,7 @@ import {
   DV_ASUNTO,
   descuentoVacacionesCuerpo,
   descuentoVacacionesDefaults,
+  dvCarta,
   descuentoVacacionesText,
   dvFechaCarta,
   isDescuentoVacaciones,
@@ -136,5 +137,18 @@ describe("descuentoVacacionesText", () => {
     ]) {
       assert.ok(text.includes(part), part);
     }
+  });
+});
+
+describe("dvCarta", () => {
+  it("maps the letter with the employer and VACACIONES. in bold", () => {
+    const c = dvCarta(filled());
+    assert.equal(c.fechaLinea, "Chiquinquirá, 22 de octubre de 2026");
+    assert.deepEqual(c.destinatario[0], { text: "Señores:" });
+    assert.deepEqual(c.destinatario[1], { text: "FABIAN LEONARDO PAEZ LANCHEROS", bold: true });
+    assert.equal(c.asunto, DV_ASUNTO);
+    assert.equal(c.cuerpo.map((x) => x.text).join(""), descuentoVacacionesCuerpo(filled()));
+    assert.deepEqual(c.cuerpo.at(-1), { text: "VACACIONES.", bold: true });
+    assert.deepEqual(c.pieFirma, [{ text: "C.C. 1053348102" }]);
   });
 });

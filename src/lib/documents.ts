@@ -93,6 +93,7 @@ export const DOC_CATEGORIES = [
   { value: "nomina", label: "Nómina" },
   { value: "dotacion", label: "Entrega de dotación" },
   { value: "descuento_vacaciones", label: "Descuento de vacaciones" },
+  { value: "dias_no_laborados", label: "Descuento por días no laborados" },
   { value: "paz_y_salvo", label: "Paz y salvo" },
   { value: "certificado", label: "Certificado laboral" },
   { value: "descargos", label: "Descargos" },

@@ -1,5 +1,6 @@
 /** Carta de autorización de descuento de días de vacaciones. */
 
+import type { Carta } from "./carta";
 import type { Employee } from "./hr";
 
 export const DV_ASUNTO = "ASUNTO: AUTORIZACIÓN DESCUENTO DIAS DE VACACIONES";
@@ -151,4 +152,24 @@ export function descuentoVacacionesText(i: DescuentoVacacionesInput): string {
     "______________________________",
     `C.C. ${i.cedula}`,
   ].join("\n");
+}
+
+/** La carta en el modelo común de vista y PDF. */
+export function dvCarta(i: DescuentoVacacionesInput): Carta {
+  const cuerpo = descuentoVacacionesCuerpo(i);
+  const [senores, empleador, ...resto] = dvDestinatario(i);
+  return {
+    fechaLinea: dvFechaCarta(i.fecha),
+    destinatario: [
+      { text: senores ?? "" },
+      ...(empleador ? [{ text: empleador, bold: true }] : []),
+      ...resto.map((text) => ({ text })),
+    ],
+    asunto: DV_ASUNTO,
+    saludo: DV_SALUDO,
+    cuerpo: [{ text: cuerpo.slice(0, -DV_CIERRE.length) }, { text: DV_CIERRE, bold: true }],
+    agradecimiento: DV_AGRADECIMIENTO,
+    despedida: DV_DESPEDIDA,
+    pieFirma: [{ text: `C.C. ${i.cedula}` }],
+  };
 }

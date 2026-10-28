@@ -7,6 +7,8 @@ import { NominaPreview } from "@/components/hr/NominaPreview";
 import { DotacionPreview } from "@/components/hr/DotacionPreview";
 import { DescuentoVacacionesPreview } from "@/components/hr/DescuentoVacacionesPreview";
 import type { DescuentoVacacionesInput } from "@/lib/descuento-vacaciones";
+import { DiasNoLaboradosPreview } from "@/components/hr/DiasNoLaboradosPreview";
+import type { DiasNoLaboradosInput } from "@/lib/dias-no-laborados";
 import type { DotacionInput } from "@/lib/dotacion";
 import { calcLiquidacion, type LiquidacionCalc, type LiquidacionInput } from "@/lib/liquidacion";
 import { calcNomina, type NominaInput } from "@/lib/nomina";
@@ -68,4 +70,12 @@ export function DvSharedPreview({
   firma,
 }: SharedViewProps<{ input: DescuentoVacacionesInput }>) {
   return <DescuentoVacacionesPreview input={data.input} logo={logo} firma={firma} />;
+}
+
+export function DnlSharedPreview({
+  data,
+  logo,
+  firma,
+}: SharedViewProps<{ input: DiasNoLaboradosInput }>) {
+  return <DiasNoLaboradosPreview input={data.input} logo={logo} firma={firma} />;
 }

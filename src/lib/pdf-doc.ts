@@ -30,17 +30,9 @@ import {
   type DotacionInput,
   type DotacionItem,
 } from "./dotacion";
-import {
-  DV_AGRADECIMIENTO,
-  DV_ASUNTO,
-  DV_CIERRE,
-  DV_DESPEDIDA,
-  DV_SALUDO,
-  descuentoVacacionesCuerpo,
-  dvDestinatario,
-  dvFechaCarta,
-  type DescuentoVacacionesInput,
-} from "./descuento-vacaciones";
+import type { Carta, CartaSegmento } from "./carta";
+import { dvCarta, type DescuentoVacacionesInput } from "./descuento-vacaciones";
+import { diasNoLaboradosCarta, type DiasNoLaboradosInput } from "./dias-no-laborados";
 
 function slug(text: string): string {
   return (
@@ -695,15 +687,76 @@ export async function downloadDotacionPdf(opts: {
   return true;
 }
 
-/** Carta de autorización de descuento de días de vacaciones (carta, vertical). */
-export async function downloadDescuentoVacacionesPdf(opts: {
-  input: DescuentoVacacionesInput;
-  logoUrl?: string | null;
+/* Párrafo justificado que respeta negritas dentro del texto; devuelve la nueva y. */
+function richParagraph(
+  doc: import("jspdf").jsPDF,
+  segs: CartaSegmento[],
+  x: number,
+  y: number,
+  width: number,
+  lineH: number,
+): number {
+  /* Palabras como secuencias de tramos: "C.C" en negrita + ". 123" forman una sola. */
+  const words: CartaSegmento[][] = [[]];
+  for (const s of segs) {
+    s.text.split(" ").forEach((part, k) => {
+      if (k > 0) words.push([]);
+      if (part) words[words.length - 1]!.push({ text: part, bold: s.bold });
+    });
+  }
+  const font = (bold?: boolean) => doc.setFont("helvetica", bold ? "bold" : "normal");
+  const wordW = (w: CartaSegmento[]) =>
+    w.reduce((acc, r) => {
+      font(r.bold);
+      return acc + doc.getTextWidth(r.text);
+    }, 0);
+  font(false);
+  const spaceW = doc.getTextWidth(" ");
+
+  const lines: CartaSegmento[][][] = [];
+  let line: CartaSegmento[][] = [];
+  let lineW = 0;
+  for (const w of words.filter((w) => w.length)) {
+    const ww = wordW(w);
+    if (line.length && lineW + spaceW + ww > width) {
+      lines.push(line);
+      line = [];
+      lineW = 0;
+    }
+    lineW += (line.length ? spaceW : 0) + ww;
+    line.push(w);
+  }
+  if (line.length) lines.push(line);
+
+  lines.forEach((ln, k) => {
+    const widths = ln.map(wordW);
+    const total = widths.reduce((a, b) => a + b, 0);
+    const last = k === lines.length - 1;
+    const gap = !last && ln.length > 1 ? (width - total) / (ln.length - 1) : spaceW;
+    let cx = x;
+    ln.forEach((w, n) => {
+      for (const r of w) {
+        font(r.bold);
+        doc.text(r.text, cx, y);
+        cx += doc.getTextWidth(r.text);
+      }
+      cx += n < ln.length - 1 ? gap : 0;
+    });
+    y += lineH;
+  });
+  font(false);
+  return y;
+}
+
+/** Cartas de autorización (carta, vertical): logo, fecha, destinatario, asunto y firma. */
+async function downloadCartaPdf(opts: {
+  carta: Carta;
+  logoUrl?: string | null | undefined;
   /** Firma del trabajador (PNG data URL). */
-  firma?: string | null;
-  fileName?: string;
+  firma?: string | null | undefined;
+  fileName: string;
 }): Promise<boolean> {
-  const { input: i } = opts;
+  const { carta: c } = opts;
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "letter" });
 
@@ -733,47 +786,31 @@ export async function downloadDescuentoVacacionesPdf(opts: {
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(dvFechaCarta(i.fecha), mx, y);
+  doc.text(c.fechaLinea, mx, y);
   y += 26;
 
-  /* Destinatario: el nombre del empleador va en negrita. */
-  dvDestinatario(i).forEach((l, k) => {
-    doc.setFont("helvetica", k === 1 ? "bold" : "normal");
-    doc.text(l, mx, y);
+  for (const l of c.destinatario) {
+    doc.setFont("helvetica", l.bold ? "bold" : "normal");
+    doc.text(l.text, mx, y);
     y += lh;
-  });
-  y += 27;
+  }
+  /* El asunto queda a la misma altura sin importar cuántas líneas tenga el destinatario. */
+  y = Math.max(127, y + 12);
 
   doc.setFont("helvetica", "bold");
-  doc.text(DV_ASUNTO, mx, y);
+  doc.text(c.asunto, mx, y);
   y += 23.5;
 
   doc.setFont("helvetica", "normal");
-  doc.text(DV_SALUDO, mx, y);
+  doc.text(c.saludo, mx, y);
   y += 11.5;
 
-  /* Párrafo justificado; "VACACIONES." en negrita al final, como en el formato. */
-  const lines = doc.splitTextToSize(descuentoVacacionesCuerpo(i), innerW) as string[];
-  lines.forEach((line, k) => {
-    const last = k === lines.length - 1;
-    if (!last) {
-      doc.text(line, mx, y, { align: "justify", maxWidth: innerW });
-    } else if (line.endsWith(DV_CIERRE)) {
-      const head = line.slice(0, -DV_CIERRE.length);
-      doc.text(head, mx, y);
-      doc.setFont("helvetica", "bold");
-      doc.text(DV_CIERRE, mx + doc.getTextWidth(head), y);
-      doc.setFont("helvetica", "normal");
-    } else {
-      doc.text(line, mx, y);
-    }
-    y += lh + 0.6;
-  });
+  y = richParagraph(doc, c.cuerpo, mx, y, innerW, lh + 0.6);
   y += 5.2;
 
-  doc.text(DV_AGRADECIMIENTO, mx, y);
+  doc.text(c.agradecimiento, mx, y);
   y += 12;
-  doc.text(DV_DESPEDIDA, mx, y);
+  doc.text(c.despedida, mx, y);
   y += 30;
 
   /* Firma del trabajador. */
@@ -783,8 +820,38 @@ export async function downloadDescuentoVacacionesPdf(opts: {
     doc.addImage(opts.firma, "PNG", mx, y - h - 1, Math.min(sigW, (h * 600) / 220), h);
   }
   doc.line(mx, y, mx + sigW, y);
-  doc.text(`C.C. ${i.cedula}`, mx, y + 5);
+  richParagraph(doc, c.pieFirma, mx, y + 5, sigW, lh);
 
-  doc.save(opts.fileName ?? pdfFileName(`Descuento vacaciones ${i.nombre}`));
+  doc.save(opts.fileName);
   return true;
+}
+
+/** Carta de autorización de descuento de días de vacaciones. */
+export function downloadDescuentoVacacionesPdf(opts: {
+  input: DescuentoVacacionesInput;
+  logoUrl?: string | null;
+  firma?: string | null;
+  fileName?: string;
+}): Promise<boolean> {
+  return downloadCartaPdf({
+    carta: dvCarta(opts.input),
+    logoUrl: opts.logoUrl,
+    firma: opts.firma,
+    fileName: opts.fileName ?? pdfFileName(`Descuento vacaciones ${opts.input.nombre}`),
+  });
+}
+
+/** Carta de autorización de descuento por días no laborados. */
+export function downloadDiasNoLaboradosPdf(opts: {
+  input: DiasNoLaboradosInput;
+  logoUrl?: string | null;
+  firma?: string | null;
+  fileName?: string;
+}): Promise<boolean> {
+  return downloadCartaPdf({
+    carta: diasNoLaboradosCarta(opts.input),
+    logoUrl: opts.logoUrl,
+    firma: opts.firma,
+    fileName: opts.fileName ?? pdfFileName(`Dias no laborados ${opts.input.nombre}`),
+  });
 }

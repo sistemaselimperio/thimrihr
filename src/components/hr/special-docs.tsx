@@ -2,11 +2,14 @@
 
 import { DescuentoVacacionesForm } from "@/components/hr/DescuentoVacacionesForm";
 import { DescuentoVacacionesPreview } from "@/components/hr/DescuentoVacacionesPreview";
+import { DiasNoLaboradosForm } from "@/components/hr/DiasNoLaboradosForm";
+import { DiasNoLaboradosPreview } from "@/components/hr/DiasNoLaboradosPreview";
 import { DotacionForm } from "@/components/hr/DotacionForm";
 import { DotacionPreview } from "@/components/hr/DotacionPreview";
 import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
 import { NominaForm } from "@/components/hr/NominaForm";
 import {
+  DnlSharedPreview,
   DotSharedPreview,
   DvSharedPreview,
   LiqAside,
@@ -21,6 +24,13 @@ import {
   validateDescuentoVacaciones,
   type DescuentoVacacionesInput,
 } from "@/lib/descuento-vacaciones";
+import {
+  diasNoLaboradosDefaults,
+  diasNoLaboradosText,
+  isDiasNoLaborados,
+  validateDiasNoLaborados,
+  type DiasNoLaboradosInput,
+} from "@/lib/dias-no-laborados";
 import {
   dotacionDefaults,
   dotacionLogoPath,
@@ -49,6 +59,7 @@ import {
 } from "@/lib/nomina";
 import {
   downloadDescuentoVacacionesPdf,
+  downloadDiasNoLaboradosPdf,
   downloadDotacionPdf,
   downloadLiquidacionPdf,
   downloadNominaPdf,
@@ -143,10 +154,33 @@ export const descuentoVacacionesDoc: SpecialDoc<DescuentoVacacionesInput> = {
   },
 };
 
+/* ------------------------------------------------ días no laborados */
+
+export const diasNoLaboradosDoc: SpecialDoc<DiasNoLaboradosInput> = {
+  key: "dias_no_laborados",
+  label: "autorización de descuento por días no laborados",
+  matches: isDiasNoLaborados,
+  defaults: ({ employee }) => diasNoLaboradosDefaults(employee),
+  validate: validateDiasNoLaborados,
+  toText: diasNoLaboradosText,
+  downloadPdf: (i, logoUrl) => downloadDiasNoLaboradosPdf({ input: i, logoUrl }),
+  Form: DiasNoLaboradosForm,
+  Preview: DiasNoLaboradosPreview,
+  /* El logo es el de la empresa elegida en el formulario. */
+  logoPath: (i, { companies }) => dotacionLogoPath(i.empresaId, companies),
+  share: {
+    pack: (i) => ({ input: i }),
+    Preview: DnlSharedPreview,
+    downloadPdf: (d, logoUrl, firma) =>
+      downloadDiasNoLaboradosPdf({ input: d.input, logoUrl, firma }),
+  },
+};
+
 /** El orden importa: el primero que coincide con la plantilla gana. */
 export const SPECIAL_DOCS: readonly AnySpecialDoc[] = [
   liquidacionDoc,
   nominaDoc,
   dotacionDoc,
   descuentoVacacionesDoc,
+  diasNoLaboradosDoc,
 ];
