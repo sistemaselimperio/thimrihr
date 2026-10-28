@@ -30,6 +30,17 @@ import {
   type DotacionInput,
   type DotacionItem,
 } from "./dotacion";
+import {
+  DV_AGRADECIMIENTO,
+  DV_ASUNTO,
+  DV_CIERRE,
+  DV_DESPEDIDA,
+  DV_SALUDO,
+  descuentoVacacionesCuerpo,
+  dvDestinatario,
+  dvFechaCarta,
+  type DescuentoVacacionesInput,
+} from "./descuento-vacaciones";
 
 function slug(text: string): string {
   return (
@@ -681,5 +692,99 @@ export async function downloadDotacionPdf(opts: {
   doc.text(`C.C. No ${i.cedula}`, xRec + 24, y + 8.3);
 
   doc.save(opts.fileName ?? pdfFileName(`Entrega dotacion ${i.nombre}`));
+  return true;
+}
+
+/** Carta de autorización de descuento de días de vacaciones (carta, vertical). */
+export async function downloadDescuentoVacacionesPdf(opts: {
+  input: DescuentoVacacionesInput;
+  logoUrl?: string | null;
+  /** Firma del trabajador (PNG data URL). */
+  firma?: string | null;
+  fileName?: string;
+}): Promise<boolean> {
+  const { input: i } = opts;
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "letter" });
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const mx = 30;
+  const innerW = pageW - mx * 2;
+  const lh = 5.2;
+  let y = 13;
+
+  doc.setTextColor(0);
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.2);
+
+  /* Encabezado: logo de la empresa arriba a la izquierda. */
+  if (opts.logoUrl) {
+    const img = await loadImage(opts.logoUrl);
+    if (img) {
+      const scale = Math.min(56 / img.w, 16 / img.h);
+      const w = img.w * scale;
+      const h = img.h * scale;
+      const fmt = img.data.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(img.data, fmt, mx, y, w, h);
+    }
+  }
+  /* Posiciones calibradas contra el formato original (carta, mm). */
+  y = 48;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(dvFechaCarta(i.fecha), mx, y);
+  y += 26;
+
+  /* Destinatario: el nombre del empleador va en negrita. */
+  dvDestinatario(i).forEach((l, k) => {
+    doc.setFont("helvetica", k === 1 ? "bold" : "normal");
+    doc.text(l, mx, y);
+    y += lh;
+  });
+  y += 27;
+
+  doc.setFont("helvetica", "bold");
+  doc.text(DV_ASUNTO, mx, y);
+  y += 23.5;
+
+  doc.setFont("helvetica", "normal");
+  doc.text(DV_SALUDO, mx, y);
+  y += 11.5;
+
+  /* Párrafo justificado; "VACACIONES." en negrita al final, como en el formato. */
+  const lines = doc.splitTextToSize(descuentoVacacionesCuerpo(i), innerW) as string[];
+  lines.forEach((line, k) => {
+    const last = k === lines.length - 1;
+    if (!last) {
+      doc.text(line, mx, y, { align: "justify", maxWidth: innerW });
+    } else if (line.endsWith(DV_CIERRE)) {
+      const head = line.slice(0, -DV_CIERRE.length);
+      doc.text(head, mx, y);
+      doc.setFont("helvetica", "bold");
+      doc.text(DV_CIERRE, mx + doc.getTextWidth(head), y);
+      doc.setFont("helvetica", "normal");
+    } else {
+      doc.text(line, mx, y);
+    }
+    y += lh + 0.6;
+  });
+  y += 5.2;
+
+  doc.text(DV_AGRADECIMIENTO, mx, y);
+  y += 12;
+  doc.text(DV_DESPEDIDA, mx, y);
+  y += 30;
+
+  /* Firma del trabajador. */
+  const sigW = 70;
+  if (opts.firma) {
+    const h = 16;
+    doc.addImage(opts.firma, "PNG", mx, y - h - 1, Math.min(sigW, (h * 600) / 220), h);
+  }
+  doc.line(mx, y, mx + sigW, y);
+  doc.text(`C.C. ${i.cedula}`, mx, y + 5);
+
+  doc.save(opts.fileName ?? pdfFileName(`Descuento vacaciones ${i.nombre}`));
   return true;
 }

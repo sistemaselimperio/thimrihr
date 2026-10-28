@@ -1,16 +1,26 @@
 /** Registro de documentos especiales. Para agregar uno: créalo aquí y súmalo a SPECIAL_DOCS. */
 
+import { DescuentoVacacionesForm } from "@/components/hr/DescuentoVacacionesForm";
+import { DescuentoVacacionesPreview } from "@/components/hr/DescuentoVacacionesPreview";
 import { DotacionForm } from "@/components/hr/DotacionForm";
 import { DotacionPreview } from "@/components/hr/DotacionPreview";
 import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
 import { NominaForm } from "@/components/hr/NominaForm";
 import {
   DotSharedPreview,
+  DvSharedPreview,
   LiqAside,
   LiqPreview,
   LiqSharedPreview,
   NomPreview,
 } from "@/components/hr/SpecialDocPreviews";
+import {
+  descuentoVacacionesDefaults,
+  descuentoVacacionesText,
+  isDescuentoVacaciones,
+  validateDescuentoVacaciones,
+  type DescuentoVacacionesInput,
+} from "@/lib/descuento-vacaciones";
 import {
   dotacionDefaults,
   dotacionLogoPath,
@@ -37,7 +47,12 @@ import {
   validateNomina,
   type NominaInput,
 } from "@/lib/nomina";
-import { downloadDotacionPdf, downloadLiquidacionPdf, downloadNominaPdf } from "@/lib/pdf-doc";
+import {
+  downloadDescuentoVacacionesPdf,
+  downloadDotacionPdf,
+  downloadLiquidacionPdf,
+  downloadNominaPdf,
+} from "@/lib/pdf-doc";
 import type { AnySpecialDoc, SpecialDoc } from "@/lib/special-doc";
 
 /* ----------------------------------------------------------- liquidación */
@@ -106,5 +121,32 @@ export const dotacionDoc: SpecialDoc<DotacionInput> = {
   },
 };
 
+/* ------------------------------------------------ descuento de vacaciones */
+
+export const descuentoVacacionesDoc: SpecialDoc<DescuentoVacacionesInput> = {
+  key: "descuento_vacaciones",
+  label: "autorización de descuento de vacaciones",
+  matches: isDescuentoVacaciones,
+  defaults: ({ employee }) => descuentoVacacionesDefaults(employee),
+  validate: validateDescuentoVacaciones,
+  toText: descuentoVacacionesText,
+  downloadPdf: (i, logoUrl) => downloadDescuentoVacacionesPdf({ input: i, logoUrl }),
+  Form: DescuentoVacacionesForm,
+  Preview: DescuentoVacacionesPreview,
+  /* El logo es el de la empresa elegida en el formulario. */
+  logoPath: (i, { companies }) => dotacionLogoPath(i.empresaId, companies),
+  share: {
+    pack: (i) => ({ input: i }),
+    Preview: DvSharedPreview,
+    downloadPdf: (d, logoUrl, firma) =>
+      downloadDescuentoVacacionesPdf({ input: d.input, logoUrl, firma }),
+  },
+};
+
 /** El orden importa: el primero que coincide con la plantilla gana. */
-export const SPECIAL_DOCS: readonly AnySpecialDoc[] = [liquidacionDoc, nominaDoc, dotacionDoc];
+export const SPECIAL_DOCS: readonly AnySpecialDoc[] = [
+  liquidacionDoc,
+  nominaDoc,
+  dotacionDoc,
+  descuentoVacacionesDoc,
+];

@@ -92,6 +92,7 @@ export const DOC_CATEGORIES = [
   { value: "liquidacion", label: "Liquidación" },
   { value: "nomina", label: "Nómina" },
   { value: "dotacion", label: "Entrega de dotación" },
+  { value: "descuento_vacaciones", label: "Descuento de vacaciones" },
   { value: "paz_y_salvo", label: "Paz y salvo" },
   { value: "certificado", label: "Certificado laboral" },
   { value: "descargos", label: "Descargos" },

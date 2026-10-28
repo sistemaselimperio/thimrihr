@@ -5,6 +5,8 @@ import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
 import { MinTrabajoValidation } from "@/components/hr/MinTrabajoValidation";
 import { NominaPreview } from "@/components/hr/NominaPreview";
 import { DotacionPreview } from "@/components/hr/DotacionPreview";
+import { DescuentoVacacionesPreview } from "@/components/hr/DescuentoVacacionesPreview";
+import type { DescuentoVacacionesInput } from "@/lib/descuento-vacaciones";
 import type { DotacionInput } from "@/lib/dotacion";
 import { calcLiquidacion, type LiquidacionCalc, type LiquidacionInput } from "@/lib/liquidacion";
 import { calcNomina, type NominaInput } from "@/lib/nomina";
@@ -58,4 +60,12 @@ export function LiqSharedPreview({
 
 export function DotSharedPreview({ data, logo, firma }: SharedViewProps<{ input: DotacionInput }>) {
   return <DotacionPreview input={data.input} logo={logo} firma={firma} />;
+}
+
+export function DvSharedPreview({
+  data,
+  logo,
+  firma,
+}: SharedViewProps<{ input: DescuentoVacacionesInput }>) {
+  return <DescuentoVacacionesPreview input={data.input} logo={logo} firma={firma} />;
 }
