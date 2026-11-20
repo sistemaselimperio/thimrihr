@@ -30,7 +30,7 @@ export const getSharedLiquidacion = createServerFn({ method: "POST" })
     const { appDbAdmin: supabaseAdmin } = await import("@/integrations/supabase/app.server");
     const { data: row, error } = await supabaseAdmin
       .from("shared_liquidaciones")
-      .select("kind, employee_name, data, logo_path, firma, signed_at")
+      .select("employee_name, data, logo_path, firma, signed_at")
       .eq("token", data.token)
       .maybeSingle();
     if (error) console.error("[getSharedLiquidacion] query failed:", error.code, error.message);
@@ -46,7 +46,7 @@ export const getSharedLiquidacion = createServerFn({ method: "POST" })
     }
 
     return {
-      kind: row.kind,
+      kind: kindOf(row.data),
       employeeName: row.employee_name,
       data: row.data,
       firma: row.firma,
@@ -86,3 +86,8 @@ export const signSharedLiquidacion = createServerFn({ method: "POST" })
       .maybeSingle();
     return { ok: false, reason: row ? "already_signed" : "not_found" };
   });
+
+function kindOf(data: unknown): string {
+  const k = data && typeof data === "object" ? (data as Record<string, unknown>)["__kind"] : undefined;
+  return typeof k === "string" ? k : "liquidacion";
+}

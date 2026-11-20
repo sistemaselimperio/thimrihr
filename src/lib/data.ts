@@ -219,7 +219,12 @@ export function useGeneratedDocuments() {
 export function useSharedLiquidaciones() {
   return useQuery({
     queryKey: qk.shared,
-    queryFn: () => selectAll<SharedLiquidacion>("shared_liquidaciones", "created_at", false),
+    queryFn: async () =>
+      (await selectAll<SharedLiquidacion>("shared_liquidaciones", "created_at", false)).map((r) => {
+        const d = r.data as Record<string, unknown> | null;
+        const k = d && typeof d === "object" ? d["__kind"] : undefined;
+        return { ...r, kind: typeof k === "string" ? k : "liquidacion" };
+      }),
   });
 }
 

@@ -106,7 +106,7 @@ function NoveltiesPage() {
 
   const shiftMonth = (delta: number) => {
     const [y, m] = (month ?? currentMonth()).split("-").map(Number);
-    const d = new Date(y, m - 1 + delta, 1);
+    const d = new Date(y ?? 0, (m ?? 1) - 1 + delta, 1);
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 

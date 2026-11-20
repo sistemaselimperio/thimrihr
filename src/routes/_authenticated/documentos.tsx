@@ -332,10 +332,10 @@ function DocumentsPage() {
       const { data, error } = await supabase
         .from("shared_liquidaciones")
         .insert({
-          kind: active.key,
           employee_id: employee.id,
           employee_name: employee.full_name,
-          data: JSON.parse(JSON.stringify(active.share.pack(input))),
+          // El tipo de documento viaja dentro de `data` (la tabla no tiene columna propia).
+          data: { ...JSON.parse(JSON.stringify(active.share.pack(input))), __kind: active.key },
           logo_path: logoPath,
         })
         .select("token")
