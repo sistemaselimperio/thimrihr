@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 import {
   IncapacityDialog,
@@ -14,6 +14,7 @@ import {
 import { useFilters } from "@/components/layout/filters-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -63,6 +64,11 @@ export const Route = createFileRoute("/_authenticated/novedades")({
   component: NoveltiesPage,
 });
 
+function currentMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function NoveltiesPage() {
   const { filters } = useFilters();
   const { data: employees = [] } = useEmployees();
@@ -76,6 +82,7 @@ function NoveltiesPage() {
   const [termOpen, setTermOpen] = useState(false);
   const [licOpen, setLicOpen] = useState(false);
   const [vacOpen, setVacOpen] = useState(false);
+  const [month, setMonth] = useState<string | null>(currentMonth);
 
 
   const byId = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
@@ -89,6 +96,18 @@ function NoveltiesPage() {
     return (
       emp.full_name.toLowerCase().includes(term) || emp.cedula.toLowerCase().includes(term)
     );
+  };
+
+  // Records overlapping the selected month (YYYY-MM). ISO date strings compare lexicographically.
+  const inMonth = (start: string, end: string = start) => {
+    if (!month) return true;
+    return start.slice(0, 7) <= month && end.slice(0, 7) >= month;
+  };
+
+  const shiftMonth = (delta: number) => {
+    const [y, m] = (month ?? currentMonth()).split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 
   const name = (employeeId: string) => byId.get(employeeId)?.full_name ?? "—";
@@ -131,6 +150,28 @@ function NoveltiesPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium">Mes:</span>
+        <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
+          <ChevronLeft className="size-4" />
+        </Button>
+        <Input
+          type="month"
+          className="w-44"
+          value={month ?? ""}
+          onChange={(e) => setMonth(e.target.value || null)}
+        />
+        <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="Mes siguiente">
+          <ChevronRight className="size-4" />
+        </Button>
+        <Button variant="outline" onClick={() => setMonth(currentMonth())}>
+          Mes actual
+        </Button>
+        <Button variant={month ? "outline" : "secondary"} onClick={() => setMonth(null)}>
+          Todos
+        </Button>
+      </div>
+
       <Tabs defaultValue="incapacidades">
         <TabsList>
           <TabsTrigger value="incapacidades">Incapacidades</TabsTrigger>
@@ -156,7 +197,7 @@ function NoveltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {incapacities.filter((i) => matches(i.employee_id)).map((i) => (
+                {incapacities.filter((i) => matches(i.employee_id) && inMonth(i.start_date, i.end_date)).map((i) => (
                   <TableRow key={i.id}>
                     <TableCell>
                       <EmployeeLink employeeId={i.employee_id} />
@@ -198,7 +239,7 @@ function NoveltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leaves.filter((l) => matches(l.employee_id)).map((l) => (
+                {leaves.filter((l) => matches(l.employee_id) && inMonth(l.start_date, l.end_date)).map((l) => (
                   <TableRow key={l.id}>
                     <TableCell>
                       <EmployeeLink employeeId={l.employee_id} />
@@ -239,7 +280,7 @@ function NoveltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vacations.filter((v) => matches(v.employee_id)).map((v) => {
+                {vacations.filter((v) => matches(v.employee_id) && inMonth(v.start_date, v.end_date)).map((v) => {
                   const estado = vacationStatus(v);
                   return (
                     <TableRow key={v.id}>
@@ -274,7 +315,7 @@ function NoveltiesPage() {
                     </TableRow>
                   );
                 })}
-                {vacations.filter((v) => matches(v.employee_id)).length === 0 && (
+                {vacations.filter((v) => matches(v.employee_id) && inMonth(v.start_date, v.end_date)).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                       Aún no hay períodos de vacaciones registrados.
@@ -302,7 +343,7 @@ function NoveltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {licenses.filter((l) => matches(l.employee_id)).map((l) => {
+                {licenses.filter((l) => matches(l.employee_id) && inMonth(l.start_date, l.end_date)).map((l) => {
                   const estado = licenseStatus(l);
                   return (
                     <TableRow key={l.id}>
@@ -337,7 +378,7 @@ function NoveltiesPage() {
                     </TableRow>
                   );
                 })}
-                {licenses.filter((l) => matches(l.employee_id)).length === 0 && (
+                {licenses.filter((l) => matches(l.employee_id) && inMonth(l.start_date, l.end_date)).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                       Aún no hay licencias registradas.
@@ -364,7 +405,7 @@ function NoveltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {terminations.filter((t) => matches(t.employee_id)).map((t) => (
+                {terminations.filter((t) => matches(t.employee_id) && inMonth(t.exit_date)).map((t) => (
                   <TableRow key={t.id}>
                     <TableCell>
                       <EmployeeLink employeeId={t.employee_id} />
