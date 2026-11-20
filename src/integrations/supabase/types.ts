@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -117,7 +117,6 @@ export type Database = {
           cedula: string
           company_id: string | null
           contract_end_date: string | null
-          contract_note: string | null
           contract_type: string
           created_at: string
           email: string | null
@@ -128,25 +127,6 @@ export type Database = {
           hire_date: string | null
           id: string
           landline: string | null
-          id_type: string
-          id_issue_place: string | null
-          address: string | null
-          contact1_name: string | null
-          contact1_relationship: string | null
-          contact1_phone: string | null
-          contact2_name: string | null
-          contact2_relationship: string | null
-          contact2_phone: string | null
-          bank_name: string | null
-          bank_account_type: string | null
-          bank_account_number: string | null
-          eps: string | null
-          pension_fund: string | null
-          severance_fund: string | null
-          arl: string | null
-          compensation_fund: string | null
-          has_medical_exam: boolean
-          medical_exam_date: string | null
           last_name: string | null
           municipality: string | null
           notes: string | null
@@ -161,7 +141,6 @@ export type Database = {
           cedula: string
           company_id?: string | null
           contract_end_date?: string | null
-          contract_note?: string | null
           contract_type?: string
           created_at?: string
           email?: string | null
@@ -172,25 +151,6 @@ export type Database = {
           hire_date?: string | null
           id?: string
           landline?: string | null
-          id_type?: string
-          id_issue_place?: string | null
-          address?: string | null
-          contact1_name?: string | null
-          contact1_relationship?: string | null
-          contact1_phone?: string | null
-          contact2_name?: string | null
-          contact2_relationship?: string | null
-          contact2_phone?: string | null
-          bank_name?: string | null
-          bank_account_type?: string | null
-          bank_account_number?: string | null
-          eps?: string | null
-          pension_fund?: string | null
-          severance_fund?: string | null
-          arl?: string | null
-          compensation_fund?: string | null
-          has_medical_exam?: boolean
-          medical_exam_date?: string | null
           last_name?: string | null
           municipality?: string | null
           notes?: string | null
@@ -205,7 +165,6 @@ export type Database = {
           cedula?: string
           company_id?: string | null
           contract_end_date?: string | null
-          contract_note?: string | null
           contract_type?: string
           created_at?: string
           email?: string | null
@@ -216,25 +175,6 @@ export type Database = {
           hire_date?: string | null
           id?: string
           landline?: string | null
-          id_type?: string
-          id_issue_place?: string | null
-          address?: string | null
-          contact1_name?: string | null
-          contact1_relationship?: string | null
-          contact1_phone?: string | null
-          contact2_name?: string | null
-          contact2_relationship?: string | null
-          contact2_phone?: string | null
-          bank_name?: string | null
-          bank_account_type?: string | null
-          bank_account_number?: string | null
-          eps?: string | null
-          pension_fund?: string | null
-          severance_fund?: string | null
-          arl?: string | null
-          compensation_fund?: string | null
-          has_medical_exam?: boolean
-          medical_exam_date?: string | null
           last_name?: string | null
           municipality?: string | null
           notes?: string | null
@@ -548,7 +488,6 @@ export type Database = {
           employee_name: string
           firma: string | null
           id: string
-          kind: string
           logo_path: string | null
           signed_at: string | null
           token: string
@@ -561,7 +500,6 @@ export type Database = {
           employee_name: string
           firma?: string | null
           id?: string
-          kind?: string
           logo_path?: string | null
           signed_at?: string | null
           token?: string
@@ -574,7 +512,6 @@ export type Database = {
           employee_name?: string
           firma?: string | null
           id?: string
-          kind?: string
           logo_path?: string | null
           signed_at?: string | null
           token?: string
