@@ -11,10 +11,11 @@ import {
   VacationDialog,
 } from "@/components/hr/NoveltyDialogs";
 
+import { EmployeeDialog } from "@/components/hr/EmployeeDialog";
+import { MonthPicker } from "@/components/hr/MonthPicker";
 import { useFilters } from "@/components/layout/filters-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -25,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  useCompanies,
   useEmployees,
   useIncapacities,
   useLeaves,
@@ -33,6 +35,7 @@ import {
   useVacations,
 } from "@/lib/data";
 import {
+  CONTRACT_TYPE_LABELS,
   INCAPACITY_LABELS,
   LEAVE_LABELS,
   LICENSE_LABELS,
@@ -40,6 +43,7 @@ import {
   daysInclusive,
   fmtDate,
   incapacityStatus,
+  isFixedTerm,
   licenseStatus,
   vacationStatus,
 } from "@/lib/hr";
@@ -77,11 +81,13 @@ function NoveltiesPage() {
   const { data: terminations = [] } = useTerminations();
   const { data: licenses = [] } = useLicenses();
   const { data: vacations = [] } = useVacations();
+  const { data: companies = [] } = useCompanies();
   const [incOpen, setIncOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [termOpen, setTermOpen] = useState(false);
   const [licOpen, setLicOpen] = useState(false);
   const [vacOpen, setVacOpen] = useState(false);
+  const [hireOpen, setHireOpen] = useState(false);
   const [month, setMonth] = useState<string | null>(currentMonth);
 
 
@@ -110,6 +116,14 @@ function NoveltiesPage() {
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 
+  const companyName = useMemo(
+    () => new Map(companies.map((c) => [c.id, c.name])),
+    [companies],
+  );
+  const hires = employees
+    .filter((e) => e.hire_date && matches(e.id) && inMonth(e.hire_date))
+    .sort((a, b) => b.hire_date.localeCompare(a.hire_date));
+
   const name = (employeeId: string) => byId.get(employeeId)?.full_name ?? "—";
 
   const EmployeeLink = ({ employeeId }: { employeeId: string }) => (
@@ -128,7 +142,7 @@ function NoveltiesPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Novedades</h1>
           <p className="text-sm text-muted-foreground">
-            Histórico completo de incapacidades, permisos y retiros.
+            Histórico completo de incapacidades, permisos, ingresos y retiros.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -144,6 +158,9 @@ function NoveltiesPage() {
           <Button variant="outline" onClick={() => setLicOpen(true)}>
             Licencia
           </Button>
+          <Button variant="outline" onClick={() => setHireOpen(true)}>
+            Ingreso
+          </Button>
           <Button variant="outline" onClick={() => setTermOpen(true)}>
             Retiro
           </Button>
@@ -155,12 +172,7 @@ function NoveltiesPage() {
         <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
           <ChevronLeft className="size-4" />
         </Button>
-        <Input
-          type="month"
-          className="w-44"
-          value={month ?? ""}
-          onChange={(e) => setMonth(e.target.value || null)}
-        />
+        <MonthPicker value={month} onChange={setMonth} />
         <Button variant="outline" size="icon" onClick={() => shiftMonth(1)} aria-label="Mes siguiente">
           <ChevronRight className="size-4" />
         </Button>
@@ -178,6 +190,7 @@ function NoveltiesPage() {
           <TabsTrigger value="permisos">Permisos y vacaciones</TabsTrigger>
           <TabsTrigger value="vacaciones">Vacaciones</TabsTrigger>
           <TabsTrigger value="licencias">Licencias</TabsTrigger>
+          <TabsTrigger value="ingresos">Ingresos</TabsTrigger>
           <TabsTrigger value="retiros">Retiros</TabsTrigger>
         </TabsList>
 
@@ -391,6 +404,54 @@ function NoveltiesPage() {
         </TabsContent>
 
 
+        <TabsContent value="ingresos">
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empleado</TableHead>
+                  <TableHead>Cargo</TableHead>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead>Fecha de ingreso</TableHead>
+                  <TableHead>Contrato</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {hires.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>
+                      <EmployeeLink employeeId={e.id} />
+                    </TableCell>
+                    <TableCell>{e.position || "—"}</TableCell>
+                    <TableCell>{companyName.get(e.company_id ?? "") ?? "—"}</TableCell>
+                    <TableCell className="numeric">{fmtDate(e.hire_date)}</TableCell>
+                    <TableCell>{CONTRACT_TYPE_LABELS[isFixedTerm(e) ? "fijo" : "indefinido"]}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          e.status === "retirado"
+                            ? "bg-retired text-retired-foreground"
+                            : "bg-success/20 text-success-foreground"
+                        }
+                      >
+                        {e.status === "retirado" ? "Retirado" : "Activo"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {hires.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                      No hay ingresos registrados en este período.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
         <TabsContent value="retiros">
           <div className="overflow-hidden rounded-xl border bg-surface shadow-panel">
             <Table>
@@ -435,6 +496,7 @@ function NoveltiesPage() {
       <TerminationDialog open={termOpen} onOpenChange={setTermOpen} />
       <LicenseDialog open={licOpen} onOpenChange={setLicOpen} />
       <VacationDialog open={vacOpen} onOpenChange={setVacOpen} />
+      <EmployeeDialog open={hireOpen} onOpenChange={setHireOpen} />
 
     </div>
   );
