@@ -212,7 +212,7 @@ export function EmployeeDialog({
     const cedula = form.cedula.trim();
     if (!cedula) e.cedula = "El número de documento es obligatorio";
     else if (!/^\d{5,15}$/.test(cedula)) e.cedula = "Solo números, sin guiones ni espacios";
-    else if (!employee && cedulasUsadas.has(cedula))
+    else if (cedulasUsadas.has(cedula))
       e.cedula = "Ya existe un empleado con este número de documento";
 
     if (!NAME_RE.test(form.first_name.trim())) e.first_name = "Mínimo 2 caracteres, solo letras";
@@ -435,18 +435,11 @@ export function EmployeeDialog({
             <Input
               id="cedula"
               inputMode="numeric"
-              readOnly={Boolean(employee)}
-              className={employee ? "bg-muted" : cls("cedula")}
+              className={cls("cedula")}
               value={form.cedula}
               onChange={(e) => set({ cedula: e.target.value })}
             />
-            {employee ? (
-              <p className="text-[11px] text-muted-foreground">
-                El número de documento es el identificador único y no se puede modificar.
-              </p>
-            ) : (
-              err("cedula")
-            )}
+            {err("cedula")}
           </div>
 
           {textField("id_issue_place", "Lugar de expedición", "Chiquinquirá, Boyacá")}
