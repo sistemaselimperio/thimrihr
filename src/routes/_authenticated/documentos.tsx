@@ -71,7 +71,7 @@ import { SPECIAL_DOCS, liquidacionDoc } from "@/components/hr/special-docs";
 import { findSignableDoc, findSpecialDoc } from "@/lib/special-doc";
 import { DocumentText } from "@/components/hr/DocumentText";
 import { fmtDate } from "@/lib/hr";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   head: () => ({

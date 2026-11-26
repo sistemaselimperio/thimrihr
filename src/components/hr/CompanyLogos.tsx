@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 import { ISLERO_LOGO_KEY, qk, updateRow, upsertRow, useIsleroLogo } from "@/lib/data";
 import type { Company } from "@/lib/hr";
 

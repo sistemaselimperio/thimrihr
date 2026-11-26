@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAppAuth } from "@/integrations/supabase/app-auth-middleware";
 import { offlineHolidays, type Holiday } from "./holidays";
 
 interface NagerHoliday {
@@ -25,7 +25,7 @@ async function fetchYear(year: number): Promise<Holiday[]> {
 
 /** Descarga los festivos de Colombia de los años pedidos y los guarda. */
 export const syncHolidays = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAppAuth])
   .inputValidator((input: { years: number[] }) => ({
     years: (input?.years ?? []).map(Number).filter((y) => y > 2000 && y < 2100),
   }))

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAppAuth } from "@/integrations/supabase/app-auth-middleware";
 import type { MinTrabajoPayload, MinTrabajoValues } from "./mintrabajo-compare";
 
 type ValidateResult = { result: MinTrabajoValues; error: null } | { result: null; error: string };
@@ -9,7 +9,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Calcula la liquidación en la calculadora del MinTrabajo (vía microservicio con Puppeteer). */
 export const validateWithMinTrabajo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAppAuth])
   .inputValidator((input: MinTrabajoPayload): MinTrabajoPayload => {
     if (!ISO.test(input?.fechaInicio) || !ISO.test(input?.fechaFin)) {
       throw new Error("Fechas inválidas");

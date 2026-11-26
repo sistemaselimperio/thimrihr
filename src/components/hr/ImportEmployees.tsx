@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 import { qk, useEmployees, useImportBatches } from "@/lib/data";
 import { downloadSheet } from "@/lib/excel";
 import { useNavigate } from "@tanstack/react-router";

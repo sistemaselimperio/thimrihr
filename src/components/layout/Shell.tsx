@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 import { useCompanies, useEmployees, useHolidaySync } from "@/lib/data";
 import { activeFilterCount } from "@/lib/filters";
 import { downloadSheet } from "@/lib/excel";

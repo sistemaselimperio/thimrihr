@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 import { FiltersProvider } from "@/components/layout/filters-context";
 import { Shell } from "@/components/layout/Shell";
 import { CelebrationProvider } from "@/components/hr/Celebration";

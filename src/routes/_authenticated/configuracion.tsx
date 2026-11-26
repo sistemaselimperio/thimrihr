@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 import { useCompanies, useEmployees, useTemplates } from "@/lib/data";
 import {
   CONTRACT_ALERT_DAYS,

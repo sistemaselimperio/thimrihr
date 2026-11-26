@@ -16,7 +16,7 @@ import { LiquidacionForm } from "@/components/hr/LiquidacionForm";
 import { LiquidacionPreview } from "@/components/hr/LiquidacionPreview";
 import { qk, useCompanies, useIsleroLogo, type SharedLiquidacion } from "@/lib/data";
 import { calcLiquidacion, dependenciaLogoPath, type LiquidacionInput } from "@/lib/liquidacion";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 
 interface Props {
   shared: SharedLiquidacion | null;

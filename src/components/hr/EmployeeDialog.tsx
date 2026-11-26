@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { qk, updateRow, useCompanies, useEmployees } from "@/lib/data";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/app-client";
 import { useCelebration } from "@/components/hr/Celebration";
 import { useNavigate } from "@tanstack/react-router";
 import { ID_TYPE_LABELS, type Employee } from "@/lib/hr";
